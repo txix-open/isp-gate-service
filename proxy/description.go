@@ -4,15 +4,13 @@ import (
 	"github.com/integration-system/isp-lib/structure"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"google.golang.org/grpc/codes"
 	"isp-gate-service/conf"
 	"isp-gate-service/proxy/grpc"
-	"isp-gate-service/proxy/grpc/utils"
 	"isp-gate-service/proxy/http"
 	"strings"
 )
 
-var ProxyStore = make(map[string]Proxy)
+var store = make(map[string]Proxy)
 
 const (
 	httpProtocol = "http"
@@ -32,24 +30,28 @@ func Init(location conf.Location) (Proxy, error) {
 	switch location.Protocol {
 	case httpProtocol:
 		proxy := http.NewProxy()
-		ProxyStore[location.PathPrefix] = proxy
+		store[location.PathPrefix] = proxy
 		return proxy, nil
 	case grpcProtocol:
 		proxy := grpc.NewProxy()
-		ProxyStore[location.PathPrefix] = proxy
+		store[location.PathPrefix] = proxy
 		return proxy, nil
 	default:
 		return nil, errors.New("unknown protocol")
 	}
 }
 
-func Handle(ctx *fasthttp.RequestCtx) {
-	path := string(ctx.Path())
-	for pathPrefix, proxy := range ProxyStore {
+func Find(path string) Proxy {
+	for pathPrefix, proxy := range store {
 		if strings.HasPrefix(path, pathPrefix) {
-			proxy.ProxyRequest(ctx)
-			return
+			return proxy
 		}
 	}
-	utils.SendError("unknown path", codes.Internal, []interface{}{map[string]string{"path": path}}, ctx)
+	return nil
+}
+
+func Close() {
+	for _, p := range store {
+		p.Close()
+	}
 }

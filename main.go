@@ -2,21 +2,17 @@ package main
 
 import (
 	"context"
-	"github.com/valyala/fasthttp"
-	"sync"
-	"time"
-
 	"github.com/integration-system/isp-lib/bootstrap"
 	"github.com/integration-system/isp-lib/config"
 	"github.com/integration-system/isp-lib/config/schema"
 	"github.com/integration-system/isp-lib/metric"
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
-
 	"isp-gate-service/conf"
 	"isp-gate-service/journal"
 	"isp-gate-service/log_code"
 	"isp-gate-service/proxy"
+	"isp-gate-service/server"
 	"isp-gate-service/service"
 	"os"
 )
@@ -24,9 +20,6 @@ import (
 var (
 	version = "0.1.0"
 	date    = "undefined"
-
-	srvLock = sync.Mutex{}
-	httpSrv *fasthttp.Server
 )
 
 func main() {
@@ -44,7 +37,7 @@ func main() {
 		if p, err := proxy.Init(location); err != nil {
 			log.Fatal(log_code.ErrorLocalConfig, err)
 		} else {
-			bs.RequireModule(location.TargetModule, p.Consumer, true)
+			bs.RequireModule(location.TargetModule, p.Consumer, false)
 		}
 	}
 
@@ -64,7 +57,7 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 
 	service.JournalMethodsMatcher = service.NewCacheableMethodMatcher(remoteConfig.JournalingMethodsPatterns)
 
-	createServer(remoteConfig)
+	server.Http.Init(remoteConfig.MaxRequestBodySizeBytes)
 	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
 	metric.InitHttpServer(remoteConfig.Metrics)
 	//metric.InitStatusChecker("router-grpc", helper.GetRoutersAndStatus)
@@ -85,9 +78,7 @@ func socketConfiguration(cfg interface{}) structure.SocketConfiguration {
 }
 
 func onShutdown(_ context.Context, _ os.Signal) {
-	for _, p := range proxy.ProxyStore {
-		p.Close()
-	}
+	proxy.Close()
 }
 
 func makeDeclaration(localConfig interface{}) bootstrap.ModuleInfo {
@@ -98,28 +89,4 @@ func makeDeclaration(localConfig interface{}) bootstrap.ModuleInfo {
 		GrpcOuterAddress: cfg.HttpOuterAddress,
 		Handlers:         []interface{}{},
 	}
-}
-
-func createServer(remoteConfig *conf.RemoteConfig) {
-	srvLock.Lock()
-	if httpSrv != nil {
-		if err := httpSrv.Shutdown(); err != nil {
-			log.Warn(log_code.WarnCreateRestServerHttpSrvShutdown, err)
-		}
-	}
-	maxRequestBodySize := remoteConfig.GetMaxRequestBodySize()
-	localConfig := config.Get().(*conf.Configuration)
-	restAddress := localConfig.HttpInnerAddress.GetAddress()
-	httpSrv = &fasthttp.Server{
-		Handler:            proxy.Handle,
-		WriteTimeout:       time.Second * 60,
-		ReadTimeout:        time.Second * 60,
-		MaxRequestBodySize: int(maxRequestBodySize),
-	}
-	go func() {
-		if err := httpSrv.ListenAndServe(restAddress); err != nil {
-			log.Error(log_code.ErrorCreateRestServerHttpSrvListenAndServe, err)
-		}
-	}()
-	srvLock.Unlock()
 }

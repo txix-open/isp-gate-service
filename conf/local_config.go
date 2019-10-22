@@ -13,8 +13,8 @@ type (
 	}
 
 	Location struct {
-		PathPrefix   string
-		Protocol     string
-		TargetModule string
+		PathPrefix   string `valid:"required~Required"`
+		Protocol     string `valid:"required~Required"`
+		TargetModule string `valid:"required~Required"`
 	}
 )
