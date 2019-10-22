@@ -12,7 +12,7 @@ const (
 	defaultSampleSize = 2048
 )
 
-var Metrics = metricService{mh: nil}
+var Metrics = &metricService{mh: nil}
 
 type (
 	metricService struct {
@@ -29,38 +29,44 @@ type (
 	}
 )
 
-func (m metricService) Init() {
-	if m.mh == nil {
-		m.mh = &metricHolder{
-			methodHistograms: make(map[string]metrics.Histogram),
-			statusCounters:   make(map[int]metrics.Counter),
-			responseTime: metrics.GetOrRegisterHistogram(
-				"http.response.time", metric.GetRegistry(), metrics.NewUniformSample(defaultSampleSize),
-			),
-			routerResponseTime: metrics.GetOrRegisterHistogram(
-				"grpc.router.response.time", metric.GetRegistry(), metrics.NewUniformSample(defaultSampleSize),
-			),
-		}
+func (m *metricService) Init() {
+	m.mh = &metricHolder{
+		methodHistograms: make(map[string]metrics.Histogram),
+		statusCounters:   make(map[int]metrics.Counter),
+		responseTime: metrics.GetOrRegisterHistogram(
+			"http.response.time", metric.GetRegistry(), metrics.NewUniformSample(defaultSampleSize),
+		),
+		routerResponseTime: metrics.GetOrRegisterHistogram(
+			"grpc.router.response.time", metric.GetRegistry(), metrics.NewUniformSample(defaultSampleSize),
+		),
 	}
 }
 
-func (m metricService) UpdateMethodResponseTime(uri string, time time.Duration) {
-	m.getOrRegisterHistogram(uri).Update(int64(time))
+func (m *metricService) UpdateMethodResponseTime(uri string, time time.Duration) {
+	if m.notEmptyHolder() {
+		m.getOrRegisterHistogram(uri).Update(int64(time))
+	}
 }
 
-func (m metricService) UpdateResponseTime(time time.Duration) {
-	m.mh.responseTime.Update(int64(time))
+func (m *metricService) UpdateResponseTime(time time.Duration) {
+	if m.notEmptyHolder() {
+		m.mh.responseTime.Update(int64(time))
+	}
 }
 
-func (m metricService) UpdateRouterResponseTime(time time.Duration) {
-	m.mh.routerResponseTime.Update(int64(time))
+func (m *metricService) UpdateRouterResponseTime(time time.Duration) {
+	if m.notEmptyHolder() {
+		m.mh.routerResponseTime.Update(int64(time))
+	}
 }
 
-func (m metricService) UpdateStatusCounter(status int) {
-	m.getOrRegisterCounter(status).Inc(1)
+func (m *metricService) UpdateStatusCounter(status int) {
+	if m.notEmptyHolder() {
+		m.getOrRegisterCounter(status).Inc(1)
+	}
 }
 
-func (m metricService) getOrRegisterHistogram(uri string) metrics.Histogram {
+func (m *metricService) getOrRegisterHistogram(uri string) metrics.Histogram {
 	m.mh.methodLock.RLock()
 	histogram, ok := m.mh.methodHistograms[uri]
 	m.mh.methodLock.RUnlock()
@@ -82,7 +88,7 @@ func (m metricService) getOrRegisterHistogram(uri string) metrics.Histogram {
 	return histogram
 }
 
-func (m metricService) getOrRegisterCounter(status int) metrics.Counter {
+func (m *metricService) getOrRegisterCounter(status int) metrics.Counter {
 	m.mh.statusLock.RLock()
 	d, ok := m.mh.statusCounters[status]
 	m.mh.statusLock.RUnlock()
@@ -98,4 +104,8 @@ func (m metricService) getOrRegisterCounter(status int) metrics.Counter {
 	d = metrics.GetOrRegisterCounter("http.response.count."+strconv.Itoa(status), metric.GetRegistry())
 	m.mh.statusCounters[status] = d
 	return d
+}
+
+func (m *metricService) notEmptyHolder() bool {
+	return m.mh != nil
 }

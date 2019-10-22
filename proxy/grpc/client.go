@@ -17,8 +17,8 @@ type grpcProxy struct {
 	client *backend.RxGrpcClient
 }
 
-func NewProxy() grpcProxy {
-	return grpcProxy{client: backend.NewRxGrpcClient(
+func NewProxy() *grpcProxy {
+	return &grpcProxy{client: backend.NewRxGrpcClient(
 		backend.WithDialOptions(
 			grpc.WithInsecure(), grpc.WithBlock(),
 			grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(int(conf.DefaultMaxResponseBodySize))),
@@ -30,7 +30,7 @@ func NewProxy() grpcProxy {
 	)}
 }
 
-func (p grpcProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
+func (p *grpcProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
 	currentTime := time.Now()
 
 	uri := string(ctx.RequestURI())
@@ -45,10 +45,10 @@ func (p grpcProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func (p grpcProxy) Consumer(addr []structure.AddressConfiguration) bool {
+func (p *grpcProxy) Consumer(addr []structure.AddressConfiguration) bool {
 	return p.client.ReceiveAddressList(addr)
 }
 
-func (p grpcProxy) Close() {
+func (p *grpcProxy) Close() {
 	p.client.Close()
 }

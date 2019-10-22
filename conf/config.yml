@@ -1,12 +1,12 @@
 configServiceAddress:
-  ip: 127.0.0.1
+  ip: 10.250.9.40
   port: 9001
 httpOuterAddress:
   ip: http://
-  port: 9003
+  port: 9028
 httpInnerAddress:
   ip: 0.0.0.0
-  port: 9003
+  port: 9028
 moduleName: isp-gate
 instanceUuid: ec183598-746a-425f-b5e5-27b7fa8bc6af
 locations:

@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"github.com/valyala/fasthttp"
+	"sync"
+	"time"
 
 	"github.com/integration-system/isp-lib/bootstrap"
 	"github.com/integration-system/isp-lib/config"
@@ -21,47 +24,49 @@ import (
 var (
 	version = "0.1.0"
 	date    = "undefined"
+
+	srvLock = sync.Mutex{}
+	httpSrv *fasthttp.Server
 )
 
 func main() {
-
-	cfg := config.InitConfig(&conf.Configuration{}).(conf.Configuration)
+	cfg := config.InitConfig(&conf.Configuration{}).(*conf.Configuration)
 
 	bs := bootstrap.
 		ServiceBootstrap(&conf.Configuration{}, &conf.RemoteConfig{}).
 		OnLocalConfigLoad(onLocalConfigLoad).
 		DefaultRemoteConfigPath(schema.ResolveDefaultConfigPath("default_remote_config.json")).
-		RequireModule(journal.RequiredModule()). //todo
-		SocketConfiguration(socketConfiguration).
 		DeclareMe(makeDeclaration).
-		OnRemoteConfigReceive(onRemoteConfigReceive).
-		OnShutdown(onShutdown)
+		SocketConfiguration(socketConfiguration).
+		RequireModule(journal.RequiredModule())
 
 	for _, location := range cfg.Locations {
 		if p, err := proxy.Init(location); err != nil {
-			log.Fatal(log_code.ErrorLocalConfig, err) // todo
+			log.Fatal(log_code.ErrorLocalConfig, err)
 		} else {
-			bs.RequireModule(cfg.ModuleName, p.Consumer, false)
+			bs.RequireModule(location.TargetModule, p.Consumer, true)
 		}
 	}
 
-	bs.Run()
+	bs.OnShutdown(onShutdown).
+		OnRemoteConfigReceive(onRemoteConfigReceive).
+		Run()
 }
 
 func onLocalConfigLoad(cfg *conf.Configuration) {
 	log.Infof(log_code.InfoOnLocalConfigLoad, "Outer http address is %s", cfg.HttpOuterAddress.GetAddress())
 }
 
-func onRemoteConfigReceive(cfg, oldRemoteConfig *conf.RemoteConfig) {
+func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	localCfg := config.Get().(*conf.Configuration)
 
-	journal.Client.ReceiveConfiguration(cfg.Journal, localCfg.ModuleName)
+	journal.Client.ReceiveConfiguration(remoteConfig.Journal, localCfg.ModuleName)
 
-	service.JournalMethodsMatcher = service.NewCacheableMethodMatcher(cfg.JournalingMethodsPatterns)
+	service.JournalMethodsMatcher = service.NewCacheableMethodMatcher(remoteConfig.JournalingMethodsPatterns)
 
-	//
-	metric.InitCollectors(cfg.Metrics, oldRemoteConfig.Metrics)
-	metric.InitHttpServer(cfg.Metrics)
+	createServer(remoteConfig)
+	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
+	metric.InitHttpServer(remoteConfig.Metrics)
 	//metric.InitStatusChecker("router-grpc", helper.GetRoutersAndStatus)
 	service.Metrics.Init()
 }
@@ -93,4 +98,28 @@ func makeDeclaration(localConfig interface{}) bootstrap.ModuleInfo {
 		GrpcOuterAddress: cfg.HttpOuterAddress,
 		Handlers:         []interface{}{},
 	}
+}
+
+func createServer(remoteConfig *conf.RemoteConfig) {
+	srvLock.Lock()
+	if httpSrv != nil {
+		if err := httpSrv.Shutdown(); err != nil {
+			log.Warn(log_code.WarnCreateRestServerHttpSrvShutdown, err)
+		}
+	}
+	maxRequestBodySize := remoteConfig.GetMaxRequestBodySize()
+	localConfig := config.Get().(*conf.Configuration)
+	restAddress := localConfig.HttpInnerAddress.GetAddress()
+	httpSrv = &fasthttp.Server{
+		Handler:            proxy.Handle,
+		WriteTimeout:       time.Second * 60,
+		ReadTimeout:        time.Second * 60,
+		MaxRequestBodySize: int(maxRequestBodySize),
+	}
+	go func() {
+		if err := httpSrv.ListenAndServe(restAddress); err != nil {
+			log.Error(log_code.ErrorCreateRestServerHttpSrvListenAndServe, err)
+		}
+	}()
+	srvLock.Unlock()
 }
