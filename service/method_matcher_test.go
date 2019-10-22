@@ -24,7 +24,7 @@ var (
 func TestCacheableMethodsMatcher_Match(t *testing.T) {
 	matcher := NewCacheableMethodMatcher(patterns)
 	for _, c := range cases {
-		res := Match(c.Method)
+		res := matcher.Match(c.Method)
 		if c.Result != res {
 			t.Error(c)
 		}
@@ -35,7 +35,7 @@ func BenchmarkCacheableMethodsMatcher_Match(b *testing.B) {
 	matcher := NewCacheableMethodMatcher(patterns)
 	for i := 0; i < b.N; i++ {
 		for _, c := range cases {
-			_ = Match(c.Method)
+			_ = matcher.Match(c.Method)
 		}
 	}
 }
@@ -44,7 +44,7 @@ func BenchmarkRuntimeMatcher_Match(b *testing.B) {
 	matcher := NewRuntimeMethodMatcher(patterns)
 	for i := 0; i < b.N; i++ {
 		for _, c := range cases {
-			_ = Match(c.Method)
+			_ = matcher.Match(c.Method)
 		}
 	}
 }
