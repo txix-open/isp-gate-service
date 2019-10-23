@@ -93,5 +93,5 @@ func (c *redisClient) CheckTokens(t map[string]string) (map[string]string, error
 
 func fineCmd(cmders []redis.Cmder, arrayKey int) bool {
 	return len(cmders) > arrayKey+1 && cmders[arrayKey] != nil &&
-		(cmders[arrayKey].Err() == nil || cmders[arrayKey].Err() != redis.Nil)
+		(cmders[arrayKey].Err() == nil || cmders[arrayKey].Err() == redis.Nil)
 }
