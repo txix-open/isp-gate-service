@@ -28,6 +28,7 @@ type RemoteConfig struct {
 	Metrics                              structure.MetricConfiguration `schema:"Настройка метрик"`
 	Journal                              rx.Config                     `schema:"Настройка логирования"`
 	JournalingMethodsPatterns            []string                      `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
+	Redis                                structure.RedisConfiguration  `schema:"Настрока Redis" valid:"required~Required"`
 }
 
 func (cfg RemoteConfig) GetSyncInvokeTimeout() time.Duration {

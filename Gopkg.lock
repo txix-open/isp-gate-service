@@ -2,14 +2,6 @@
 
 
 [[projects]]
-  digest = "1:e92f5581902c345eb4ceffdcd4a854fb8f73cf436d47d837d1ec98ef1fe0a214"
-  name = "github.com/StackExchange/wmi"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "5d049714c4a64225c3c79a7cf7d02f7fb5b96338"
-  version = "1.0.0"
-
-[[projects]]
   digest = "1:320e7ead93de9fd2b0e59b50fd92a4d50c1f8ab455d96bc2eb083267453a9709"
   name = "github.com/asaskevich/govalidator"
   packages = ["."]
@@ -34,15 +26,20 @@
   version = "v1.4.7"
 
 [[projects]]
-  digest = "1:440028f55cb322d8cb5b9d5ebec298a00b7d74690a658fe6b1c0c0b44341bfae"
-  name = "github.com/go-ole/go-ole"
+  digest = "1:b46f50677ef33284ebde2b285a42b707ff9e1de1f37328d91869859c929ebbd2"
+  name = "github.com/go-redis/redis"
   packages = [
     ".",
-    "oleutil",
+    "internal",
+    "internal/consistenthash",
+    "internal/hashtag",
+    "internal/pool",
+    "internal/proto",
+    "internal/util",
   ]
   pruneopts = "UT"
-  revision = "97b6244175ae18ea6eef668034fd6565847501c9"
-  version = "v1.2.4"
+  revision = "7f69d5e32072d151eb6936cbe2306413e8117488"
+  version = "v6.15.6"
 
 [[projects]]
   digest = "1:07f4fafe81587b642166199f41c3edcca12929fcfcc0261b00be5dea2f968f44"
@@ -150,7 +147,8 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:07a84c67d3c719dec447bf309303edda3b208234fee91fff5c38f466ee6665d1"
+  branch = "master"
+  digest = "1:5d6745d93914f036ecf9c22e20ec2a6885864acad54bec463e59cfde770dd7ee"
   name = "github.com/integration-system/isp-lib"
   packages = [
     "backend",
@@ -161,19 +159,22 @@
     "logger",
     "metric",
     "proto/stubs",
+    "redis",
     "streaming",
     "structure",
     "utils",
   ]
   pruneopts = "UT"
-  revision = "b110f4b47bc34145bda99c67560a780013d12f55"
-  version = "v1.6.3"
+  revision = "f72fc522399b23b49e43d8bcc279a54654ea2419"
 
 [[projects]]
   branch = "master"
-  digest = "1:ba98dc95f3f2eb551d124f9ed6a6a405ea95a6b2ab70450b988306e885caa4fe"
+  digest = "1:1789fb6e57949a6e4cacb74023cd30efb04b09dc6111d6ef3718241ebb23ebe9"
   name = "github.com/integration-system/isp-log"
-  packages = ["."]
+  packages = [
+    ".",
+    "stdcodes",
+  ]
   pruneopts = "UT"
   revision = "a22bf2e0b56a9ef47db4a98756e39f700a99b688"
 
@@ -313,17 +314,6 @@
   revision = "cac0b30c2563378d434b5af411844adff8e32960"
 
 [[projects]]
-  digest = "1:ab1672baf07ee80c988e369e5633bcac459342e8e00d0c38a799056395fe9dba"
-  name = "github.com/shirou/gopsutil"
-  packages = [
-    "cpu",
-    "internal/common",
-  ]
-  pruneopts = "UT"
-  revision = "1c09419d4b1c4c19e06d9f48b9406bda27d32acd"
-  version = "v2.19.9"
-
-[[projects]]
   digest = "1:04457f9f6f3ffc5fea48e71d62f2ca256637dee0a04d710288e27e05c8b41976"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
@@ -392,7 +382,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5788c649931a43dc8a21b07a4b51028238b1c2715baadef36c104572ba642be0"
+  digest = "1:e743d2809ba5299bfe842a8a724172f9ac4e89ee281b46720ac65a688ac398a1"
   name = "github.com/valyala/fasthttp"
   packages = [
     ".",
@@ -400,7 +390,7 @@
     "stackless",
   ]
   pruneopts = "UT"
-  revision = "c3d82ca3a430260ff1795abfeac9e8396ed6f6fe"
+  revision = "18c619fb0432fa6b21cb134d35118e6b09d9d9ce"
 
 [[projects]]
   digest = "1:39a425f98fb19427061a693fe6bf0683c9bddec4b25b17067e34fdb465e39cb9"
@@ -432,18 +422,18 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "da9a3fd4c5820e74b24a6cb7fb438dc9b0dd377c"
+  revision = "ec77196f6094c3492a8b61f2c11cf937f78992ae"
 
 [[projects]]
   branch = "master"
-  digest = "1:44480e76e73bb8d3104753f3618943ff331f2225c867c69af330e3e7f89b2e35"
+  digest = "1:3fa58f7377e1d95d496db43dd3281ddcea4185eb46c6394f89fec1cfa4ec3244"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "727590c5006e77ca5247972f47e877f4929fc985"
+  revision = "742c48ecaeb7c624c475e02f3eb0827ebb4970d4"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -535,7 +525,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/buaazp/fasthttprouter",
+    "github.com/go-redis/redis",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes/struct",
     "github.com/integration-system/isp-journal/rx",
@@ -546,6 +536,7 @@
     "github.com/integration-system/isp-lib/http",
     "github.com/integration-system/isp-lib/metric",
     "github.com/integration-system/isp-lib/proto/stubs",
+    "github.com/integration-system/isp-lib/redis",
     "github.com/integration-system/isp-lib/streaming",
     "github.com/integration-system/isp-lib/structure",
     "github.com/integration-system/isp-lib/utils",
@@ -555,7 +546,6 @@
     "github.com/rcrowley/go-metrics",
     "github.com/valyala/fasthttp",
     "golang.org/x/net/context",
-    "google.golang.org/genproto/googleapis/rpc/errdetails",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/metadata",

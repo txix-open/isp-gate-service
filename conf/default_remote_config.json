@@ -18,5 +18,13 @@
     "maxSizeMb": 512,
     "bufferSize": 4096,
     "rotateTimeoutMs": 86400000
+  },
+  "redis": {
+    "password": "password",
+    "defaultDB": 0,
+    "address": {
+      "ip": "127.0.0.1",
+      "port": "6379"
+    }
   }
 }

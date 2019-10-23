@@ -12,6 +12,7 @@ import (
 	"isp-gate-service/journal"
 	"isp-gate-service/log_code"
 	"isp-gate-service/proxy"
+	"isp-gate-service/redis"
 	"isp-gate-service/server"
 	"isp-gate-service/service"
 	"os"
@@ -54,10 +55,11 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	localCfg := config.Get().(*conf.Configuration)
 
 	journal.Client.ReceiveConfiguration(remoteConfig.Journal, localCfg.ModuleName)
+	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
+	server.Http.Init(remoteConfig.MaxRequestBodySizeBytes)
 
 	service.JournalMethodsMatcher = service.NewCacheableMethodMatcher(remoteConfig.JournalingMethodsPatterns)
 
-	server.Http.Init(remoteConfig.MaxRequestBodySizeBytes)
 	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
 	metric.InitHttpServer(remoteConfig.Metrics)
 	//metric.InitStatusChecker("router-grpc", helper.GetRoutersAndStatus)
