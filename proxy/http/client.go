@@ -30,6 +30,11 @@ func (p *httpProxy) Consumer(addressList []structure.AddressConfiguration) bool 
 }
 
 func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
+	if p.client == nil {
+		log.Error(log_code.ErrorClientHttp, "client undefined")
+		return
+	}
+
 	req := &ctx.Request
 	res := &ctx.Response
 

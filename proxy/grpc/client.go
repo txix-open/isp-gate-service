@@ -31,6 +31,11 @@ func NewProxy() *grpcProxy {
 }
 
 func (p *grpcProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
+	if p.client == nil {
+		log.Error(log_code.ErrorClientGrpc, "client undefined")
+		return
+	}
+
 	currentTime := time.Now()
 
 	uri := string(ctx.RequestURI())

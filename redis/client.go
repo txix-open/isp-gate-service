@@ -21,6 +21,10 @@ func (c *redisClient) ReceiveConfiguration(configuration structure.RedisConfigur
 }
 
 func (c *redisClient) GetTokens(appToken string) (map[string]string, error) {
+	if c.cli == nil {
+		return nil, errors.New("client undefined")
+	}
+
 	instanceUuid := config.Get().(*conf.Configuration).InstanceUuid
 	key := fmt.Sprintf("%s|%s", appToken, instanceUuid)
 
