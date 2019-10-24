@@ -48,7 +48,7 @@ func main() {
 }
 
 func onLocalConfigLoad(cfg *conf.Configuration) {
-	log.Infof(log_code.InfoOnLocalConfigLoad, "Outer http address is %s", cfg.HttpOuterAddress.GetAddress())
+
 }
 
 func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
@@ -81,6 +81,8 @@ func socketConfiguration(cfg interface{}) structure.SocketConfiguration {
 
 func onShutdown(_ context.Context, _ os.Signal) {
 	proxy.Close()
+	redis.Client.Close()
+	server.Http.Close()
 }
 
 func makeDeclaration(localConfig interface{}) bootstrap.ModuleInfo {

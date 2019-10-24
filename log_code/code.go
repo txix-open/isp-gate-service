@@ -1,8 +1,6 @@
 package log_code
 
 const (
-	InfoOnLocalConfigLoad = 601
-
 	WarnRequestHandler                  = 604 //metadata: {"typeData":"", "method":""}
 	WarnConvertErrorDataMarshalResponse = 605
 	ErrorGrpcClientDialing              = 606
@@ -11,10 +9,12 @@ const (
 
 	ErrorClientJournal = 903
 
-	WarnCreateRestServerHttpSrvShutdown        = 602
-	ErrorCreateRestServerHttpSrvListenAndServe = 603
+	WarnHttpServerShutdown = 602
+	ErrorHttpServerListen  = 603
 
 	ErrorLocalConfig = 904
 	ErrorClientGrpc  = 905
 	ErrorClientHttp  = 906
+
+	ErrorClientRedis = 907
 )

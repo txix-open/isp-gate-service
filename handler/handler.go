@@ -1,28 +1,23 @@
 package handler
 
 import (
-	"encoding/json"
-	"github.com/integration-system/isp-lib/http"
-	"github.com/integration-system/isp-lib/structure"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/proxy"
+	"isp-gate-service/utils"
 )
 
 func Complete(ctx *fasthttp.RequestCtx) {
 	path := string(ctx.Path())
 
-	if err := authenticate.Compete(ctx); err != nil {
-		statusCode := codes.Unauthenticated
-		response := structure.GrpcError{
-			ErrorMessage: "unauthenticated", ErrorCode: statusCode.String(),
-			Details: []interface{}{err},
+	if err := authenticate.Do(ctx); err != nil {
+		status := codes.Unknown
+		switch e := err.(type) {
+		case authenticate.ErrorDescription:
+			status = e.ConvertToGrpcStatus()
 		}
-		ctx.Response.Header.SetContentType("application/json; charset=utf-8")
-		ctx.SetStatusCode(http.CodeToHttpStatus(statusCode))
-		message, _ := json.Marshal(response)
-		_, _ = ctx.Write(message)
+		utils.SendError("authenticate error", status, nil, ctx)
 		return
 	}
 
@@ -30,14 +25,6 @@ func Complete(ctx *fasthttp.RequestCtx) {
 	if p != nil {
 		p.ProxyRequest(ctx)
 	} else {
-		statusCode := codes.NotFound
-		response := structure.GrpcError{
-			ErrorMessage: "unknown path", ErrorCode: statusCode.String(),
-			Details: []interface{}{map[string]string{"path": path}},
-		}
-		ctx.Response.Header.SetContentType("application/json; charset=utf-8")
-		ctx.SetStatusCode(http.CodeToHttpStatus(statusCode))
-		message, _ := json.Marshal(response)
-		_, _ = ctx.Write(message)
+		utils.SendError("unknown path", codes.NotFound, []interface{}{map[string]string{"path": path}}, ctx)
 	}
 }

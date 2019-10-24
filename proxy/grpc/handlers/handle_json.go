@@ -12,16 +12,16 @@ import (
 	"isp-gate-service/conf"
 	"isp-gate-service/journal"
 	"isp-gate-service/log_code"
-	"isp-gate-service/proxy/grpc/utils"
 	"isp-gate-service/service"
+	"isp-gate-service/utils"
 	"time"
 )
 
-var Json handleJson
+var handleJson handleJsonDesc
 
-type handleJson struct{}
+type handleJsonDesc struct{}
 
-func (p handleJson) Complete(c *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) {
+func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) {
 	//body, err := utils.ReadJsonBody(c)
 	body := c.Request.Body()
 	/*if err != nil {
@@ -30,7 +30,7 @@ func (p handleJson) Complete(c *fasthttp.RequestCtx, method string, client *back
 		return
 	}*/
 
-	md, methodName := utils.MakeMetadata(&c.Request.Header, method)
+	md, methodName := makeMetadata(&c.Request.Header, method)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 	cfg := config.GetRemote().(*conf.RemoteConfig)
 	ctx, cancel := context.WithTimeout(ctx, cfg.GetSyncInvokeTimeout())
@@ -38,7 +38,7 @@ func (p handleJson) Complete(c *fasthttp.RequestCtx, method string, client *back
 
 	cli, err := client.Conn()
 	if err != nil {
-		utils.LogRequestHandlerError(log_code.TypeData.JsonContent, methodName, err)
+		logHandlerError(log_code.TypeData.JsonContent, methodName, err)
 		utils.SendError(errorMsgInternal, codes.Internal, []interface{}{err.Error()}, c)
 		return
 	}
@@ -53,7 +53,7 @@ func (p handleJson) Complete(c *fasthttp.RequestCtx, method string, client *back
 	)
 	service.Metrics.UpdateRouterResponseTime(time.Since(currentTime) / 1e6)
 
-	if data, status, err := utils.GetResponse(response, invokerErr); err == nil {
+	if data, status, err := getResponse(response, invokerErr); err == nil {
 		c.SetStatusCode(status)
 		_, _ = c.Write(data)
 		if cfg.Journal.Enable && service.JournalMethodsMatcher.Match(methodName) {
@@ -68,7 +68,7 @@ func (p handleJson) Complete(c *fasthttp.RequestCtx, method string, client *back
 			}
 		}
 	} else {
-		utils.LogRequestHandlerError(log_code.TypeData.JsonContent, methodName, err)
+		logHandlerError(log_code.TypeData.JsonContent, methodName, err)
 		utils.SendError(errorMsgInternal, codes.Internal, []interface{}{err.Error()}, c)
 	}
 }

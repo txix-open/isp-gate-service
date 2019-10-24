@@ -22,7 +22,7 @@ func (s *httpSrv) Init(MaxRequestBodySize int64) {
 	s.mx.Lock()
 	if s.srv != nil {
 		if err := s.srv.Shutdown(); err != nil {
-			log.Warn(log_code.WarnCreateRestServerHttpSrvShutdown, err)
+			log.Warn(log_code.WarnHttpServerShutdown, err)
 		}
 	}
 	maxRequestBodySize := MaxRequestBodySize
@@ -36,8 +36,16 @@ func (s *httpSrv) Init(MaxRequestBodySize int64) {
 	}
 	go func() {
 		if err := s.srv.ListenAndServe(restAddress); err != nil {
-			log.Error(log_code.ErrorCreateRestServerHttpSrvListenAndServe, err)
+			log.Error(log_code.ErrorHttpServerListen, err)
 		}
 	}()
 	s.mx.Unlock()
+}
+
+func (s *httpSrv) Close() {
+	if s.srv != nil {
+		if err := s.srv.Shutdown(); err != nil {
+			log.Warn(log_code.WarnHttpServerShutdown, err)
+		}
+	}
 }

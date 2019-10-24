@@ -6,9 +6,12 @@ import (
 	log "github.com/integration-system/isp-log"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"isp-gate-service/conf"
 	"isp-gate-service/log_code"
+	"isp-gate-service/proxy/grpc/handlers"
 	"isp-gate-service/service"
+	"isp-gate-service/utils"
 	"net/http"
 	"time"
 )
@@ -31,16 +34,17 @@ func NewProxy() *grpcProxy {
 }
 
 func (p *grpcProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
-	if p.client == nil {
-		log.Error(log_code.ErrorClientGrpc, "client undefined")
+	if p.client.InternalGrpcClient == nil {
+		msg := "client undefined"
+		log.Error(log_code.ErrorClientGrpc, msg)
+		utils.SendError(msg, codes.Internal, nil, ctx)
 		return
 	}
 
 	currentTime := time.Now()
 
 	uri := string(ctx.RequestURI())
-	SetHandler(ctx).Complete(ctx, uri, p.client)
-
+	handlers.Handler.Get(ctx).Complete(ctx, uri, p.client)
 	executionTime := time.Since(currentTime) / 1e6
 
 	service.Metrics.UpdateStatusCounter(ctx.Response.StatusCode())

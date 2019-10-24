@@ -7,26 +7,27 @@ import (
 	s "github.com/integration-system/isp-lib/streaming"
 	u "github.com/integration-system/isp-lib/utils"
 	log "github.com/integration-system/isp-log"
+	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
 	"io"
 	"isp-gate-service/conf"
 	"isp-gate-service/log_code"
-	"isp-gate-service/proxy/grpc/utils"
+	"isp-gate-service/utils"
 	"strconv"
 )
 
-var GetFile getFile
+var getFile getFileDesc
 
-type getFile struct{}
+type getFileDesc struct{}
 
-func (getFile) Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) {
+func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) {
 	cfg := config.GetRemote().(*conf.RemoteConfig)
 	timeout := cfg.GetStreamInvokeTimeout()
 
-	req, err := utils.ReadJsonBody(ctx)
+	req, err := g.readJsonBody(ctx)
 	if err != nil {
-		utils.LogRequestHandlerError(log_code.TypeData.GetFile, method, err)
+		logHandlerError(log_code.TypeData.GetFile, method, err)
 		utils.SendError(err.Error(), codes.InvalidArgument, nil, ctx)
 		return
 	}
@@ -38,7 +39,7 @@ func (getFile) Complete(ctx *fasthttp.RequestCtx, method string, client *backend
 		}
 	}()
 	if err != nil {
-		utils.LogRequestHandlerError(log_code.TypeData.GetFile, method, err)
+		logHandlerError(log_code.TypeData.GetFile, method, err)
 		utils.SendError(errorMsgInternal, codes.Internal, []interface{}{err.Error()}, ctx)
 		return
 	}
@@ -47,7 +48,7 @@ func (getFile) Complete(ctx *fasthttp.RequestCtx, method string, client *backend
 		value := u.ConvertInterfaceToGrpcStruct(req)
 		err := stream.Send(backend.WrapBody(value))
 		if err != nil {
-			utils.LogRequestHandlerError(log_code.TypeData.GetFile, method, err)
+			logHandlerError(log_code.TypeData.GetFile, method, err)
 			utils.SendError(errorMsgInternal, codes.Internal, []interface{}{err.Error()}, ctx)
 			return
 		}
@@ -55,7 +56,7 @@ func (getFile) Complete(ctx *fasthttp.RequestCtx, method string, client *backend
 
 	msg, err := stream.Recv()
 	if err != nil {
-		bytes, status, err := utils.GetResponse(nil, err)
+		bytes, status, err := getResponse(nil, err)
 		if err == nil {
 			ctx.SetStatusCode(status)
 			ctx.SetBody(bytes)
@@ -65,7 +66,7 @@ func (getFile) Complete(ctx *fasthttp.RequestCtx, method string, client *backend
 	bf := s.BeginFile{}
 	err = bf.FromMessage(msg)
 	if err != nil {
-		bytes, status, err := utils.GetResponse(nil, err)
+		bytes, status, err := getResponse(nil, err)
 		if err == nil {
 			ctx.SetStatusCode(status)
 			ctx.SetBody(bytes)
@@ -87,7 +88,7 @@ func (getFile) Complete(ctx *fasthttp.RequestCtx, method string, client *backend
 			break
 		}
 		if err != nil {
-			utils.LogRequestHandlerError(log_code.TypeData.GetFile, method, err)
+			logHandlerError(log_code.TypeData.GetFile, method, err)
 			break
 		}
 		bytes := msg.GetBytesBody()
@@ -100,8 +101,30 @@ func (getFile) Complete(ctx *fasthttp.RequestCtx, method string, client *backend
 		}
 		_, err = ctx.Write(bytes)
 		if err != nil {
-			utils.LogRequestHandlerError(log_code.TypeData.GetFile, method, err)
+			logHandlerError(log_code.TypeData.GetFile, method, err)
 			break
 		}
 	}
+}
+
+func (getFileDesc) readJsonBody(ctx *fasthttp.RequestCtx) (interface{}, error) {
+	requestBody := ctx.Request.Body()
+	var body interface{}
+	if len(requestBody) == 0 {
+		requestBody = []byte("{}")
+	}
+	if requestBody[0] == '{' {
+		body = make(map[string]interface{})
+	} else if requestBody[0] == '[' {
+		body = make([]interface{}, 0)
+	} else {
+		return nil, errors.New("Invalid json format. Expected object or array")
+	}
+
+	err := json.Unmarshal(requestBody, &body)
+
+	if err != nil {
+		return nil, errors.New("Not able to read request body")
+	}
+	return body, err
 }

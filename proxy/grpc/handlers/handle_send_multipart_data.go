@@ -3,20 +3,22 @@ package handlers
 import (
 	"github.com/integration-system/isp-lib/backend"
 	"github.com/integration-system/isp-lib/config"
+	isp "github.com/integration-system/isp-lib/proto/stubs"
 	s "github.com/integration-system/isp-lib/streaming"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
 	"isp-gate-service/conf"
 	"isp-gate-service/log_code"
-	"isp-gate-service/proxy/grpc/utils"
+	"isp-gate-service/utils"
+	"mime/multipart"
 	"strings"
 )
 
-var SendMultipartData sendMultipartData
+var sendMultipartData sendMultipartDataDesc
 
-type sendMultipartData struct{}
+type sendMultipartDataDesc struct{}
 
-func (sendMultipartData) Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) {
+func (h sendMultipartDataDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) {
 	cfg := config.GetRemote().(*conf.RemoteConfig)
 	timeout := cfg.GetStreamInvokeTimeout()
 	bufferSize := cfg.GetTransferFileBufferSize()
@@ -28,7 +30,7 @@ func (sendMultipartData) Complete(ctx *fasthttp.RequestCtx, method string, clien
 		}
 	}()
 	if err != nil {
-		utils.LogRequestHandlerError(log_code.TypeData.SendMultipart, method, err)
+		logHandlerError(log_code.TypeData.SendMultipart, method, err)
 		utils.SendError(errorMsgInternal, codes.Internal, []interface{}{err.Error()}, ctx)
 		return
 	}
@@ -41,7 +43,7 @@ func (sendMultipartData) Complete(ctx *fasthttp.RequestCtx, method string, clien
 	}()
 
 	if err != nil {
-		utils.LogRequestHandlerError(log_code.TypeData.SendMultipart, method, err)
+		logHandlerError(log_code.TypeData.SendMultipart, method, err)
 		utils.SendError(errorMsgInvalidArg, codes.InvalidArgument, []interface{}{err.Error()}, ctx)
 		return
 	}
@@ -83,9 +85,9 @@ func (sendMultipartData) Complete(ctx *fasthttp.RequestCtx, method string, clien
 		if ok, eof = checkError(err, ctx); !ok || eof {
 			break
 		}
-		if ok, eof = transferFile(f, stream, buffer, ctx); ok {
+		if ok, eof = h.transferFile(f, stream, buffer, ctx); ok {
 			msg, err := stream.Recv()
-			v, _, err := utils.GetResponse(msg, err)
+			v, _, err := getResponse(msg, err)
 			if err == nil {
 				response = append(response, string(v))
 			}
@@ -99,14 +101,38 @@ func (sendMultipartData) Complete(ctx *fasthttp.RequestCtx, method string, clien
 
 	err = stream.CloseSend()
 	if err != nil {
-		utils.LogRequestHandlerError(log_code.TypeData.SendMultipart, method, err)
+		logHandlerError(log_code.TypeData.SendMultipart, method, err)
 	}
 
 	if ok {
 		arrayBody := strings.Join(response, ",")
 		_, err = ctx.WriteString("[" + arrayBody + "]")
 		if err != nil {
-			utils.LogRequestHandlerError(log_code.TypeData.SendMultipart, method, err)
+			logHandlerError(log_code.TypeData.SendMultipart, method, err)
 		}
 	}
+}
+
+func (sendMultipartDataDesc) transferFile(f multipart.File, stream isp.BackendService_RequestStreamClient,
+	buffer []byte, ctx *fasthttp.RequestCtx) (bool, bool) {
+
+	ok := true
+	eof := false
+	for {
+		n, err := f.Read(buffer)
+		if n > 0 {
+			err = stream.Send(&isp.Message{Body: &isp.Message_BytesBody{buffer[:n]}})
+			if ok, eof = checkError(err, ctx); !ok || eof {
+				break
+			}
+		}
+		if err != nil {
+			if ok, eof = checkError(err, ctx); ok && eof {
+				err = stream.Send(s.FileEnd())
+				ok, eof = checkError(err, ctx)
+			}
+			break
+		}
+	}
+	return ok, eof
 }

@@ -4,7 +4,9 @@ import (
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
 	"github.com/valyala/fasthttp"
+	"google.golang.org/grpc/codes"
 	"isp-gate-service/log_code"
+	"isp-gate-service/utils"
 	"net"
 	"strings"
 )
@@ -31,7 +33,9 @@ func (p *httpProxy) Consumer(addressList []structure.AddressConfiguration) bool 
 
 func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
 	if p.client == nil {
-		log.Error(log_code.ErrorClientHttp, "client undefined")
+		msg := "client undefined"
+		log.Error(log_code.ErrorClientHttp, msg)
+		utils.SendError(msg, codes.Internal, nil, ctx)
 		return
 	}
 

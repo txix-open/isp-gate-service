@@ -1,34 +1,39 @@
-package grpc
+package handlers
 
 import (
 	"github.com/integration-system/isp-lib/backend"
 	u "github.com/integration-system/isp-lib/utils"
 	"github.com/valyala/fasthttp"
-	"isp-gate-service/proxy/grpc/handlers"
-	"isp-gate-service/proxy/grpc/utils"
+	"isp-gate-service/utils"
 	"mime"
 )
 
-type Handler interface {
-	Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient)
-}
+var Handler handlerHelper
 
-func SetHandler(ctx *fasthttp.RequestCtx) Handler {
-	isMultipart := isMultipart(ctx)
+type (
+	handlerHelper struct{}
+
+	handler interface {
+		Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient)
+	}
+)
+
+func (h handlerHelper) Get(ctx *fasthttp.RequestCtx) handler {
+	isMultipart := h.isMultipart(ctx)
 	isExpectFile := string(ctx.Request.Header.Peek(u.ExpectFileHeader)) == "true"
 
 	if isMultipart {
 		ctx.Response.Header.SetContentType(utils.JsonContentType)
-		return handlers.SendMultipartData
+		return sendMultipartData
 	} else if isExpectFile {
-		return handlers.GetFile
+		return getFile
 	} else {
 		ctx.Response.Header.SetContentType(utils.JsonContentType)
-		return handlers.Json
+		return handleJson
 	}
 }
 
-func isMultipart(ctx *fasthttp.RequestCtx) bool {
+func (h handlerHelper) isMultipart(ctx *fasthttp.RequestCtx) bool {
 	if !ctx.IsPost() {
 		return false
 	}
