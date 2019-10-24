@@ -42,7 +42,7 @@ var (
 func convertError(err error) ([]byte, int) {
 	s, ok := status.FromError(err)
 	if ok {
-		cfg := config.GetRemote().(*conf.RemoteConfig)
+		cfg := config.GetRemote().(*conf.RemoteConfig).GrpcSetting
 		if cfg.EnableOriginalProtoErrors {
 			if body, err := proto.Marshal(s.Proto()); err != nil {
 				return []byte(utils.ServiceError), http.StatusServiceUnavailable
@@ -105,7 +105,7 @@ func logHandlerError(typeData, method string, err error) {
 	log.WithMetadata(map[string]interface{}{
 		log_code.MdTypeData: typeData,
 		log_code.MdMethod:   method,
-	}).Warn(log_code.WarnRequestHandler, err)
+	}).Warn(log_code.WarnProxyGrpcHandler, err)
 }
 
 func openStream(headers *fasthttp.RequestHeader, method string, timeout time.Duration, client *backend.RxGrpcClient) (

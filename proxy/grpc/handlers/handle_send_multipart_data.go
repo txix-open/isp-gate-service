@@ -19,7 +19,7 @@ var sendMultipartData sendMultipartDataDesc
 type sendMultipartDataDesc struct{}
 
 func (h sendMultipartDataDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) {
-	cfg := config.GetRemote().(*conf.RemoteConfig)
+	cfg := config.GetRemote().(*conf.RemoteConfig).GrpcSetting
 	timeout := cfg.GetStreamInvokeTimeout()
 	bufferSize := cfg.GetTransferFileBufferSize()
 

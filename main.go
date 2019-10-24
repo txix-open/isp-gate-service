@@ -56,7 +56,7 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 
 	journal.Client.ReceiveConfiguration(remoteConfig.Journal, localCfg.ModuleName)
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
-	server.Http.Init(remoteConfig.MaxRequestBodySizeBytes)
+	server.Http.Init(remoteConfig.GrpcSetting.MaxRequestBodySizeBytes) //todo remote config info
 
 	service.JournalMethodsMatcher = service.NewCacheableMethodMatcher(remoteConfig.JournalingMethodsPatterns)
 

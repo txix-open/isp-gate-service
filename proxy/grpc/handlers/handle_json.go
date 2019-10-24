@@ -33,7 +33,7 @@ func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *
 	md, methodName := makeMetadata(&c.Request.Header, method)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 	cfg := config.GetRemote().(*conf.RemoteConfig)
-	ctx, cancel := context.WithTimeout(ctx, cfg.GetSyncInvokeTimeout())
+	ctx, cancel := context.WithTimeout(ctx, cfg.GrpcSetting.GetSyncInvokeTimeout())
 	defer cancel()
 
 	cli, err := client.Conn()

@@ -1,7 +1,8 @@
 package log_code
 
 const (
-	WarnRequestHandler                  = 604 //metadata: {"typeData":"", "method":""}
+	//grpc
+	WarnProxyGrpcHandler                = 604 //metadata: {"typeData":"", "method":""}
 	WarnConvertErrorDataMarshalResponse = 605
 	ErrorGrpcClientDialing              = 606
 	WarnJournalCouldNotWriteToFile      = 607
@@ -17,4 +18,6 @@ const (
 	ErrorClientHttp  = 906
 
 	ErrorClientRedis = 907
+
+	ErrorAuthenticate = 908
 )

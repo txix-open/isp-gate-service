@@ -7,16 +7,15 @@ import (
 
 var Error errorHelper
 
-func (errorHelper) Create(status codes.Code) ErrorDescription {
+type errorHelper struct{}
+
+func (errorHelper) create(status codes.Code) ErrorDescription {
 	return ErrorDescription{grpcStatus: status}
 }
 
-type (
-	errorHelper      struct{}
-	ErrorDescription struct {
-		grpcStatus codes.Code
-	}
-)
+type ErrorDescription struct {
+	grpcStatus codes.Code
+}
 
 func (e ErrorDescription) Error() string {
 	return fmt.Sprintf("%v", e)

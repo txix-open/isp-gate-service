@@ -9,8 +9,6 @@ import (
 )
 
 func Complete(ctx *fasthttp.RequestCtx) {
-	path := string(ctx.Path())
-
 	if err := authenticate.Do(ctx); err != nil {
 		status := codes.Unknown
 		switch e := err.(type) {
@@ -21,6 +19,7 @@ func Complete(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	path := string(ctx.Path())
 	p := proxy.Find(path)
 	if p != nil {
 		p.ProxyRequest(ctx)

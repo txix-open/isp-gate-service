@@ -22,7 +22,7 @@ var getFile getFileDesc
 type getFileDesc struct{}
 
 func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) {
-	cfg := config.GetRemote().(*conf.RemoteConfig)
+	cfg := config.GetRemote().(*conf.RemoteConfig).GrpcSetting
 	timeout := cfg.GetStreamInvokeTimeout()
 
 	req, err := g.readJsonBody(ctx)
@@ -96,7 +96,7 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 			log.WithMetadata(map[string]interface{}{
 				log_code.MdTypeData: log_code.TypeData.GetFile,
 				log_code.MdMethod:   method,
-			}).Errorf(log_code.WarnRequestHandler, "Method %s. Expected bytes array", method)
+			}).Errorf(log_code.WarnProxyGrpcHandler, "Method %s. Expected bytes array", method)
 			break
 		}
 		_, err = ctx.Write(bytes)

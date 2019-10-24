@@ -5,22 +5,19 @@ import (
 	rd "github.com/go-redis/redis"
 	"github.com/integration-system/isp-lib/config"
 	"github.com/integration-system/isp-lib/redis"
-	"google.golang.org/grpc/codes"
+	"github.com/integration-system/isp-lib/utils"
+	"github.com/pkg/errors"
 	"isp-gate-service/conf"
 	rdClient "isp-gate-service/redis"
 )
 
 const (
-	SystemIdentity      = "1"
-	DomainIdentity      = "2"
-	ServiceIdentity     = "3"
-	ApplicationIdentity = "4"
+	systemIdentity      = "1"
+	domainIdentity      = "2"
+	serviceIdentity     = "3"
+	applicationIdentity = "4"
 
-	DeviceIdentity = "5"
-	UserIdentity   = "6"
-
-	DeviceToken = "7"
-	UserToken   = "8"
+	permittedToCallInfo = "permittedToCallInfo"
 )
 
 var verification verificationHelper
@@ -40,12 +37,12 @@ func (v verificationHelper) appToken(token string) (map[string]string, error) {
 		}
 		return nil
 	}); err != nil {
-		return nil, Error.Create(codes.Internal)
+		return nil, err
 	} else {
 		if len(resp) < 2 || resp[1].Err() == rd.Nil {
 			return nil, nil
 		} else if resp[1].Err() != nil {
-			return nil, Error.Create(codes.Unauthenticated)
+			return nil, err
 		} else if stringStringMapCmd, ok := resp[1].(*rd.StringStringMapCmd); !ok {
 			return nil, nil
 		} else {
@@ -55,9 +52,9 @@ func (v verificationHelper) appToken(token string) (map[string]string, error) {
 }
 
 func (v *verificationHelper) keys(t map[string]string, uri string) (map[string]string, error) {
-	secondDbKey := fmt.Sprintf("%s|%s", t[ApplicationIdentity], uri)
-	thirdDbKey := fmt.Sprintf("%s|%s", t[UserToken], t[DomainIdentity])
-	fifthDbKey := fmt.Sprintf("%s|%s", t[DeviceToken], t[DomainIdentity])
+	secondDbKey := fmt.Sprintf("%s|%s", t[utils.ApplicationIdHeader], uri)
+	thirdDbKey := fmt.Sprintf("%s|%s", t[utils.UserTokenHeader], t[utils.DomainIdHeader])
+	fifthDbKey := fmt.Sprintf("%s|%s", t[utils.DeviceTokenHeader], t[utils.DomainIdHeader])
 
 	if resp, err := rdClient.Client.Get().Pipelined(func(p rd.Pipeliner) error {
 		if cmd := p.Select(int(redis.ApplicationPermissionDb)); v.notEmptyError(cmd.Err()) {
@@ -81,26 +78,26 @@ func (v *verificationHelper) keys(t map[string]string, uri string) (map[string]s
 			return cmd.Err()
 		}
 		return nil
-	}); err != nil && err != rd.Nil {
-		return t, Error.Create(codes.Internal)
+	}); v.notEmptyError(err) {
+		return t, err
 	} else {
 		// It is not permitted to call this methodParts
-		if v.fineCmd(resp, 1) {
-			if intCmd, ok := resp[1].(*rd.IntCmd); ok && intCmd.Val() == 0 {
-				return t, Error.Create(codes.PermissionDenied)
-			}
+		if msg, err := v.findStringCmd(resp, 1); err != nil {
+			return t, err
+		} else {
+			t[permittedToCallInfo] = msg
 		}
 		//  ===== CHECK USER TOKEN =====
-		if v.fineCmd(resp, 3) {
-			if stringCmd, ok := resp[3].(*rd.StringCmd); ok {
-				t[UserIdentity] = stringCmd.Val()
-			}
+		if msg, err := v.findStringCmd(resp, 3); err != nil {
+			return t, err
+		} else {
+			t[utils.UserIdHeader] = msg
 		}
 		// ===== CHECK DEVICE TOKEN =====
-		if v.fineCmd(resp, 5) {
-			if stringCmd, ok := resp[5].(*rd.StringCmd); ok {
-				t[DeviceIdentity] = stringCmd.Val()
-			}
+		if msg, err := v.findStringCmd(resp, 5); err != nil {
+			return t, err
+		} else {
+			t[utils.DeviceIdHeader] = msg
 		}
 	}
 	return t, nil
@@ -110,11 +107,25 @@ func (v *verificationHelper) notEmptyError(err error) bool {
 	return err != nil && err != rd.Nil
 }
 
-func (v *verificationHelper) fineCmd(cmders []rd.Cmder, arrayKey int) bool {
-	if len(cmders) > arrayKey+1 {
-		cmder := cmders[arrayKey]
-		return cmder != nil && (cmder.Err() == nil || cmder.Err() == rd.Nil)
+func (v *verificationHelper) findStringCmd(cmders []rd.Cmder, arrayKey int) (string, error) {
+	if len(cmders) > arrayKey {
+		cmd := cmders[arrayKey]
+		if cmd != nil {
+			if cmd.Err() != nil {
+				if cmd.Err() == rd.Nil {
+					return "", nil
+				}
+				return "", cmd.Err()
+			}
+			if stringCmd, ok := cmd.(*rd.StringCmd); !ok {
+				return "", errors.New("unexpected type")
+			} else {
+				return stringCmd.Val(), nil
+			}
+		} else {
+			return "", errors.New("empty cmd")
+		}
 	} else {
-		return false
+		return "", errors.New("")
 	}
 }
