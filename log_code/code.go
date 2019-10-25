@@ -1,19 +1,19 @@
 package log_code
 
 const (
-	WarnProxyGrpcHandler                = 901 //metadata: {"typeData":"", "method":""}
-	WarnConvertErrorDataMarshalResponse = 902
-	WarnJournalCouldNotWriteToFile      = 903
+	WarnProxyGrpcHandler                = 604 //metadata: {"typeData":"", "method":""}
+	WarnConvertErrorDataMarshalResponse = 605
+	WarnJournalCouldNotWriteToFile      = 607
 
-	WarnHttpServerShutdown = 904
-	ErrorHttpServerListen  = 905
+	WarnHttpServerShutdown = 602
+	ErrorHttpServerListen  = 603
 
-	ErrorLocalConfig = 906
-	ErrorClientGrpc  = 907
-	ErrorClientHttp  = 908
+	FatalLocalConfig = 610
+	ErrorClientGrpc  = 606
+	ErrorClientHttp  = 611
 
-	ErrorClientJournal = 909
-	ErrorClientRedis   = 910
+	ErrorClientJournal = 608
+	ErrorClientRedis   = 609
 
-	ErrorAuthenticate = 911
+	ErrorAuthenticate = 612
 )

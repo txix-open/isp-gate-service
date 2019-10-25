@@ -38,7 +38,7 @@ func main() {
 
 	for _, location := range cfg.Locations {
 		if p, err := proxy.Init(location); err != nil {
-			log.Fatal(log_code.ErrorLocalConfig, err)
+			log.Fatal(log_code.FatalLocalConfig, err)
 		} else {
 			bs.RequireModule(location.TargetModule, p.Consumer, false)
 		}
