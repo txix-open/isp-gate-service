@@ -126,6 +126,6 @@ func (v *verificationHelper) findStringCmd(cmders []rd.Cmder, arrayKey int) (str
 			return "", errors.New("empty cmd")
 		}
 	} else {
-		return "", errors.New("")
+		return "", errors.New("not found cmd")
 	}
 }

@@ -20,6 +20,8 @@ const (
 
 type (
 	RemoteConfig struct {
+		SecretKey                 string
+		ServerSetting             ServerSetting
 		GrpcSetting               GrpcSetting
 		Metrics                   structure.MetricConfiguration `schema:"Настройка метрик"`
 		Journal                   rx.Config                     `schema:"Настройка логирования"`
@@ -27,11 +29,14 @@ type (
 		Redis                     structure.RedisConfiguration  `schema:"Настрока Redis" valid:"required~Required"`
 	}
 
+	ServerSetting struct {
+		MaxRequestBodySizeBytes int64 `schema:"Максимальный размер тела запроса,в байтайх, по умолчанию: 512 MB"`
+	}
+
 	GrpcSetting struct {
 		EnableOriginalProtoErrors            bool  `schema:"Проксирование ошибок в протобаф,включение/отключение проксирования, по умолчанию отключено"`
 		ProxyGrpcErrorDetails                bool  `schema:"Проксирование первого элемента из details GRPC ошибки,включение/отключение проксирования, по умолчанию отключено"`
 		MultipartDataTransferBufferSizeBytes int64 `schema:"Размер буфера для передачи бинарных файлов,по умолчанию 4 KB"`
-		MaxRequestBodySizeBytes              int64 `schema:"Максимальный размер тела запроса,в байтайх, по умолчанию: 512 MB"`
 		SyncInvokeMethodTimeoutMs            int64 `schema:"Время ожидания вызова метода,значение в миллисекундах, по умолчанию: 30000"`
 		StreamInvokeMethodTimeoutMs          int64 `schema:"Время ожидания передачи и обработки файла,значение в миллисекундах, по умолчанию: 60000"`
 	}
@@ -58,9 +63,9 @@ func (cfg GrpcSetting) GetTransferFileBufferSize() int64 {
 	return cfg.MultipartDataTransferBufferSizeBytes
 }
 
-func (cfg GrpcSetting) GetMaxRequestBodySize() int64 {
+/*func (cfg GrpcSetting) GetMaxRequestBodySize() int64 {
 	if cfg.MaxRequestBodySizeBytes <= 0 {
 		return defaultMaxRequestBodySize
 	}
 	return cfg.MaxRequestBodySizeBytes
-}
+}*/

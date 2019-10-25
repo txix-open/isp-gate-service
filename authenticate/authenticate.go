@@ -6,6 +6,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
 	"isp-gate-service/log_code"
+	"isp-gate-service/routing"
 	"strings"
 )
 
@@ -25,16 +26,16 @@ func Do(ctx *fasthttp.RequestCtx) error {
 
 	appToken := ctx.Request.Header.Peek(utils.ApplicationTokenHeader)
 	if len(appToken) == 0 {
-		return Error.create(codes.Unauthenticated)
+		return createError(codes.Unauthenticated)
 	}
 
 	keys, err := verification.appToken(string(appToken))
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, err)
-		return Error.create(codes.Internal)
+		return createError(codes.Internal)
 	}
 	if len(keys) != 4 {
-		return Error.create(codes.Unauthenticated)
+		return createError(codes.Unauthenticated)
 	}
 
 	verifiableKeys := make(map[string]string)
@@ -42,17 +43,18 @@ func Do(ctx *fasthttp.RequestCtx) error {
 		verifiableKeys[verifiableKeyHeaderKeyMap[i]] = value
 	}
 
-	uri := strings.Replace(strings.ToLower(string(ctx.Path())), "/", "", -1)
+	path := ctx.Path()
+	uri := strings.Replace(strings.ToLower(string(path)), "/", "", -1)
 	verifiableKeys[utils.DeviceTokenHeader] = string(ctx.Request.Header.Peek(utils.DeviceTokenHeader))
 	verifiableKeys[utils.UserTokenHeader] = string(ctx.Request.Header.Peek(utils.UserTokenHeader))
 
 	verifiableKeys, err = verification.keys(verifiableKeys, uri)
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, err)
-		return Error.create(codes.Internal)
+		return createError(codes.Internal)
 	}
 	if verifiableKeys[permittedToCallInfo] == "0" {
-		return Error.create(codes.PermissionDenied)
+		return createError(codes.PermissionDenied)
 	} else {
 		delete(verifiableKeys, permittedToCallInfo)
 	}
@@ -62,5 +64,27 @@ func Do(ctx *fasthttp.RequestCtx) error {
 			ctx.Request.Header.Set(key, value)
 		}
 	}
+
+	path = getPathWithoutPrefix(path)
+	if _, ok := routing.InnerAddressMap[string(path)]; ok {
+		adminToken := ctx.Request.Header.Peek("x-auth-admin") //todo const key
+		if token.Check(string(adminToken)) != nil {
+			return createError(codes.PermissionDenied)
+		}
+	}
 	return nil
+}
+
+func getPathWithoutPrefix(path []byte) []byte {
+	firstFound := false
+	for key, value := range path {
+		if value == '/' {
+			if firstFound {
+				return path[key+1:]
+			} else {
+				firstFound = true
+			}
+		}
+	}
+	return []byte{}
 }

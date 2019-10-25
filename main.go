@@ -13,6 +13,7 @@ import (
 	"isp-gate-service/log_code"
 	"isp-gate-service/proxy"
 	"isp-gate-service/redis"
+	"isp-gate-service/routing"
 	"isp-gate-service/server"
 	"isp-gate-service/service"
 	"os"
@@ -32,6 +33,7 @@ func main() {
 		DefaultRemoteConfigPath(schema.ResolveDefaultConfigPath("default_remote_config.json")).
 		DeclareMe(makeDeclaration).
 		SocketConfiguration(socketConfiguration).
+		RequireRoutes(handleRouteUpdate).
 		RequireModule(journal.RequiredModule())
 
 	for _, location := range cfg.Locations {
@@ -56,7 +58,7 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 
 	journal.Client.ReceiveConfiguration(remoteConfig.Journal, localCfg.ModuleName)
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
-	server.Http.Init(remoteConfig.GrpcSetting.MaxRequestBodySizeBytes) //todo remote config info
+	server.Http.Init(remoteConfig.ServerSetting.MaxRequestBodySizeBytes)
 
 	service.JournalMethodsMatcher = service.NewCacheableMethodMatcher(remoteConfig.JournalingMethodsPatterns)
 
@@ -83,6 +85,11 @@ func onShutdown(_ context.Context, _ os.Signal) {
 	proxy.Close()
 	redis.Client.Close()
 	server.Http.Close()
+}
+
+func handleRouteUpdate(configs structure.RoutingConfig) bool {
+	routing.InitRoutes(configs)
+	return true
 }
 
 func makeDeclaration(localConfig interface{}) bootstrap.ModuleInfo {

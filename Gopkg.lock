@@ -18,6 +18,14 @@
   version = "v0.1.1"
 
 [[projects]]
+  digest = "1:76dc72490af7174349349838f2fe118996381b31ea83243812a97e5a0fd5ed55"
+  name = "github.com/dgrijalva/jwt-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
+
+[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -148,7 +156,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5d6745d93914f036ecf9c22e20ec2a6885864acad54bec463e59cfde770dd7ee"
+  digest = "1:a1ebd1a46e87e9343cbabec1ca99c34a7a2e0572c0160fcf266175073b2adf5f"
   name = "github.com/integration-system/isp-lib"
   packages = [
     "backend",
@@ -165,7 +173,7 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "f72fc522399b23b49e43d8bcc279a54654ea2419"
+  revision = "5060d1348219abd8fad3628668b229779a5314c7"
 
 [[projects]]
   branch = "master"
@@ -382,7 +390,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e743d2809ba5299bfe842a8a724172f9ac4e89ee281b46720ac65a688ac398a1"
+  digest = "1:8df917c05bc5b359af4a95a39049919ec141d6224f48bb7b92a8f44c91c0f5ba"
   name = "github.com/valyala/fasthttp"
   packages = [
     ".",
@@ -390,7 +398,7 @@
     "stackless",
   ]
   pruneopts = "UT"
-  revision = "18c619fb0432fa6b21cb134d35118e6b09d9d9ce"
+  revision = "707b1c1917f38038d0d81e856df73853513100b3"
 
 [[projects]]
   digest = "1:39a425f98fb19427061a693fe6bf0683c9bddec4b25b17067e34fdb465e39cb9"
@@ -426,14 +434,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3fa58f7377e1d95d496db43dd3281ddcea4185eb46c6394f89fec1cfa4ec3244"
+  digest = "1:f8c0a298987fa1c452d209f37d2ed9bcf874f2c6eec817607e8ebbba88e6331f"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "742c48ecaeb7c624c475e02f3eb0827ebb4970d4"
+  revision = "e66fe6eb8e0cbfacade8b490cf55cd2494f4db62"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -525,6 +533,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/dgrijalva/jwt-go",
     "github.com/go-redis/redis",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes/struct",

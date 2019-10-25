@@ -5,11 +5,7 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-var Error errorHelper
-
-type errorHelper struct{}
-
-func (errorHelper) create(status codes.Code) ErrorDescription {
+func createError(status codes.Code) ErrorDescription {
 	return ErrorDescription{grpcStatus: status}
 }
 
