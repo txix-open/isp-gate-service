@@ -77,10 +77,10 @@ func Do(ctx *fasthttp.RequestCtx) error {
 
 func getPathWithoutPrefix(path []byte) []byte {
 	firstFound := false
-	for key, value := range path {
+	for i, value := range path {
 		if value == '/' {
 			if firstFound {
-				return path[key+1:]
+				return path[i+1:]
 			} else {
 				firstFound = true
 			}
