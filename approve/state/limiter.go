@@ -1,7 +1,6 @@
 package state
 
 import (
-	"sync"
 	"time"
 )
 
@@ -10,7 +9,6 @@ type limiter struct {
 	datetime []time.Time
 	pattern  string
 	point    int
-	mx       sync.RWMutex
 }
 
 func (lim *limiter) check() (bool, int, time.Time) {
@@ -21,7 +19,6 @@ func (lim *limiter) check() (bool, int, time.Time) {
 		return true, 0, time.Now()
 	}
 
-	lim.mx.RLock()
 	point := lim.point + 1
 	if point >= len(lim.datetime) {
 		point = 0
@@ -30,15 +27,10 @@ func (lim *limiter) check() (bool, int, time.Time) {
 	now := time.Now()
 	approve := now.Sub(date) > lim.lifetime
 
-	lim.mx.RUnlock()
 	return approve, point, now
 }
 
 func (lim *limiter) update(point int, time time.Time) {
-	lim.mx.Lock()
-
 	lim.point = point
 	lim.datetime[point] = time
-
-	lim.mx.Unlock()
 }

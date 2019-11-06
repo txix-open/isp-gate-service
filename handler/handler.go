@@ -23,7 +23,7 @@ func Complete(ctx *fasthttp.RequestCtx) {
 
 	path := string(ctx.Path())
 
-	if !approve.Complete(applicationId, path) {
+	if approver := approve.GetApprove(applicationId); approver != nil && !approver.Complete(path) {
 		utils.SendError("approve error", codes.PermissionDenied, nil, ctx)
 		return
 	}

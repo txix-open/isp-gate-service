@@ -6,39 +6,47 @@ import (
 	"isp-gate-service/approve/state"
 	"isp-gate-service/conf"
 	"isp-gate-service/log_code"
+	"sync"
 )
 
-var approvingByAppId = make(map[int64]approve)
+var approvingByAppId map[int64]*approve
 
 type approve struct {
+	mx          sync.Mutex
 	matcher     matcher.Matcher
 	limitStates map[string]state.LimitState
 }
 
 func ReceiveConfiguration(setting []conf.ApproveSetting) {
+	approvingByAppId = make(map[int64]*approve)
 	for _, s := range setting {
 		limitState, patternArray, err := state.InitLimitState(s.Limits)
 		if err != nil {
 			log.Fatal(log_code.FatalConfigApproveSetting, err)
 		}
 
-		approvingByAppId[s.ApplicationId] = approve{
+		approvingByAppId[s.ApplicationId] = &approve{
 			matcher:     matcher.NewCacheableMatcher(patternArray),
 			limitStates: limitState,
+			mx:          sync.Mutex{},
 		}
 	}
 }
 
-func Complete(appId int64, method string) bool {
-	approve, ok := approvingByAppId[appId]
-	if !ok {
-		return true
-	} else {
-		stateStorage := make([]state.LimitState, 0)
-		patternArray := approve.matcher.Match(method)
-		for _, pattern := range patternArray {
-			stateStorage = append(stateStorage, approve.limitStates[pattern])
-		}
-		return state.Update(stateStorage)
+func GetApprove(appId int64) *approve {
+	return approvingByAppId[appId]
+}
+
+func (app *approve) Complete(method string) bool {
+	app.mx.Lock()
+
+	stateStorage := make([]state.LimitState, 0)
+	patternArray := app.matcher.Match(method)
+	for _, pattern := range patternArray {
+		stateStorage = append(stateStorage, app.limitStates[pattern])
 	}
+
+	resp := state.Update(stateStorage)
+	app.mx.Unlock()
+	return resp
 }

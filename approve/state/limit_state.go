@@ -2,7 +2,6 @@ package state
 
 import (
 	"isp-gate-service/conf"
-	"sync"
 	"time"
 )
 
@@ -37,7 +36,6 @@ func InitLimitState(limits []conf.LimitSetting) (map[string]LimitState, []string
 			datetime: make([]time.Time, limit.MaxCount),
 			pattern:  limit.Pattern,
 			point:    -1,
-			mx:       sync.RWMutex{},
 		}
 	}
 	return limitStates, patternArray, nil

@@ -52,7 +52,7 @@ func TestApprove(t *testing.T) {
 	expected := true
 	req := reqExample[0]
 	for _, path := range req.path {
-		a.Equal(expected, Complete(req.appId, path))
+		a.Equal(expected, GetApprove(req.appId).Complete(path))
 		expected = !expected
 		time.Sleep(150 * time.Millisecond)
 	}
@@ -60,19 +60,19 @@ func TestApprove(t *testing.T) {
 	//expected == true
 	req = reqExample[1]
 	for _, path := range req.path {
-		a.Equal(expected, Complete(req.appId, path))
+		a.Equal(expected, GetApprove(req.appId).Complete(path))
 		expected = !expected
 	}
 
 	req = reqExample[2]
 	expectedArray := []bool{true, true, true, true, true, false}
 	for key, path := range req.path {
-		a.Equal(expectedArray[key], Complete(req.appId, path))
+		a.Equal(expectedArray[key], GetApprove(req.appId).Complete(path))
 	}
 
 	//expected == true
 	req = reqExample[3]
 	for _, path := range req.path {
-		a.Equal(expected, Complete(req.appId, path))
+		a.Equal(expected, GetApprove(req.appId).Complete(path))
 	}
 }
