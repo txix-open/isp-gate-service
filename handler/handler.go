@@ -3,13 +3,15 @@ package handler
 import (
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
+	"isp-gate-service/approve"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/proxy"
 	"isp-gate-service/utils"
 )
 
 func Complete(ctx *fasthttp.RequestCtx) {
-	if err := authenticate.Do(ctx); err != nil {
+	applicationId, err := authenticate.Do(ctx)
+	if err != nil {
 		status := codes.Unknown
 		switch e := err.(type) {
 		case authenticate.ErrorDescription:
@@ -20,6 +22,12 @@ func Complete(ctx *fasthttp.RequestCtx) {
 	}
 
 	path := string(ctx.Path())
+
+	if !approve.Complete(applicationId, path) {
+		utils.SendError("approve error", codes.PermissionDenied, nil, ctx)
+		return
+	}
+
 	p := proxy.Find(path)
 	if p != nil {
 		p.ProxyRequest(ctx)

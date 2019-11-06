@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"isp-gate-service/log_code"
 	"isp-gate-service/routing"
+	"strconv"
 	"strings"
 )
 
@@ -19,23 +20,23 @@ var (
 	}
 )
 
-func Do(ctx *fasthttp.RequestCtx) error {
+func Do(ctx *fasthttp.RequestCtx) (int64, error) {
 	for _, notExpectedHeader := range verifiableKeyHeaderKeyMap {
 		ctx.Request.Header.Del(notExpectedHeader)
 	}
 
 	appToken := ctx.Request.Header.Peek(utils.ApplicationTokenHeader)
 	if len(appToken) == 0 {
-		return createError(codes.Unauthenticated)
+		return 0, createError(codes.Unauthenticated)
 	}
 
 	keys, err := verification.appToken(string(appToken))
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, err)
-		return createError(codes.Internal)
+		return 0, createError(codes.Internal)
 	}
 	if len(keys) != 4 {
-		return createError(codes.Unauthenticated)
+		return 0, createError(codes.Unauthenticated)
 	}
 
 	verifiableKeys := make(map[string]string)
@@ -51,12 +52,18 @@ func Do(ctx *fasthttp.RequestCtx) error {
 	verifiableKeys, err = verification.keys(verifiableKeys, uri)
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, err)
-		return createError(codes.Internal)
+		return 0, createError(codes.Internal)
 	}
 	if verifiableKeys[permittedToCallInfo] == "0" {
-		return createError(codes.PermissionDenied)
+		return 0, createError(codes.PermissionDenied)
 	} else {
 		delete(verifiableKeys, permittedToCallInfo)
+	}
+
+	applicationId, err := strconv.Atoi(verifiableKeys[utils.ApplicationIdHeader])
+	if err != nil {
+		log.Error(log_code.ErrorAuthenticate, err)
+		return 0, createError(codes.Internal)
 	}
 
 	for key, value := range verifiableKeys {
@@ -69,10 +76,11 @@ func Do(ctx *fasthttp.RequestCtx) error {
 	if _, ok := routing.InnerAddressMap[string(path)]; ok {
 		adminToken := ctx.Request.Header.Peek("x-auth-admin") //todo const key
 		if token.Check(string(adminToken)) != nil {
-			return createError(codes.PermissionDenied)
+			return 0, createError(codes.PermissionDenied)
 		}
 	}
-	return nil
+
+	return int64(applicationId), nil
 }
 
 func getPathWithoutPrefix(path []byte) []byte {

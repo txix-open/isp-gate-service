@@ -8,6 +8,7 @@ import (
 	"github.com/integration-system/isp-lib/metric"
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
+	"isp-gate-service/approve"
 	"isp-gate-service/conf"
 	"isp-gate-service/journal"
 	"isp-gate-service/log_code"
@@ -59,6 +60,7 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	journal.Client.ReceiveConfiguration(remoteConfig.Journal, localCfg.ModuleName)
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
 	server.Http.Init(remoteConfig.ServerSetting.MaxRequestBodySizeBytes)
+	approve.ReceiveConfiguration(remoteConfig.ApproveSetting)
 
 	service.JournalMethodsMatcher = service.NewCacheableMethodMatcher(remoteConfig.JournalingMethodsPatterns)
 

@@ -27,6 +27,18 @@ type (
 		Journal                   rx.Config                     `schema:"Настройка логирования"`
 		JournalingMethodsPatterns []string                      `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
 		Redis                     structure.RedisConfiguration  `schema:"Настрока Redis" valid:"required~Required"`
+		ApproveSetting            []ApproveSetting
+	}
+
+	ApproveSetting struct {
+		ApplicationId int64
+		Limits        []LimitSetting
+	}
+
+	LimitSetting struct {
+		Pattern  string
+		MaxCount int
+		Lifetime string
 	}
 
 	ServerSetting struct {
