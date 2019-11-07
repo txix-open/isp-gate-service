@@ -14,7 +14,7 @@ import (
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
-	"isp-gate-service/proxy/response"
+	"isp-gate-service/utils"
 	"strconv"
 )
 
@@ -29,12 +29,8 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 	req, err := g.readJsonBody(ctx)
 	if err != nil {
 		logHandlerError(log_code.TypeData.GetFile, method, err)
-		return response.Create(
-			ctx,
-			response.Option.SetAndSendError(err.Error(), codes.InvalidArgument, err),
-			response.Option.EmptyRequest(),
-			response.Option.EmptyResponse(),
-		)
+		utils.WriteError(ctx, err.Error(), codes.InvalidArgument, nil)
+		return domain.Create().SetError(err)
 	}
 
 	stream, cancel, err := openStream(&ctx.Request.Header, method, timeout, client)
@@ -45,12 +41,8 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 	}()
 	if err != nil {
 		logHandlerError(log_code.TypeData.GetFile, method, err)
-		return response.Create(
-			ctx,
-			response.Option.SetAndSendError(errorMsgInternal, codes.Internal, err),
-			response.Option.EmptyRequest(),
-			response.Option.EmptyResponse(),
-		)
+		utils.WriteError(ctx, errorMsgInternal, codes.Internal, nil)
+		return domain.Create().SetError(err)
 	}
 
 	if req != nil {
@@ -58,12 +50,8 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 		err := stream.Send(backend.WrapBody(value))
 		if err != nil {
 			logHandlerError(log_code.TypeData.GetFile, method, err)
-			return response.Create(
-				ctx,
-				response.Option.SetAndSendError(errorMsgInternal, codes.Internal, err),
-				response.Option.EmptyRequest(),
-				response.Option.EmptyResponse(),
-			)
+			utils.WriteError(ctx, errorMsgInternal, codes.Internal, nil)
+			return domain.Create().SetError(err)
 		}
 	}
 
@@ -74,7 +62,7 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 			ctx.SetStatusCode(status)
 			ctx.SetBody(bytes)
 		}
-		return response.Create(ctx, response.Option.EmptyResponse(), response.Option.EmptyRequest())
+		return domain.Create().SetError(err)
 	}
 	bf := s.BeginFile{}
 	err = bf.FromMessage(msg)
@@ -84,7 +72,7 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 			ctx.SetStatusCode(status)
 			ctx.SetBody(bytes)
 		}
-		return response.Create(ctx, response.Option.EmptyResponse(), response.Option.EmptyRequest())
+		return domain.Create().SetError(err)
 	}
 	header := &ctx.Response.Header
 	header.Set(headerKeyContentDisposition, fmt.Sprintf("attachment; filename=%s", bf.FileName))
@@ -118,7 +106,7 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 			break
 		}
 	}
-	return response.Create(ctx, response.Option.EmptyResponse(), response.Option.EmptyRequest())
+	return domain.Create().SetError(err)
 }
 
 func (getFileDesc) readJsonBody(ctx *fasthttp.RequestCtx) (interface{}, error) {

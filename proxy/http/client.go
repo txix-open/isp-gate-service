@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
-	"isp-gate-service/proxy/response"
+	"isp-gate-service/utils"
 	"net"
 	"strings"
 )
@@ -37,7 +37,11 @@ func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse 
 	if p.client == nil {
 		msg := "client undefined"
 		log.Error(log_code.ErrorClientHttp, msg)
-		return response.Create(ctx, response.Option.SetAndSendError(msg, codes.Internal, errors.New(msg)))
+		utils.WriteError(ctx, msg, codes.Internal, nil)
+		return domain.Create().
+			SetRequestBody(ctx.Request.Body()).
+			SetResponseBody(ctx.Response.Body()).
+			SetError(errors.New(msg))
 	}
 
 	req := &ctx.Request
@@ -47,10 +51,14 @@ func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse 
 		req.Header.Add("X-Forwarded-For", addr)
 	}
 
-	if err := p.client.Do(req, res); err != nil {
+	err := p.client.Do(req, res)
+	if err != nil {
 		log.Error(log_code.ErrorClientHttp, err)
 	}
-	return response.Create(ctx)
+	return domain.Create().
+		SetRequestBody(ctx.Request.Body()).
+		SetResponseBody(ctx.Response.Body()).
+		SetError(err)
 }
 
 func (p *httpProxy) Close() {

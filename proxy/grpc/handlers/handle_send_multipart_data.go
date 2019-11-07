@@ -10,7 +10,7 @@ import (
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
-	"isp-gate-service/proxy/response"
+	"isp-gate-service/utils"
 	"mime/multipart"
 	"strings"
 )
@@ -32,12 +32,8 @@ func (h sendMultipartDataDesc) Complete(ctx *fasthttp.RequestCtx, method string,
 	}()
 	if err != nil {
 		logHandlerError(log_code.TypeData.SendMultipart, method, err)
-		return response.Create(
-			ctx,
-			response.Option.SetAndSendError(errorMsgInternal, codes.Internal, err),
-			response.Option.EmptyRequest(),
-			response.Option.EmptyResponse(),
-		)
+		utils.WriteError(ctx, errorMsgInternal, codes.Internal, nil)
+		return domain.Create().SetError(err)
 	}
 
 	form, err := ctx.MultipartForm()
@@ -49,12 +45,8 @@ func (h sendMultipartDataDesc) Complete(ctx *fasthttp.RequestCtx, method string,
 
 	if err != nil {
 		logHandlerError(log_code.TypeData.SendMultipart, method, err)
-		return response.Create(
-			ctx,
-			response.Option.SetAndSendError(errorMsgInvalidArg, codes.InvalidArgument, err),
-			response.Option.EmptyRequest(),
-			response.Option.EmptyResponse(),
-		)
+		utils.WriteError(ctx, errorMsgInvalidArg, codes.InvalidArgument, nil)
+		return domain.Create().SetError(err)
 	}
 
 	formData := make(map[string]interface{}, len(form.Value))

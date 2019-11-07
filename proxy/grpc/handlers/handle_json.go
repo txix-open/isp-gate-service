@@ -11,7 +11,7 @@ import (
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
-	"isp-gate-service/proxy/response"
+	"isp-gate-service/utils"
 )
 
 var handleJson handleJsonDesc
@@ -36,12 +36,8 @@ func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *
 	cli, err := client.Conn()
 	if err != nil {
 		logHandlerError(log_code.TypeData.JsonContent, methodName, err)
-		return response.Create(
-			c,
-			response.Option.SetAndSendError(errorMsgInternal, codes.Internal, err),
-			response.Option.EmptyRequest(),
-			response.Option.EmptyResponse(),
-		)
+		utils.WriteError(c, errorMsgInternal, codes.Internal, nil)
+		return domain.Create().SetError(err)
 	}
 
 	//structBody := u.ConvertInterfaceToGrpcStruct(body)
@@ -55,14 +51,10 @@ func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *
 	if data, status, err := getResponse(resp, invokerErr); err == nil {
 		c.SetStatusCode(status)
 		_, _ = c.Write(data)
-		return response.Create(c, response.Option.SetError(invokerErr))
+		return domain.Create().SetError(invokerErr)
 	} else {
 		logHandlerError(log_code.TypeData.JsonContent, methodName, err)
-		return response.Create(
-			c,
-			response.Option.SetAndSendError(errorMsgInternal, codes.Internal, err),
-			response.Option.EmptyRequest(),
-			response.Option.EmptyResponse(),
-		)
+		utils.WriteError(c, errorMsgInternal, codes.Internal, nil)
+		return domain.Create().SetError(err)
 	}
 }

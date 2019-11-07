@@ -13,8 +13,8 @@ import (
 	"isp-gate-service/journal"
 	"isp-gate-service/log_code"
 	"isp-gate-service/proxy"
-	"isp-gate-service/proxy/response"
 	"isp-gate-service/service"
+	"isp-gate-service/utils"
 	"net/http"
 	"time"
 )
@@ -38,13 +38,14 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 		service.Metrics.UpdateMethodResponseTime(uri, executionTime)
 	}
 
+	requestBody, responseBody, err := resp.Get()
 	if config.GetRemote().(*conf.RemoteConfig).Journal.Enable && service.JournalMethodsMatcher.Match(uri) {
-		if resp.Error != nil {
-			if err := journal.Client.Error(uri, resp.RequestBody, resp.ResponseBody, resp.Error); err != nil {
+		if err != nil {
+			if err := journal.Client.Error(uri, requestBody, responseBody, err); err != nil {
 				log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
 			}
 		} else {
-			if err := journal.Client.Info(uri, resp.RequestBody, resp.ResponseBody); err != nil {
+			if err := journal.Client.Info(uri, requestBody, responseBody); err != nil {
 				log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
 			}
 		}
@@ -61,12 +62,14 @@ func (handlerHelper) AuthenticateApproveProxy(ctx *fasthttp.RequestCtx) domain.P
 		case authenticate.ErrorDescription:
 			status = e.ConvertToGrpcStatus()
 		}
-		return response.Create(ctx, response.Option.SetAndSendError("unauthorized", status, err))
+		utils.WriteError(ctx, "unauthorized", status, nil)
+		return domain.Create().SetError(err)
 	}
 
 	if approver := approve.GetApprove(applicationId); approver != nil && !approver.ApproveMethod(path) {
 		err := errors.New("approve error")
-		return response.Create(ctx, response.Option.SetAndSendError("forbidden", codes.PermissionDenied, err))
+		utils.WriteError(ctx, "forbidden", codes.PermissionDenied, nil)
+		return domain.Create().SetError(err)
 	}
 
 	p := proxy.Find(path)
@@ -74,7 +77,8 @@ func (handlerHelper) AuthenticateApproveProxy(ctx *fasthttp.RequestCtx) domain.P
 		return p.ProxyRequest(ctx)
 	} else {
 		err := errors.Errorf("unknown path %s", path)
-		return response.Create(ctx, response.Option.SetAndSendError("not found", codes.NotFound, err))
+		utils.WriteError(ctx, "not found", codes.NotFound, nil)
+		return domain.Create().SetError(err)
 	}
 }
 
@@ -94,25 +98,3 @@ func (handlerHelper) SetMetricStatus(statusCode int) string {
 	}
 	return metricStatus
 }
-
-//
-//func (h handlerHelper) CheckPath(path []byte) (bool, bool) {
-//	path = h.getPathWithoutPrefix(path)
-//	_, implemented := routing.AddressMap[string(path)]
-//	_, inner := routing.InnerAddressMap[string(path)]
-//	return implemented, inner
-//}
-//
-//func (handlerHelper) getPathWithoutPrefix(path []byte) []byte {
-//	firstFound := false
-//	for i, value := range path {
-//		if value == '/' {
-//			if firstFound {
-//				return path[i+1:]
-//			} else {
-//				firstFound = true
-//			}
-//		}
-//	}
-//	return []byte{}
-//}

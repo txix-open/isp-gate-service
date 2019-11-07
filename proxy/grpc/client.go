@@ -12,7 +12,7 @@ import (
 	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
 	"isp-gate-service/proxy/grpc/handlers"
-	"isp-gate-service/proxy/response"
+	"isp-gate-service/utils"
 )
 
 type grpcProxy struct {
@@ -36,7 +36,11 @@ func (p *grpcProxy) ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse 
 	if p.client.InternalGrpcClient == nil {
 		msg := "client undefined"
 		log.Error(log_code.ErrorClientGrpc, msg)
-		return response.Create(ctx, response.Option.SetAndSendError(msg, codes.Internal, errors.New(msg)))
+		utils.WriteError(ctx, msg, codes.Internal, nil)
+		return domain.Create().
+			SetRequestBody(ctx.Request.Body()).
+			SetResponseBody(ctx.Response.Body()).
+			SetError(errors.New(msg))
 	}
 
 	uri := string(ctx.RequestURI())

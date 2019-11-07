@@ -20,7 +20,7 @@ import (
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
-	"isp-gate-service/proxy/response"
+	utils2 "isp-gate-service/utils"
 	"net/http"
 	"strings"
 	"time"
@@ -149,7 +149,8 @@ func checkError(err error, ctx *fasthttp.RequestCtx) (bool, bool, domain.ProxyRe
 	if err != nil {
 		if err != io.EOF {
 			logHandlerError(log_code.TypeData.GetFile, "", err)
-			resp = response.Create(ctx, response.Option.SetAndSendError(errorMsgInternal, codes.Internal, err))
+			utils2.WriteError(ctx, errorMsgInternal, codes.Internal, nil)
+			resp = domain.Create().SetError(err)
 			ok, eof = false, false
 		} else {
 			ok, eof = true, true
