@@ -21,6 +21,14 @@ var (
 )
 
 func Do(ctx *fasthttp.RequestCtx) (int64, error) {
+	path := ctx.Path()
+	uri := strings.Replace(strings.ToLower(string(path)), "/", "", -1)
+	path = getPathWithoutPrefix(path)
+
+	if _, ok := routing.AddressMap[string(path)]; !ok {
+		return 0, createError(codes.Unimplemented)
+	}
+
 	for _, notExpectedHeader := range verifiableKeyHeaderKeyMap {
 		ctx.Request.Header.Del(notExpectedHeader)
 	}
@@ -44,8 +52,6 @@ func Do(ctx *fasthttp.RequestCtx) (int64, error) {
 		verifiableKeys[verifiableKeyHeaderKeyMap[i]] = value
 	}
 
-	path := ctx.Path()
-	uri := strings.Replace(strings.ToLower(string(path)), "/", "", -1)
 	verifiableKeys[utils.DeviceTokenHeader] = string(ctx.Request.Header.Peek(utils.DeviceTokenHeader))
 	verifiableKeys[utils.UserTokenHeader] = string(ctx.Request.Header.Peek(utils.UserTokenHeader))
 
@@ -72,7 +78,6 @@ func Do(ctx *fasthttp.RequestCtx) (int64, error) {
 		}
 	}
 
-	path = getPathWithoutPrefix(path)
 	if _, ok := routing.InnerAddressMap[string(path)]; ok {
 		adminToken := ctx.Request.Header.Peek("x-auth-admin") //todo const key
 		if token.Check(string(adminToken)) != nil {

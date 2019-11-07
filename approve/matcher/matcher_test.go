@@ -1,21 +1,23 @@
 package matcher
 
-import "testing"
+import (
+	"testing"
+)
 
 var (
 	patterns = []string{
 		"mdm-master/group/method",
-		"mdm-master/group/*",
+		"mdm-master/group/",
 		"mdm-master/group2/method",
-		"mdm-master/group3/*",
+		"mdm-master/group3/",
 	}
 	cases = []struct {
 		method string
 		length int
 	}{
 		{method: "mdm-master/group/method", length: 2},
-		{method: "mdm-master/group/method2", length: 1},
-		{method: "mdm-master/group2/method3", length: 0},
+		{method: "mdm-master/group/method2", length: 2},
+		{method: "mdm-master/group2/method3", length: 1},
 		{method: "mdm-master/group2/method", length: 1},
 		{method: "mdm-master/group3/some", length: 1},
 		{method: "mdm-master/group3/", length: 1},

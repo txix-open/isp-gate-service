@@ -4,7 +4,8 @@ import (
 	"github.com/integration-system/isp-lib/backend"
 	u "github.com/integration-system/isp-lib/utils"
 	"github.com/valyala/fasthttp"
-	"isp-gate-service/utils"
+	"isp-gate-service/domain"
+	"isp-gate-service/proxy/response"
 	"mime"
 )
 
@@ -14,7 +15,7 @@ type (
 	handlerHelper struct{}
 
 	handler interface {
-		Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient)
+		Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) domain.ProxyResponse
 	}
 )
 
@@ -23,12 +24,12 @@ func (h handlerHelper) Get(ctx *fasthttp.RequestCtx) handler {
 	isExpectFile := string(ctx.Request.Header.Peek(u.ExpectFileHeader)) == "true"
 
 	if isMultipart {
-		ctx.Response.Header.SetContentType(utils.JsonContentType)
+		ctx.Response.Header.SetContentType(response.JsonContentType)
 		return sendMultipartData
 	} else if isExpectFile {
 		return getFile
 	} else {
-		ctx.Response.Header.SetContentType(utils.JsonContentType)
+		ctx.Response.Header.SetContentType(response.JsonContentType)
 		return handleJson
 	}
 }

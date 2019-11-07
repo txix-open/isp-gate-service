@@ -1,12 +1,14 @@
 package http
 
 import (
+	"errors"
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
+	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
-	"isp-gate-service/utils"
+	"isp-gate-service/proxy/response"
 	"net"
 	"strings"
 )
@@ -31,12 +33,11 @@ func (p *httpProxy) Consumer(addressList []structure.AddressConfiguration) bool 
 	return true
 }
 
-func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
+func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
 	if p.client == nil {
 		msg := "client undefined"
 		log.Error(log_code.ErrorClientHttp, msg)
-		utils.SendError(msg, codes.Internal, nil, ctx)
-		return
+		return response.Create(ctx, response.Option.SetAndSendError(msg, codes.Internal, errors.New(msg)))
 	}
 
 	req := &ctx.Request
@@ -48,8 +49,8 @@ func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
 
 	if err := p.client.Do(req, res); err != nil {
 		log.Error(log_code.ErrorClientHttp, err)
-		return
 	}
+	return response.Create(ctx)
 }
 
 func (p *httpProxy) Close() {

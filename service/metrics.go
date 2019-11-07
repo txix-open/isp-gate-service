@@ -3,7 +3,6 @@ package service
 import (
 	"github.com/integration-system/isp-lib/metric"
 	"github.com/rcrowley/go-metrics"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -20,25 +19,24 @@ type (
 	}
 
 	metricHolder struct {
-		methodHistograms   map[string]metrics.Histogram
-		methodLock         sync.RWMutex
-		statusCounters     map[int]metrics.Counter
-		statusLock         sync.RWMutex
-		routerResponseTime metrics.Histogram
-		responseTime       metrics.Histogram
+		methodHistograms map[string]metrics.Histogram
+		methodLock       sync.RWMutex
+		statusCounters   map[string]metrics.Counter
+		statusLock       sync.RWMutex
+		responseTime     metrics.Histogram
 	}
 )
 
 func (m *metricService) Init() {
 	m.mh = &metricHolder{
 		methodHistograms: make(map[string]metrics.Histogram),
-		statusCounters:   make(map[int]metrics.Counter),
+		statusCounters:   make(map[string]metrics.Counter),
 		responseTime: metrics.GetOrRegisterHistogram(
 			"http.response.time", metric.GetRegistry(), metrics.NewUniformSample(defaultSampleSize),
 		),
-		routerResponseTime: metrics.GetOrRegisterHistogram(
-			"grpc.router.response.time", metric.GetRegistry(), metrics.NewUniformSample(defaultSampleSize),
-		),
+		//routerResponseTime: metrics.GetOrRegisterHistogram(
+		//	"grpc.router.response.time", metric.GetRegistry(), metrics.NewUniformSample(defaultSampleSize),
+		//),
 	}
 }
 
@@ -54,13 +52,7 @@ func (m *metricService) UpdateResponseTime(time time.Duration) {
 	}
 }
 
-func (m *metricService) UpdateRouterResponseTime(time time.Duration) {
-	if m.notEmptyHolder() {
-		m.mh.routerResponseTime.Update(int64(time))
-	}
-}
-
-func (m *metricService) UpdateStatusCounter(status int) {
+func (m *metricService) UpdateStatusCounter(status string) {
 	if m.notEmptyHolder() {
 		m.getOrRegisterCounter(status).Inc(1)
 	}
@@ -88,7 +80,7 @@ func (m *metricService) getOrRegisterHistogram(uri string) metrics.Histogram {
 	return histogram
 }
 
-func (m *metricService) getOrRegisterCounter(status int) metrics.Counter {
+func (m *metricService) getOrRegisterCounter(status string) metrics.Counter {
 	m.mh.statusLock.RLock()
 	d, ok := m.mh.statusCounters[status]
 	m.mh.statusLock.RUnlock()
@@ -101,7 +93,7 @@ func (m *metricService) getOrRegisterCounter(status int) metrics.Counter {
 	if d, ok := m.mh.statusCounters[status]; ok {
 		return d
 	}
-	d = metrics.GetOrRegisterCounter("http.response.count."+strconv.Itoa(status), metric.GetRegistry())
+	d = metrics.GetOrRegisterCounter("http.response.count."+status, metric.GetRegistry())
 	m.mh.statusCounters[status] = d
 	return d
 }

@@ -8,8 +8,9 @@ import (
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
 	"isp-gate-service/conf"
+	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
-	"isp-gate-service/utils"
+	"isp-gate-service/proxy/response"
 	"mime/multipart"
 	"strings"
 )
@@ -18,7 +19,7 @@ var sendMultipartData sendMultipartDataDesc
 
 type sendMultipartDataDesc struct{}
 
-func (h sendMultipartDataDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) {
+func (h sendMultipartDataDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) domain.ProxyResponse {
 	cfg := config.GetRemote().(*conf.RemoteConfig).GrpcSetting
 	timeout := cfg.GetStreamInvokeTimeout()
 	bufferSize := cfg.GetTransferFileBufferSize()
@@ -31,8 +32,12 @@ func (h sendMultipartDataDesc) Complete(ctx *fasthttp.RequestCtx, method string,
 	}()
 	if err != nil {
 		logHandlerError(log_code.TypeData.SendMultipart, method, err)
-		utils.SendError(errorMsgInternal, codes.Internal, []interface{}{err.Error()}, ctx)
-		return
+		return response.Create(
+			ctx,
+			response.Option.SetAndSendError(errorMsgInternal, codes.Internal, err),
+			response.Option.EmptyRequest(),
+			response.Option.EmptyResponse(),
+		)
 	}
 
 	form, err := ctx.MultipartForm()
@@ -44,8 +49,12 @@ func (h sendMultipartDataDesc) Complete(ctx *fasthttp.RequestCtx, method string,
 
 	if err != nil {
 		logHandlerError(log_code.TypeData.SendMultipart, method, err)
-		utils.SendError(errorMsgInvalidArg, codes.InvalidArgument, []interface{}{err.Error()}, ctx)
-		return
+		return response.Create(
+			ctx,
+			response.Option.SetAndSendError(errorMsgInvalidArg, codes.InvalidArgument, err),
+			response.Option.EmptyRequest(),
+			response.Option.EmptyResponse(),
+		)
 	}
 
 	formData := make(map[string]interface{}, len(form.Value))
@@ -56,10 +65,13 @@ func (h sendMultipartDataDesc) Complete(ctx *fasthttp.RequestCtx, method string,
 		}
 	}
 
-	response := make([]string, 0)
-	buffer := make([]byte, bufferSize)
-	ok := true
-	eof := false
+	var (
+		proxyResp domain.ProxyResponse
+		resp      = make([]string, 0)
+		buffer    = make([]byte, bufferSize)
+		ok        = true
+		eof       = false
+	)
 
 	for formDataName, files := range form.File {
 		if len(files) == 0 {
@@ -77,19 +89,19 @@ func (h sendMultipartDataDesc) Complete(ctx *fasthttp.RequestCtx, method string,
 			FormData:      formData,
 		}
 		err = stream.Send(bf.ToMessage())
-		if ok, eof = checkError(err, ctx); !ok || eof {
+		if ok, eof, proxyResp = checkError(err, ctx); !ok || eof {
 			break
 		}
 
 		f, err := file.Open()
-		if ok, eof = checkError(err, ctx); !ok || eof {
+		if ok, eof, proxyResp = checkError(err, ctx); !ok || eof {
 			break
 		}
-		if ok, eof = h.transferFile(f, stream, buffer, ctx); ok {
+		if ok, eof, proxyResp = h.transferFile(f, stream, buffer, ctx); ok {
 			msg, err := stream.Recv()
 			v, _, err := getResponse(msg, err)
 			if err == nil {
-				response = append(response, string(v))
+				resp = append(resp, string(v))
 			}
 			ok = err == nil
 		}
@@ -105,34 +117,38 @@ func (h sendMultipartDataDesc) Complete(ctx *fasthttp.RequestCtx, method string,
 	}
 
 	if ok {
-		arrayBody := strings.Join(response, ",")
+		arrayBody := strings.Join(resp, ",")
 		_, err = ctx.WriteString("[" + arrayBody + "]")
 		if err != nil {
 			logHandlerError(log_code.TypeData.SendMultipart, method, err)
 		}
 	}
+	return proxyResp
 }
 
 func (sendMultipartDataDesc) transferFile(f multipart.File, stream isp.BackendService_RequestStreamClient,
-	buffer []byte, ctx *fasthttp.RequestCtx) (bool, bool) {
+	buffer []byte, ctx *fasthttp.RequestCtx) (bool, bool, domain.ProxyResponse) {
 
-	ok := true
-	eof := false
+	var (
+		ok        = true
+		eof       = false
+		proxyResp domain.ProxyResponse
+	)
 	for {
 		n, err := f.Read(buffer)
 		if n > 0 {
-			err = stream.Send(&isp.Message{Body: &isp.Message_BytesBody{buffer[:n]}})
-			if ok, eof = checkError(err, ctx); !ok || eof {
+			err = stream.Send(&isp.Message{Body: &isp.Message_BytesBody{BytesBody: buffer[:n]}})
+			if ok, eof, proxyResp = checkError(err, ctx); !ok || eof {
 				break
 			}
 		}
 		if err != nil {
-			if ok, eof = checkError(err, ctx); ok && eof {
+			if ok, eof, proxyResp = checkError(err, ctx); ok && eof {
 				err = stream.Send(s.FileEnd())
-				ok, eof = checkError(err, ctx)
+				ok, eof, proxyResp = checkError(err, ctx)
 			}
 			break
 		}
 	}
-	return ok, eof
+	return ok, eof, proxyResp
 }

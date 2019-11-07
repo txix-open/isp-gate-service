@@ -1,6 +1,8 @@
 package matcher
 
-import "path"
+import (
+	"strings"
+)
 
 type runtimeMatcher struct {
 	patterns []string
@@ -9,7 +11,7 @@ type runtimeMatcher struct {
 func (mm runtimeMatcher) Match(method string) []string {
 	resp := make([]string, 0)
 	for _, pattern := range mm.patterns {
-		if matched, _ := path.Match(pattern, method); matched {
+		if strings.HasPrefix(method, pattern) {
 			resp = append(resp, pattern)
 		}
 	}

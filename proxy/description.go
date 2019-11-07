@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"isp-gate-service/conf"
+	"isp-gate-service/domain"
 	"isp-gate-service/proxy/grpc"
 	"isp-gate-service/proxy/http"
 	"strings"
@@ -17,11 +18,13 @@ const (
 	grpcProtocol = "grpc"
 )
 
-type Proxy interface {
-	ProxyRequest(ctx *fasthttp.RequestCtx)
-	Consumer([]structure.AddressConfiguration) bool
-	Close()
-}
+type (
+	Proxy interface {
+		ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse
+		Consumer([]structure.AddressConfiguration) bool
+		Close()
+	}
+)
 
 func Init(location conf.Location) (Proxy, error) {
 	if location.PathPrefix[0] != '/' {

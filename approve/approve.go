@@ -37,7 +37,7 @@ func GetApprove(appId int64) *approve {
 	return approvingByAppId[appId]
 }
 
-func (app *approve) Complete(method string) bool {
+func (app *approve) ApproveMethod(method string) bool {
 	app.mx.Lock()
 
 	stateStorage := make([]state.LimitState, 0)
