@@ -8,7 +8,7 @@ import (
 	"github.com/integration-system/isp-lib/metric"
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
-	"isp-gate-service/approve"
+	"isp-gate-service/accounting"
 	"isp-gate-service/conf"
 	"isp-gate-service/journal"
 	"isp-gate-service/log_code"
@@ -41,7 +41,7 @@ func main() {
 	for _, location := range cfg.Locations {
 		if p, err := proxy.Init(location); err != nil {
 			log.Fatal(log_code.FatalLocalConfig, err)
-		} else {
+		} else if location.TargetModule != "" {
 			bs.RequireModule(location.TargetModule, p.Consumer, false)
 		}
 	}
@@ -61,7 +61,7 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	journal.Client.ReceiveConfiguration(remoteConfig.Journal, localCfg.ModuleName)
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
 	server.Http.Init(remoteConfig.ServerSetting.MaxRequestBodySizeBytes)
-	approve.ReceiveConfiguration(remoteConfig.ApproveSetting)
+	accounting.ReceiveConfiguration(remoteConfig.AccountingSetting)
 
 	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalingMethodsPatterns)
 

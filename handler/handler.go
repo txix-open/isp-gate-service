@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
-	"isp-gate-service/approve"
+	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
@@ -35,19 +35,20 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	statusCode := ctx.Response.StatusCode()
 	service.Metrics.UpdateStatusCounter(helper.SetMetricStatus(statusCode))
 	if statusCode == http.StatusOK {
-		service.Metrics.UpdateResponseTime(executionTime)
 		service.Metrics.UpdateMethodResponseTime(uri, executionTime)
 	}
 
 	requestBody, responseBody, err := resp.Get()
-	if config.GetRemote().(*conf.RemoteConfig).Journal.Enable && matcher.JournalMethods.Match(uri) {
-		if err != nil {
-			if err := journal.Client.Error(uri, requestBody, responseBody, err); err != nil {
-				log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
-			}
-		} else {
-			if err := journal.Client.Info(uri, requestBody, responseBody); err != nil {
-				log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
+	if config.GetRemote().(*conf.RemoteConfig).Journal.Enable {
+		if matcher.JournalMethods.Match(uri) {
+			if err != nil {
+				if err := journal.Client.Error(uri, requestBody, responseBody, err); err != nil {
+					log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
+				}
+			} else {
+				if err := journal.Client.Info(uri, requestBody, responseBody); err != nil {
+					log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
+				}
 			}
 		}
 	}
@@ -67,8 +68,8 @@ func (handlerHelper) AuthenticateApproveProxy(ctx *fasthttp.RequestCtx) domain.P
 		return domain.Create().SetError(err)
 	}
 
-	if approver := approve.GetApprove(applicationId); approver != nil && !approver.ApproveMethod(path) {
-		err := errors.New("approve error")
+	if approver := accounting.GetAccounting(applicationId); approver != nil && !approver.TakeAccount(path) {
+		err := errors.New("accounting error")
 		utils.WriteError(ctx, "forbidden", codes.PermissionDenied, nil)
 		return domain.Create().SetError(err)
 	}

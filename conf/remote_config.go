@@ -20,25 +20,30 @@ const (
 
 type (
 	RemoteConfig struct {
-		SecretKey                 string
-		ServerSetting             ServerSetting
-		GrpcSetting               GrpcSetting
+		SecretKey                 string                        `schema:"Секрет"`
+		ServerSetting             ServerSetting                 `schema:"Настройка сервера"`
+		GrpcSetting               GrpcSetting                   `schema:"Настройка grpc соединения"`
 		Metrics                   structure.MetricConfiguration `schema:"Настройка метрик"`
 		Journal                   rx.Config                     `schema:"Настройка логирования"`
 		JournalingMethodsPatterns []string                      `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
-		Redis                     structure.RedisConfiguration  `schema:"Настрока Redis" valid:"required~Required"`
-		ApproveSetting            []ApproveSetting
+		Redis                     structure.RedisConfiguration  `schema:"Настройка Redis" valid:"required~Required"`
+		AccountingSetting         Accounting                    `schema:"Настройка учета запросов"`
 	}
 
-	ApproveSetting struct {
-		ApplicationId int64
-		Limits        []LimitSetting
+	Accounting struct {
+		Enable  bool                `schema:"Статус работы учета,включает/отключает учет запросов"`
+		Setting []AccountingSetting `schema:"Настройка учета для приложений"`
+	}
+
+	AccountingSetting struct {
+		ApplicationId int64          `valid:"required~Required" schema:"Идентификатор приложения"`
+		Limits        []LimitSetting `schema:"Настройка ограничений на запросы"`
 	}
 
 	LimitSetting struct {
-		Pattern  string
-		MaxCount int
-		Lifetime string
+		Pattern  string `valid:"required~Required" schema:"Шаблон пути,указывается путь для которого будут применяется ограничения; поддерживается '/*' для неполного совпадения"`
+		MaxCount int    `schema:"Количество запросов"`
+		Timeout  string `schema:"Время жизни одного запроса"`
 	}
 
 	ServerSetting struct {
@@ -74,10 +79,3 @@ func (cfg GrpcSetting) GetTransferFileBufferSize() int64 {
 	}
 	return cfg.MultipartDataTransferBufferSizeBytes
 }
-
-/*func (cfg GrpcSetting) GetMaxRequestBodySize() int64 {
-	if cfg.MaxRequestBodySizeBytes <= 0 {
-		return defaultMaxRequestBodySize
-	}
-	return cfg.MaxRequestBodySizeBytes
-}*/

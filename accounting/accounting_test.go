@@ -1,4 +1,4 @@
-package approve
+package accounting
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -8,16 +8,19 @@ import (
 )
 
 var (
-	approveSetting = []conf.ApproveSetting{
-		{ApplicationId: 1, Limits: []conf.LimitSetting{
-			{Pattern: "mdm-master/group/method", MaxCount: 1, Lifetime: "290ms"},
-			{Pattern: "mdm-master/group3/method", MaxCount: 10, Lifetime: "10s"},
-			{Pattern: "mdm-master/group3/*", MaxCount: 5, Lifetime: "10s"},
-			{Pattern: "mdm-master/group4/method", MaxCount: 2, Lifetime: "0s"},
-		}},
-		{ApplicationId: 2, Limits: []conf.LimitSetting{
-			{Pattern: "mdm-master/group/method", MaxCount: 0, Lifetime: "10s"},
-		}},
+	approveSetting = conf.Accounting{
+		Enable: true,
+		Setting: []conf.AccountingSetting{
+			{ApplicationId: 1, Limits: []conf.LimitSetting{
+				{Pattern: "mdm-master/group/method", MaxCount: 1, Timeout: "290ms"},
+				{Pattern: "mdm-master/group3/method", MaxCount: 10, Timeout: "10s"},
+				{Pattern: "mdm-master/group3/*", MaxCount: 5, Timeout: "10s"},
+				{Pattern: "mdm-master/group4/method", MaxCount: 2, Timeout: "0s"},
+			}},
+			{ApplicationId: 2, Limits: []conf.LimitSetting{
+				{Pattern: "mdm-master/group/method", MaxCount: 0, Timeout: "10s"},
+			}},
+		},
 	}
 
 	reqExample = []struct {
@@ -52,7 +55,7 @@ func TestApprove(t *testing.T) {
 	expected := true
 	req := reqExample[0]
 	for _, path := range req.path {
-		a.Equal(expected, GetApprove(req.appId).ApproveMethod(path))
+		a.Equal(expected, GetAccounting(req.appId).TakeAccount(path))
 		expected = !expected
 		time.Sleep(150 * time.Millisecond)
 	}
@@ -60,19 +63,19 @@ func TestApprove(t *testing.T) {
 	//expected == true
 	req = reqExample[1]
 	for _, path := range req.path {
-		a.Equal(expected, GetApprove(req.appId).ApproveMethod(path))
+		a.Equal(expected, GetAccounting(req.appId).TakeAccount(path))
 		expected = !expected
 	}
 
 	req = reqExample[2]
 	expectedArray := []bool{true, true, true, true, true, false}
 	for key, path := range req.path {
-		a.Equal(expectedArray[key], GetApprove(req.appId).ApproveMethod(path))
+		a.Equal(expectedArray[key], GetAccounting(req.appId).TakeAccount(path))
 	}
 
 	//expected == true
 	req = reqExample[3]
 	for _, path := range req.path {
-		a.Equal(expected, GetApprove(req.appId).ApproveMethod(path))
+		a.Equal(expected, GetAccounting(req.appId).TakeAccount(path))
 	}
 }

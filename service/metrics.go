@@ -23,7 +23,6 @@ type (
 		methodLock       sync.RWMutex
 		statusCounters   map[string]metrics.Counter
 		statusLock       sync.RWMutex
-		responseTime     metrics.Histogram
 	}
 )
 
@@ -31,24 +30,12 @@ func (m *metricService) Init() {
 	m.mh = &metricHolder{
 		methodHistograms: make(map[string]metrics.Histogram),
 		statusCounters:   make(map[string]metrics.Counter),
-		responseTime: metrics.GetOrRegisterHistogram(
-			"http.response.time", metric.GetRegistry(), metrics.NewUniformSample(defaultSampleSize),
-		),
-		//routerResponseTime: metrics.GetOrRegisterHistogram(
-		//	"grpc.router.response.time", metric.GetRegistry(), metrics.NewUniformSample(defaultSampleSize),
-		//),
 	}
 }
 
 func (m *metricService) UpdateMethodResponseTime(uri string, time time.Duration) {
 	if m.notEmptyHolder() {
 		m.getOrRegisterHistogram(uri).Update(int64(time))
-	}
-}
-
-func (m *metricService) UpdateResponseTime(time time.Duration) {
-	if m.notEmptyHolder() {
-		m.mh.responseTime.Update(int64(time))
 	}
 }
 

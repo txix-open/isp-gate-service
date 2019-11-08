@@ -7,6 +7,7 @@ import (
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/proxy/grpc"
+	"isp-gate-service/proxy/health_check"
 	"isp-gate-service/proxy/http"
 	"strings"
 )
@@ -14,8 +15,9 @@ import (
 var store = make(map[string]Proxy)
 
 const (
-	httpProtocol = "http"
-	grpcProtocol = "grpc"
+	httpProtocol        = "http"
+	grpcProtocol        = "grpc"
+	healthCheckProtocol = "healthсheck"
 )
 
 type (
@@ -39,8 +41,12 @@ func Init(location conf.Location) (Proxy, error) {
 		proxy := grpc.NewProxy()
 		store[location.PathPrefix] = proxy
 		return proxy, nil
+	case healthCheckProtocol:
+		proxy := health_check.NewProxy()
+		store[location.PathPrefix] = proxy
+		return proxy, nil
 	default:
-		return nil, errors.New("unknown protocol")
+		return nil, errors.Errorf("unknown protocol '%s'", location.Protocol)
 	}
 }
 
