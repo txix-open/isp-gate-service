@@ -17,6 +17,7 @@ import (
 	"isp-gate-service/routing"
 	"isp-gate-service/server"
 	"isp-gate-service/service"
+	"isp-gate-service/service/matcher"
 	"os"
 )
 
@@ -62,7 +63,7 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	server.Http.Init(remoteConfig.ServerSetting.MaxRequestBodySizeBytes)
 	approve.ReceiveConfiguration(remoteConfig.ApproveSetting)
 
-	service.JournalMethodsMatcher = service.NewCacheableMethodMatcher(remoteConfig.JournalingMethodsPatterns)
+	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalingMethodsPatterns)
 
 	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
 	metric.InitHttpServer(remoteConfig.Metrics)

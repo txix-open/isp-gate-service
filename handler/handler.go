@@ -14,6 +14,7 @@ import (
 	"isp-gate-service/log_code"
 	"isp-gate-service/proxy"
 	"isp-gate-service/service"
+	"isp-gate-service/service/matcher"
 	"isp-gate-service/utils"
 	"net/http"
 	"time"
@@ -39,7 +40,7 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	}
 
 	requestBody, responseBody, err := resp.Get()
-	if config.GetRemote().(*conf.RemoteConfig).Journal.Enable && service.JournalMethodsMatcher.Match(uri) {
+	if config.GetRemote().(*conf.RemoteConfig).Journal.Enable && matcher.JournalMethods.Match(uri) {
 		if err != nil {
 			if err := journal.Client.Error(uri, requestBody, responseBody, err); err != nil {
 				log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
