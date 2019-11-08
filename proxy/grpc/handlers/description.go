@@ -4,6 +4,7 @@ import (
 	"github.com/integration-system/isp-lib/backend"
 	u "github.com/integration-system/isp-lib/utils"
 	"github.com/valyala/fasthttp"
+	"isp-gate-service/domain"
 	"isp-gate-service/utils"
 	"mime"
 )
@@ -14,7 +15,7 @@ type (
 	handlerHelper struct{}
 
 	handler interface {
-		Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient)
+		Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) domain.ProxyResponse
 	}
 )
 

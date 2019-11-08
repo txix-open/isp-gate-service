@@ -34,7 +34,7 @@
 
 [[override]]
   name = "github.com/integration-system/isp-lib"
-  branch = "master"
+  version = "1.9.0"
 
 [prune]
   go-tests = true

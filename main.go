@@ -8,6 +8,7 @@ import (
 	"github.com/integration-system/isp-lib/metric"
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
+	"isp-gate-service/accounting"
 	"isp-gate-service/conf"
 	"isp-gate-service/journal"
 	"isp-gate-service/log_code"
@@ -16,6 +17,7 @@ import (
 	"isp-gate-service/routing"
 	"isp-gate-service/server"
 	"isp-gate-service/service"
+	"isp-gate-service/service/matcher"
 	"os"
 )
 
@@ -39,7 +41,7 @@ func main() {
 	for _, location := range cfg.Locations {
 		if p, err := proxy.Init(location); err != nil {
 			log.Fatal(log_code.FatalLocalConfig, err)
-		} else {
+		} else if location.TargetModule != "" {
 			bs.RequireModule(location.TargetModule, p.Consumer, false)
 		}
 	}
@@ -59,8 +61,9 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	journal.Client.ReceiveConfiguration(remoteConfig.Journal, localCfg.ModuleName)
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
 	server.Http.Init(remoteConfig.ServerSetting.MaxRequestBodySizeBytes)
+	accounting.ReceiveConfiguration(remoteConfig.AccountingSetting)
 
-	service.JournalMethodsMatcher = service.NewCacheableMethodMatcher(remoteConfig.JournalingMethodsPatterns)
+	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalingMethodsPatterns)
 
 	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
 	metric.InitHttpServer(remoteConfig.Metrics)

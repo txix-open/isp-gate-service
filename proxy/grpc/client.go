@@ -4,16 +4,15 @@ import (
 	"github.com/integration-system/isp-lib/backend"
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
+	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"isp-gate-service/conf"
+	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
 	"isp-gate-service/proxy/grpc/handlers"
-	"isp-gate-service/service"
 	"isp-gate-service/utils"
-	"net/http"
-	"time"
 )
 
 type grpcProxy struct {
@@ -33,25 +32,19 @@ func NewProxy() *grpcProxy {
 	)}
 }
 
-func (p *grpcProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
+func (p *grpcProxy) ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
 	if p.client.InternalGrpcClient == nil {
 		msg := "client undefined"
 		log.Error(log_code.ErrorClientGrpc, msg)
-		utils.SendError(msg, codes.Internal, nil, ctx)
-		return
+		utils.WriteError(ctx, msg, codes.Internal, nil)
+		return domain.Create().
+			SetRequestBody(ctx.Request.Body()).
+			SetResponseBody(ctx.Response.Body()).
+			SetError(errors.New(msg))
 	}
-
-	currentTime := time.Now()
 
 	uri := string(ctx.RequestURI())
-	handlers.Handler.Get(ctx).Complete(ctx, uri, p.client)
-	executionTime := time.Since(currentTime) / 1e6
-
-	service.Metrics.UpdateStatusCounter(ctx.Response.StatusCode())
-	if ctx.Response.StatusCode() == http.StatusOK {
-		service.Metrics.UpdateResponseTime(executionTime)
-		service.Metrics.UpdateMethodResponseTime(uri, executionTime)
-	}
+	return handlers.Handler.Get(ctx).Complete(ctx, uri, p.client)
 }
 
 func (p *grpcProxy) Consumer(addr []structure.AddressConfiguration) bool {

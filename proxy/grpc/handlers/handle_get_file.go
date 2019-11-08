@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"io"
 	"isp-gate-service/conf"
+	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
 	"isp-gate-service/utils"
 	"strconv"
@@ -21,15 +22,15 @@ var getFile getFileDesc
 
 type getFileDesc struct{}
 
-func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) {
+func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) domain.ProxyResponse {
 	cfg := config.GetRemote().(*conf.RemoteConfig).GrpcSetting
 	timeout := cfg.GetStreamInvokeTimeout()
 
 	req, err := g.readJsonBody(ctx)
 	if err != nil {
 		logHandlerError(log_code.TypeData.GetFile, method, err)
-		utils.SendError(err.Error(), codes.InvalidArgument, nil, ctx)
-		return
+		utils.WriteError(ctx, err.Error(), codes.InvalidArgument, nil)
+		return domain.Create().SetError(err)
 	}
 
 	stream, cancel, err := openStream(&ctx.Request.Header, method, timeout, client)
@@ -40,8 +41,8 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 	}()
 	if err != nil {
 		logHandlerError(log_code.TypeData.GetFile, method, err)
-		utils.SendError(errorMsgInternal, codes.Internal, []interface{}{err.Error()}, ctx)
-		return
+		utils.WriteError(ctx, errorMsgInternal, codes.Internal, nil)
+		return domain.Create().SetError(err)
 	}
 
 	if req != nil {
@@ -49,8 +50,8 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 		err := stream.Send(backend.WrapBody(value))
 		if err != nil {
 			logHandlerError(log_code.TypeData.GetFile, method, err)
-			utils.SendError(errorMsgInternal, codes.Internal, []interface{}{err.Error()}, ctx)
-			return
+			utils.WriteError(ctx, errorMsgInternal, codes.Internal, nil)
+			return domain.Create().SetError(err)
 		}
 	}
 
@@ -61,7 +62,7 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 			ctx.SetStatusCode(status)
 			ctx.SetBody(bytes)
 		}
-		return
+		return domain.Create().SetError(err)
 	}
 	bf := s.BeginFile{}
 	err = bf.FromMessage(msg)
@@ -71,7 +72,7 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 			ctx.SetStatusCode(status)
 			ctx.SetBody(bytes)
 		}
-		return
+		return domain.Create().SetError(err)
 	}
 	header := &ctx.Response.Header
 	header.Set(headerKeyContentDisposition, fmt.Sprintf("attachment; filename=%s", bf.FileName))
@@ -105,6 +106,7 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 			break
 		}
 	}
+	return domain.Create().SetError(err)
 }
 
 func (getFileDesc) readJsonBody(ctx *fasthttp.RequestCtx) (interface{}, error) {

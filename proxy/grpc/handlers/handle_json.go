@@ -4,24 +4,21 @@ import (
 	"github.com/integration-system/isp-lib/backend"
 	"github.com/integration-system/isp-lib/config"
 	isp "github.com/integration-system/isp-lib/proto/stubs"
-	log "github.com/integration-system/isp-log"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"isp-gate-service/conf"
-	"isp-gate-service/journal"
+	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
-	"isp-gate-service/service"
 	"isp-gate-service/utils"
-	"time"
 )
 
 var handleJson handleJsonDesc
 
 type handleJsonDesc struct{}
 
-func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) {
+func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) domain.ProxyResponse {
 	//body, err := utils.ReadJsonBody(c)
 	body := c.Request.Body()
 	/*if err != nil {
@@ -32,43 +29,32 @@ func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *
 
 	md, methodName := makeMetadata(&c.Request.Header, method)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
-	cfg := config.GetRemote().(*conf.RemoteConfig)
-	ctx, cancel := context.WithTimeout(ctx, cfg.GrpcSetting.GetSyncInvokeTimeout())
+	grpcSetting := config.GetRemote().(*conf.RemoteConfig).GrpcSetting
+	ctx, cancel := context.WithTimeout(ctx, grpcSetting.GetSyncInvokeTimeout())
 	defer cancel()
 
 	cli, err := client.Conn()
 	if err != nil {
 		logHandlerError(log_code.TypeData.JsonContent, methodName, err)
-		utils.SendError(errorMsgInternal, codes.Internal, []interface{}{err.Error()}, c)
-		return
+		utils.WriteError(c, errorMsgInternal, codes.Internal, nil)
+		return domain.Create().SetError(err)
 	}
 
 	//structBody := u.ConvertInterfaceToGrpcStruct(body)
-	currentTime := time.Now()
-	response, invokerErr := cli.Request(
+	resp, invokerErr := cli.Request(
 		ctx,
 		&isp.Message{
 			Body: &isp.Message_BytesBody{BytesBody: body},
 		},
 	)
-	service.Metrics.UpdateRouterResponseTime(time.Since(currentTime) / 1e6)
 
-	if data, status, err := getResponse(response, invokerErr); err == nil {
+	if data, status, err := getResponse(resp, invokerErr); err == nil {
 		c.SetStatusCode(status)
 		_, _ = c.Write(data)
-		if cfg.Journal.Enable && service.JournalMethodsMatcher.Match(methodName) {
-			if invokerErr != nil {
-				if err := journal.Client.Error(methodName, body, data, invokerErr); err != nil {
-					log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
-				}
-			} else {
-				if err := journal.Client.Info(methodName, body, data); err != nil {
-					log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
-				}
-			}
-		}
+		return domain.Create().SetError(invokerErr)
 	} else {
 		logHandlerError(log_code.TypeData.JsonContent, methodName, err)
-		utils.SendError(errorMsgInternal, codes.Internal, []interface{}{err.Error()}, c)
+		utils.WriteError(c, errorMsgInternal, codes.Internal, nil)
+		return domain.Create().SetError(err)
 	}
 }
