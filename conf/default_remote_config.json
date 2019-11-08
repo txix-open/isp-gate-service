@@ -1,15 +1,4 @@
 {
-  "enableOriginalProtoErrors": false,
-  "proxyGrpcErrorDetails": false,
-  "metrics": {
-    "address": {
-      "ip": "0.0.0.0",
-      "path": "/metrics",
-      "port": "9553"
-    },
-    "gc": true,
-    "memory": true
-  },
   "journal": {
     "enableRemoteTransfer": true,
     "enable": false,
@@ -19,9 +8,34 @@
     "bufferSize": 4096,
     "rotateTimeoutMs": 86400000
   },
+  "metrics": {
+    "gc": true,
+    "memory": true,
+    "address": {
+      "path": "/metrics",
+      "port": "9553",
+      "ip": "0.0.0.0"
+    }
+  },
+  "secretKey": "secret key",
+  "grpcSetting": {},
+  "serverSetting": {},
+  "accountingSetting": {
+    "enable": false,
+    "setting": [
+      {
+        "limits": [
+          {
+            "pattern": "/healthcheck/module/group/method",
+            "timeout": "1s",
+            "maxCount": 1000
+          }
+        ],
+        "applicationId": 1
+      }
+    ]
+  },
   "redis": {
-    "password": "password",
-    "defaultDB": 0,
     "address": {
       "ip": "127.0.0.1",
       "port": "6379"
