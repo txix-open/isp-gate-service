@@ -17,9 +17,13 @@
       "ip": "0.0.0.0"
     }
   },
-  "secretKey": "secret key",
-  "grpcSetting": {},
-  "serverSetting": {},
+  "grpcSetting": {
+    "enableOriginalProtoErrors": false,
+    "proxyGrpcErrorDetails": false
+  },
+  "serverSetting": {
+    "maxRequestBodySizeBytes": 0
+  },
   "accountingSetting": {
     "enable": false,
     "setting": [
@@ -39,6 +43,28 @@
     "address": {
       "ip": "127.0.0.1",
       "port": "6379"
+    }
+  },
+  "tokenVerification": {
+    "enable": false
+  },
+  "authenticateSetting": {
+    "timeout": "1m",
+    "enableCash": true
+  },
+  "secretSetting": {
+    "admin": "secret",
+    "application": "secret"
+  },
+  "journalSetting": {
+    "journal": {
+      "rotateTimeoutMs": 86400000,
+      "enableRemoteTransfer": true,
+      "enable": false,
+      "compress": true,
+      "filename": "/var/log/isp-gate-service/runtime.log",
+      "maxSizeMb": 512,
+      "bufferSize": 4096
     }
   }
 }

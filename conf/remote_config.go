@@ -20,14 +20,34 @@ const (
 
 type (
 	RemoteConfig struct {
-		SecretKey                 string                        `schema:"Секрет"`
-		ServerSetting             ServerSetting                 `schema:"Настройка сервера"`
-		GrpcSetting               GrpcSetting                   `schema:"Настройка grpc соединения"`
-		Metrics                   structure.MetricConfiguration `schema:"Настройка метрик"`
-		Journal                   rx.Config                     `schema:"Настройка логирования"`
-		JournalingMethodsPatterns []string                      `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
-		Redis                     structure.RedisConfiguration  `schema:"Настройка Redis" valid:"required~Required"`
-		AccountingSetting         Accounting                    `schema:"Настройка учета запросов"`
+		TokenVerification   TokenVerification             `schema:"Настройка веритификации токенов"`
+		SecretSetting       SecretSetting                 `schema:"Настройка секретов"`
+		ServerSetting       ServerSetting                 `schema:"Настройка сервера"`
+		GrpcSetting         GrpcSetting                   `schema:"Настройка grpc соединения"`
+		Metrics             structure.MetricConfiguration `schema:"Настройка метрик"`
+		JournalSetting      Journal                       `schema:"Настройка журалирования"`
+		Redis               structure.RedisConfiguration  `schema:"Настройка Redis" valid:"required~Required"`
+		AccountingSetting   Accounting                    `schema:"Настройка учета запросов"`
+		AuthenticateSetting Authenticate                  `schema:"Настройка авторизации" valid:"required~Required"`
+	}
+
+	Authenticate struct {
+		EnableCash bool   `schema:"Включает сохранение информации о авторизации токена"`
+		Timeout    string `schema:"Время жизни информации в кеше"`
+	}
+
+	Journal struct {
+		Journal         rx.Config `schema:"Настройка конфигурации"`
+		MethodsPatterns []string  `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
+	}
+
+	TokenVerification struct {
+		Enable bool `schema:"Включает проверку application-токена"`
+	}
+
+	SecretSetting struct {
+		Admin       string `schema:"Секрет admin-токена"`
+		Application string `schema:"Секрет application-токена"`
 	}
 
 	Accounting struct {
@@ -78,4 +98,11 @@ func (cfg GrpcSetting) GetTransferFileBufferSize() int64 {
 		return defaultBufferSize
 	}
 	return cfg.MultipartDataTransferBufferSizeBytes
+}
+
+func (cfg ServerSetting) GetMaxRequestBodySize() int64 {
+	if cfg.MaxRequestBodySizeBytes <= 0 {
+		return defaultMaxRequestBodySize
+	}
+	return cfg.MaxRequestBodySizeBytes
 }

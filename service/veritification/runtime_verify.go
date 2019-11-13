@@ -1,4 +1,4 @@
-package authenticate
+package veritification
 
 import (
 	"fmt"
@@ -11,20 +11,18 @@ import (
 	rdClient "isp-gate-service/redis"
 )
 
-const (
-	systemIdentity      = "1"
-	domainIdentity      = "2"
-	serviceIdentity     = "3"
-	applicationIdentity = "4"
+const permittedToCallInfo = "0"
 
-	permittedToCallInfo = "permittedToCallInfo"
-)
+var headerKeyByRedisIdentity = map[string]string{
+	"1": utils.SystemIdHeader,
+	"2": utils.DomainIdHeader,
+	"3": utils.ServiceIdHeader,
+	"4": utils.ApplicationIdHeader,
+}
 
-var verification verificationHelper
+type runtimeVerify struct{}
 
-type verificationHelper struct{}
-
-func (v verificationHelper) appToken(token string) (map[string]string, error) {
+func (v *runtimeVerify) ApplicationToken(token string) (map[string]string, error) {
 	instanceUuid := config.Get().(*conf.Configuration).InstanceUuid
 	key := fmt.Sprintf("%s|%s", token, instanceUuid)
 
@@ -46,15 +44,20 @@ func (v verificationHelper) appToken(token string) (map[string]string, error) {
 		} else if stringStringMapCmd, ok := resp[1].(*rd.StringStringMapCmd); !ok {
 			return nil, nil
 		} else {
-			return stringStringMapCmd.Val(), nil
+			identityMap := make(map[string]string)
+			for i, value := range stringStringMapCmd.Val() {
+				identityMap[headerKeyByRedisIdentity[i]] = value
+			}
+			return identityMap, nil
 		}
 	}
 }
 
-func (v *verificationHelper) keys(t map[string]string, uri string) (map[string]string, error) {
+func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]string, bool, error) {
 	secondDbKey := fmt.Sprintf("%s|%s", t[utils.ApplicationIdHeader], uri)
 	thirdDbKey := fmt.Sprintf("%s|%s", t[utils.UserTokenHeader], t[utils.DomainIdHeader])
 	fifthDbKey := fmt.Sprintf("%s|%s", t[utils.DeviceTokenHeader], t[utils.DomainIdHeader])
+	permittedToCall := false
 
 	if resp, err := rdClient.Client.Get().Pipelined(func(p rd.Pipeliner) error {
 		if cmd := p.Select(int(redis.ApplicationPermissionDb)); v.notEmptyError(cmd.Err()) {
@@ -79,35 +82,35 @@ func (v *verificationHelper) keys(t map[string]string, uri string) (map[string]s
 		}
 		return nil
 	}); v.notEmptyError(err) {
-		return t, err
+		return t, false, err
 	} else {
 		// It is not permitted to call this methodParts
 		if msg, err := v.findStringCmd(resp, 1); err != nil {
-			return t, err
-		} else {
-			t[permittedToCallInfo] = msg
+			return t, false, err
+		} else if msg == permittedToCallInfo {
+			permittedToCall = true
 		}
 		//  ===== CHECK USER TOKEN =====
 		if msg, err := v.findStringCmd(resp, 3); err != nil {
-			return t, err
+			return t, false, err
 		} else {
 			t[utils.UserIdHeader] = msg
 		}
 		// ===== CHECK DEVICE TOKEN =====
 		if msg, err := v.findStringCmd(resp, 5); err != nil {
-			return t, err
+			return t, false, err
 		} else {
 			t[utils.DeviceIdHeader] = msg
 		}
 	}
-	return t, nil
+	return t, permittedToCall, nil
 }
 
-func (v *verificationHelper) notEmptyError(err error) bool {
+func (v *runtimeVerify) notEmptyError(err error) bool {
 	return err != nil && err != rd.Nil
 }
 
-func (v *verificationHelper) findStringCmd(cmders []rd.Cmder, arrayKey int) (string, error) {
+func (v *runtimeVerify) findStringCmd(cmders []rd.Cmder, arrayKey int) (string, error) {
 	if len(cmders) > arrayKey {
 		cmd := cmders[arrayKey]
 		if cmd != nil {

@@ -9,6 +9,7 @@ import (
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
 	"isp-gate-service/accounting"
+	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
 	"isp-gate-service/journal"
 	"isp-gate-service/log_code"
@@ -58,16 +59,16 @@ func onLocalConfigLoad(cfg *conf.Configuration) {
 func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	localCfg := config.Get().(*conf.Configuration)
 
-	journal.Client.ReceiveConfiguration(remoteConfig.Journal, localCfg.ModuleName)
-	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
-	server.Http.Init(remoteConfig.ServerSetting.MaxRequestBodySizeBytes)
-	accounting.ReceiveConfiguration(remoteConfig.AccountingSetting)
+	journal.Client.ReceiveConfiguration(remoteConfig.JournalSetting.Journal, localCfg.ModuleName)
+	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalSetting.MethodsPatterns)
 
-	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalingMethodsPatterns)
+	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
+	server.Http.Init(remoteConfig.ServerSetting.GetMaxRequestBodySize())
+	accounting.ReceiveConfiguration(remoteConfig.AccountingSetting)
+	authenticate.ReceiveConfiguration(remoteConfig.AuthenticateSetting)
 
 	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
 	metric.InitHttpServer(remoteConfig.Metrics)
-	//metric.InitStatusChecker("router-grpc", helper.GetRoutersAndStatus)
 	service.Metrics.Init()
 }
 

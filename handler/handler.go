@@ -39,7 +39,7 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	}
 
 	requestBody, responseBody, err := resp.Get()
-	if config.GetRemote().(*conf.RemoteConfig).Journal.Enable {
+	if config.GetRemote().(*conf.RemoteConfig).JournalSetting.Journal.Enable {
 		if matcher.JournalMethods.Match(uri) {
 			if err != nil {
 				if err := journal.Client.Error(uri, requestBody, responseBody, err); err != nil {
@@ -60,17 +60,19 @@ func (handlerHelper) AuthenticateApproveProxy(ctx *fasthttp.RequestCtx) domain.P
 	applicationId, err := authenticate.Do(ctx)
 	if err != nil {
 		status := codes.Unknown
+		details := make([]interface{}, 0)
 		switch e := err.(type) {
 		case authenticate.ErrorDescription:
 			status = e.ConvertToGrpcStatus()
+			details = e.Details()
 		}
-		utils.WriteError(ctx, "unauthorized", status, nil)
+		utils.WriteError(ctx, "unauthorized", status, details)
 		return domain.Create().SetError(err)
 	}
 
 	if approver := accounting.GetAccounting(applicationId); approver != nil && !approver.TakeAccount(path) {
 		err := errors.New("accounting error")
-		utils.WriteError(ctx, "forbidden", codes.PermissionDenied, nil)
+		utils.WriteError(ctx, "forbidden", codes.ResourceExhausted, nil)
 		return domain.Create().SetError(err)
 	}
 

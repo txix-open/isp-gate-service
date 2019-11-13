@@ -15,6 +15,8 @@ const (
 	ErrorClientJournal = 608
 	ErrorClientRedis   = 609
 
-	ErrorAuthenticate         = 612
+	ErrorAuthenticate = 612
+
 	FatalConfigApproveSetting = 613
+	ErrorConfigAuth           = 614
 )
