@@ -12,7 +12,7 @@
     "enableOriginalProtoErrors": false,
     "proxyGrpcErrorDetails": false
   },
-  "serverSetting": {
+  "httpSetting": {
     "maxRequestBodySizeBytes": 0
   },
   "accountingSetting": {
