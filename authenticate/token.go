@@ -7,34 +7,35 @@ import (
 	"isp-gate-service/conf"
 )
 
-var validateToken token
+var verifyToken token
+
+type appClaims struct {
+	*jwt.StandardClaims
+	AppId int32
+}
 
 type token struct{}
 
 func (t token) Admin(token string) error {
-	secret := config.GetRemote().(*conf.RemoteConfig).SecretSetting.Admin
-	_, err := t.parse(token, secret)
+	secret := config.GetRemote().(*conf.RemoteConfig).Secrets.Admin
+	_, err := t.parse(token, secret, jwt.MapClaims{})
 	return err
 }
 
-func (t token) Application(token string) (int, error) {
-	secret := config.GetRemote().(*conf.RemoteConfig).SecretSetting.Application
+func (t token) Application(token string) (int32, error) {
+	secret := config.GetRemote().(*conf.RemoteConfig).Secrets.Application
 
-	if parsed, err := t.parse(token, secret); err != nil {
+	if parsed, err := t.parse(token, secret, &appClaims{StandardClaims: &jwt.StandardClaims{}}); err != nil {
 		return 0, err
-	} else if claims, ok := parsed.Claims.(jwt.MapClaims); !ok {
-		return 0, errors.New("token is invalid")
-	} else if appId, ok := claims["appId"]; !ok {
-		return 0, errors.New("token is invalid")
-	} else if applicationId, ok := appId.(float64); !ok {
+	} else if claims, ok := parsed.Claims.(*appClaims); !ok {
 		return 0, errors.New("token is invalid")
 	} else {
-		return int(applicationId), nil
+		return claims.AppId, nil
 	}
 }
 
-func (token) parse(token, secret string) (*jwt.Token, error) {
-	if parsed, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+func (token) parse(token, secret string, claims jwt.Claims) (*jwt.Token, error) {
+	if parsed, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}

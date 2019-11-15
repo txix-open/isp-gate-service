@@ -8,11 +8,11 @@ import (
 	"github.com/integration-system/isp-lib/metric"
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
+	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
 	"isp-gate-service/journal"
-	"isp-gate-service/log_code"
 	"isp-gate-service/proxy"
 	"isp-gate-service/redis"
 	"isp-gate-service/routing"
@@ -41,7 +41,7 @@ func main() {
 
 	for _, location := range cfg.Locations {
 		if p, err := proxy.Init(location); err != nil {
-			log.Fatal(log_code.FatalLocalConfig, err)
+			log.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
 		} else if location.TargetModule != "" {
 			bs.RequireModule(location.TargetModule, p.Consumer, false)
 		}
@@ -63,13 +63,14 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalSetting.MethodsPatterns)
 
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
-	server.Http.Init(remoteConfig.ServerSetting.GetMaxRequestBodySize())
 	accounting.ReceiveConfiguration(remoteConfig.AccountingSetting)
-	authenticate.ReceiveConfiguration(remoteConfig.AuthenticateSetting)
+	authenticate.ReceiveConfiguration(remoteConfig.AuthCacheSetting)
 
 	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
 	metric.InitHttpServer(remoteConfig.Metrics)
 	service.Metrics.Init()
+
+	server.Http.Init(remoteConfig.ServerSetting.GetMaxRequestBodySize())
 }
 
 func socketConfiguration(cfg interface{}) structure.SocketConfiguration {
@@ -86,9 +87,9 @@ func socketConfiguration(cfg interface{}) structure.SocketConfiguration {
 }
 
 func onShutdown(_ context.Context, _ os.Signal) {
+	server.Http.Close()
 	proxy.Close()
 	redis.Client.Close()
-	server.Http.Close()
 }
 
 func handleRouteUpdate(configs structure.RoutingConfig) bool {

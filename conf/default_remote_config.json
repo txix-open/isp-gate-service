@@ -1,13 +1,4 @@
 {
-  "journal": {
-    "enableRemoteTransfer": true,
-    "enable": false,
-    "compress": true,
-    "filename": "/var/log/isp-gate-service/runtime.log",
-    "maxSizeMb": 512,
-    "bufferSize": 4096,
-    "rotateTimeoutMs": 86400000
-  },
   "metrics": {
     "gc": true,
     "memory": true,
@@ -26,18 +17,7 @@
   },
   "accountingSetting": {
     "enable": false,
-    "setting": [
-      {
-        "limits": [
-          {
-            "pattern": "/healthcheck/module/group/method",
-            "timeout": "1s",
-            "maxCount": 1000
-          }
-        ],
-        "applicationId": 1
-      }
-    ]
+    "setting": []
   },
   "redis": {
     "address": {
@@ -45,16 +25,14 @@
       "port": "6379"
     }
   },
-  "tokenVerification": {
-    "enable": false
+  "authCacheSetting": {
+    "evictTimeout": "1m",
+    "enableCash": false
   },
-  "authenticateSetting": {
-    "timeout": "1m",
-    "enableCash": true
-  },
-  "secretSetting": {
+  "secrets": {
     "admin": "secret",
-    "application": "secret"
+    "application": "SECRET_ACCESS_KEY",
+    "verifyAppToken": false
   },
   "journalSetting": {
     "journal": {
@@ -65,6 +43,7 @@
       "filename": "/var/log/isp-gate-service/runtime.log",
       "maxSizeMb": 512,
       "bufferSize": 4096
-    }
+    },
+    "methodsPatterns": []
   }
 }

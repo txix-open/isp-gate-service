@@ -20,20 +20,19 @@ const (
 
 type (
 	RemoteConfig struct {
-		TokenVerification   TokenVerification             `schema:"Настройка веритификации токенов"`
-		SecretSetting       SecretSetting                 `schema:"Настройка секретов"`
-		ServerSetting       ServerSetting                 `schema:"Настройка сервера"`
-		GrpcSetting         GrpcSetting                   `schema:"Настройка grpc соединения"`
-		Metrics             structure.MetricConfiguration `schema:"Настройка метрик"`
-		JournalSetting      Journal                       `schema:"Настройка журалирования"`
-		Redis               structure.RedisConfiguration  `schema:"Настройка Redis" valid:"required~Required"`
-		AccountingSetting   Accounting                    `schema:"Настройка учета запросов"`
-		AuthenticateSetting Authenticate                  `schema:"Настройка авторизации" valid:"required~Required"`
+		Secrets           SecretSetting                 `schema:"Настройка секретов"`
+		ServerSetting     HttpSetting                   `schema:"Настройка сервера"`
+		GrpcSetting       GrpcSetting                   `schema:"Настройка grpc соединения"`
+		Metrics           structure.MetricConfiguration `schema:"Настройка метрик"`
+		JournalSetting    Journal                       `schema:"Настройка журалирования"`
+		Redis             structure.RedisConfiguration  `schema:"Настройка Redis" valid:"required~Required"`
+		AccountingSetting Accounting                    `schema:"Настройка учета запросов"`
+		AuthCacheSetting  Cache                         `schema:"Настройка кеширования данных аутентификации приложений" valid:"required~Required"`
 	}
 
-	Authenticate struct {
-		EnableCash bool   `schema:"Включает сохранение информации о авторизации токена"`
-		Timeout    string `schema:"Время жизни информации в кеше"`
+	Cache struct {
+		EnableCash   bool   `schema:"Кеширование,включает кеширования для токена приложения"`
+		EvictTimeout string `schema:"Время жизни записи в кеше"`
 	}
 
 	Journal struct {
@@ -41,13 +40,10 @@ type (
 		MethodsPatterns []string  `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
 	}
 
-	TokenVerification struct {
-		Enable bool `schema:"Включает проверку application-токена"`
-	}
-
 	SecretSetting struct {
-		Admin       string `schema:"Секрет admin-токена"`
-		Application string `schema:"Секрет application-токена"`
+		Admin          string `schema:"Секрет для проверки токена администратора"`
+		Application    string `schema:"Секрет для проверки токена приложений"`
+		VerifyAppToken bool   `schema:"Проверка подписи токена приложений"`
 	}
 
 	Accounting struct {
@@ -56,7 +52,7 @@ type (
 	}
 
 	AccountingSetting struct {
-		ApplicationId int64          `valid:"required~Required" schema:"Идентификатор приложения"`
+		ApplicationId int32          `valid:"required~Required" schema:"Идентификатор приложения"`
 		Limits        []LimitSetting `schema:"Настройка ограничений на запросы"`
 	}
 
@@ -66,7 +62,7 @@ type (
 		Timeout  string `schema:"Время жизни одного запроса"`
 	}
 
-	ServerSetting struct {
+	HttpSetting struct {
 		MaxRequestBodySizeBytes int64 `schema:"Максимальный размер тела запроса,в байтайх, по умолчанию: 512 MB"`
 	}
 
@@ -100,7 +96,7 @@ func (cfg GrpcSetting) GetTransferFileBufferSize() int64 {
 	return cfg.MultipartDataTransferBufferSizeBytes
 }
 
-func (cfg ServerSetting) GetMaxRequestBodySize() int64 {
+func (cfg HttpSetting) GetMaxRequestBodySize() int64 {
 	if cfg.MaxRequestBodySizeBytes <= 0 {
 		return defaultMaxRequestBodySize
 	}

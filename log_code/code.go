@@ -8,15 +8,11 @@ const (
 	WarnHttpServerShutdown = 602
 	ErrorHttpServerListen  = 603
 
-	FatalLocalConfig = 610
-	ErrorClientGrpc  = 606
-	ErrorClientHttp  = 611
+	ErrorClientGrpc = 606
+	ErrorClientHttp = 611
 
 	ErrorClientJournal = 608
 	ErrorClientRedis   = 609
 
 	ErrorAuthenticate = 612
-
-	FatalConfigApproveSetting = 613
-	ErrorConfigAuth           = 614
 )

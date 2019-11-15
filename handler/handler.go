@@ -57,6 +57,13 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 func (handlerHelper) AuthenticateApproveProxy(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
 	path := string(ctx.Path())
 
+	p := proxy.Find(path)
+	if p == nil {
+		err := errors.Errorf("unknown path %s", path)
+		utils.WriteError(ctx, "not found", codes.NotFound, nil)
+		return domain.Create().SetError(err)
+	}
+
 	applicationId, err := authenticate.Do(ctx)
 	if err != nil {
 		status := codes.Unknown
@@ -70,20 +77,13 @@ func (handlerHelper) AuthenticateApproveProxy(ctx *fasthttp.RequestCtx) domain.P
 		return domain.Create().SetError(err)
 	}
 
-	if approver := accounting.GetAccounting(applicationId); approver != nil && !approver.TakeAccount(path) {
+	if approver := accounting.GetAccounting(applicationId); approver != nil && !approver.Check(path) {
 		err := errors.New("accounting error")
 		utils.WriteError(ctx, "forbidden", codes.ResourceExhausted, nil)
 		return domain.Create().SetError(err)
 	}
 
-	p := proxy.Find(path)
-	if p != nil {
-		return p.ProxyRequest(ctx)
-	} else {
-		err := errors.Errorf("unknown path %s", path)
-		utils.WriteError(ctx, "not found", codes.NotFound, nil)
-		return domain.Create().SetError(err)
-	}
+	return p.ProxyRequest(ctx)
 }
 
 func (handlerHelper) SetMetricStatus(statusCode int) string {
