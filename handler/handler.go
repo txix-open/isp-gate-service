@@ -39,7 +39,7 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	}
 
 	requestBody, responseBody, err := resp.Get()
-	if config.GetRemote().(*conf.RemoteConfig).Journal.Enable {
+	if config.GetRemote().(*conf.RemoteConfig).JournalSetting.Journal.Enable {
 		if matcher.JournalMethods.Match(uri) {
 			if err != nil {
 				if err := journal.Client.Error(uri, requestBody, responseBody, err); err != nil {
@@ -57,31 +57,33 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 func (handlerHelper) AuthenticateApproveProxy(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
 	path := string(ctx.Path())
 
-	applicationId, err := authenticate.Do(ctx)
-	if err != nil {
-		status := codes.Unknown
-		switch e := err.(type) {
-		case authenticate.ErrorDescription:
-			status = e.ConvertToGrpcStatus()
-		}
-		utils.WriteError(ctx, "unauthorized", status, nil)
-		return domain.Create().SetError(err)
-	}
-
-	if approver := accounting.GetAccounting(applicationId); approver != nil && !approver.TakeAccount(path) {
-		err := errors.New("accounting error")
-		utils.WriteError(ctx, "forbidden", codes.PermissionDenied, nil)
-		return domain.Create().SetError(err)
-	}
-
 	p := proxy.Find(path)
-	if p != nil {
-		return p.ProxyRequest(ctx)
-	} else {
+	if p == nil {
 		err := errors.Errorf("unknown path %s", path)
 		utils.WriteError(ctx, "not found", codes.NotFound, nil)
 		return domain.Create().SetError(err)
 	}
+
+	applicationId, err := authenticate.Do(ctx)
+	if err != nil {
+		status := codes.Unknown
+		details := make([]interface{}, 0)
+		switch e := err.(type) {
+		case authenticate.ErrorDescription:
+			status = e.ConvertToGrpcStatus()
+			details = e.Details()
+		}
+		utils.WriteError(ctx, "unauthorized", status, details)
+		return domain.Create().SetError(err)
+	}
+
+	if approver := accounting.GetAccounting(applicationId); approver != nil && !approver.Check(path) {
+		err := errors.New("accounting error")
+		utils.WriteError(ctx, "forbidden", codes.ResourceExhausted, nil)
+		return domain.Create().SetError(err)
+	}
+
+	return p.ProxyRequest(ctx)
 }
 
 func (handlerHelper) SetMetricStatus(statusCode int) string {

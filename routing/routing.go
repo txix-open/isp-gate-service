@@ -5,8 +5,8 @@ import (
 )
 
 var (
-	InnerAddressMap = make(map[string]bool)
-	AddressMap      = make(map[string]bool)
+	InnerMethods = make(map[string]bool)
+	AllMethods   = make(map[string]bool)
 )
 
 func InitRoutes(configs structure.RoutingConfig) {
@@ -23,6 +23,6 @@ func InitRoutes(configs structure.RoutingConfig) {
 			}
 		}
 	}
-	AddressMap = newAddressMap
-	InnerAddressMap = newInnerAddressMap
+	AllMethods = newAddressMap
+	InnerMethods = newInnerAddressMap
 }

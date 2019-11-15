@@ -1,75 +1,98 @@
 package authenticate
 
 import (
+	"github.com/integration-system/isp-lib/config"
 	"github.com/integration-system/isp-lib/utils"
 	log "github.com/integration-system/isp-log"
+	"github.com/integration-system/isp-log/stdcodes"
+	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
+	"isp-gate-service/conf"
 	"isp-gate-service/log_code"
 	"isp-gate-service/routing"
+	"isp-gate-service/service/veritification"
 	"strconv"
-	"strings"
+	"time"
 )
 
-var (
-	verifiableKeyHeaderKeyMap = map[string]string{
-		systemIdentity:      utils.SystemIdHeader,
-		domainIdentity:      utils.DomainIdHeader,
-		serviceIdentity:     utils.ServiceIdHeader,
-		applicationIdentity: utils.ApplicationIdHeader,
+var notExpectedHeaders = []string{
+	utils.SystemIdHeader, utils.DomainIdHeader, utils.ServiceIdHeader, utils.ApplicationIdHeader,
+}
+
+var auth = authenticate{}
+
+type authenticate struct {
+	verify veritification.Verify
+}
+
+func ReceiveConfiguration(conf conf.Cache) {
+	if conf.EnableCash {
+		if timeout, err := time.ParseDuration(conf.EvictTimeout); err != nil {
+			log.Fatalf(stdcodes.ModuleInvalidRemoteConfig, "invalid timeout '%s'", timeout)
+		} else {
+			auth.verify = veritification.NewCacheableVerify(timeout)
+		}
+	} else {
+		auth.verify = veritification.NewRuntimeVerify()
 	}
-)
+}
 
-func Do(ctx *fasthttp.RequestCtx) (int64, error) {
+func Do(ctx *fasthttp.RequestCtx) (int32, error) {
 	path := ctx.Path()
-	uri := strings.Replace(strings.ToLower(string(path)), "/", "", -1)
-	path = getPathWithoutPrefix(path)
+	pathStr := getPathWithoutPrefix(path)
 
-	if _, ok := routing.AddressMap[string(path)]; !ok {
+	if _, ok := routing.AllMethods[pathStr]; !ok {
 		return 0, createError(codes.Unimplemented)
 	}
 
-	for _, notExpectedHeader := range verifiableKeyHeaderKeyMap {
+	for _, notExpectedHeader := range notExpectedHeaders {
 		ctx.Request.Header.Del(notExpectedHeader)
 	}
 
 	appToken := ctx.Request.Header.Peek(utils.ApplicationTokenHeader)
+
+	var (
+		err   error
+		appId int32 = -1
+	)
 	if len(appToken) == 0 {
 		return 0, createError(codes.Unauthenticated)
+	} else if config.GetRemote().(*conf.RemoteConfig).Secrets.VerifyAppToken {
+		if appId, err = verifyToken.Application(string(appToken)); err != nil || appId == 0 {
+			return 0, createError(codes.Unauthenticated, "invalid token")
+		}
 	}
 
-	keys, err := verification.appToken(string(appToken))
+	verifiableKeys, err := auth.verify.ApplicationToken(string(appToken))
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, err)
 		return 0, createError(codes.Internal)
 	}
-	if len(keys) != 4 {
-		return 0, createError(codes.Unauthenticated)
+	if len(verifiableKeys) != 4 {
+		return 0, createError(codes.Unauthenticated, "unknown token")
 	}
 
-	verifiableKeys := make(map[string]string)
-	for i, value := range keys {
-		verifiableKeys[verifiableKeyHeaderKeyMap[i]] = value
+	applicationId, err := strconv.Atoi(verifiableKeys[utils.ApplicationIdHeader])
+	if err != nil {
+		log.Error(log_code.ErrorAuthenticate, errors.WithMessagef(err, "parse appId from redis"))
+		return 0, createError(codes.Internal)
+	}
+	if appId != -1 && int32(applicationId) != appId {
+		return 0, createError(codes.Unauthenticated, "unknown application identity")
 	}
 
 	verifiableKeys[utils.DeviceTokenHeader] = string(ctx.Request.Header.Peek(utils.DeviceTokenHeader))
 	verifiableKeys[utils.UserTokenHeader] = string(ctx.Request.Header.Peek(utils.UserTokenHeader))
 
-	verifiableKeys, err = verification.keys(verifiableKeys, uri)
+	permittedToCall := false
+	verifiableKeys, permittedToCall, err = auth.verify.Identity(verifiableKeys, pathStr)
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, err)
 		return 0, createError(codes.Internal)
 	}
-	if verifiableKeys[permittedToCallInfo] == "0" {
+	if permittedToCall {
 		return 0, createError(codes.PermissionDenied)
-	} else {
-		delete(verifiableKeys, permittedToCallInfo)
-	}
-
-	applicationId, err := strconv.Atoi(verifiableKeys[utils.ApplicationIdHeader])
-	if err != nil {
-		log.Error(log_code.ErrorAuthenticate, err)
-		return 0, createError(codes.Internal)
 	}
 
 	for key, value := range verifiableKeys {
@@ -78,26 +101,26 @@ func Do(ctx *fasthttp.RequestCtx) (int64, error) {
 		}
 	}
 
-	if _, ok := routing.InnerAddressMap[string(path)]; ok {
+	if _, ok := routing.InnerMethods[pathStr]; ok {
 		adminToken := ctx.Request.Header.Peek("x-auth-admin") //todo const key
-		if token.Check(string(adminToken)) != nil {
+		if verifyToken.Admin(string(adminToken)) != nil {
 			return 0, createError(codes.PermissionDenied)
 		}
 	}
 
-	return int64(applicationId), nil
+	return appId, nil
 }
 
-func getPathWithoutPrefix(path []byte) []byte {
+func getPathWithoutPrefix(path []byte) string {
 	firstFound := false
 	for i, value := range path {
 		if value == '/' {
 			if firstFound {
-				return path[i+1:]
+				return string(path[i+1:])
 			} else {
 				firstFound = true
 			}
 		}
 	}
-	return []byte{}
+	return ""
 }

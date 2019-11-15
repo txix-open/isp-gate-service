@@ -5,12 +5,13 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-func createError(status codes.Code) ErrorDescription {
-	return ErrorDescription{grpcStatus: status}
+func createError(status codes.Code, details ...interface{}) ErrorDescription {
+	return ErrorDescription{grpcStatus: status, details: details}
 }
 
 type ErrorDescription struct {
 	grpcStatus codes.Code
+	details    []interface{}
 }
 
 func (e ErrorDescription) Error() string {
@@ -19,4 +20,8 @@ func (e ErrorDescription) Error() string {
 
 func (e ErrorDescription) ConvertToGrpcStatus() codes.Code {
 	return e.grpcStatus
+}
+
+func (e ErrorDescription) Details() []interface{} {
+	return e.details
 }
