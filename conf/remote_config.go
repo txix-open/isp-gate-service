@@ -20,7 +20,8 @@ const (
 
 type (
 	RemoteConfig struct {
-		Secrets           SecretSetting                 `schema:"Настройка секретов"`
+		Database          structure.DBConfiguration     `schema:"Настройка подключения к базе данных"`
+		TokensSetting     TokensSetting                 `schema:"Настройка секретов"`
 		ServerSetting     HttpSetting                   `schema:"Настройка сервера"`
 		GrpcSetting       GrpcSetting                   `schema:"Настройка grpc соединения"`
 		Metrics           structure.MetricConfiguration `schema:"Настройка метрик"`
@@ -40,15 +41,16 @@ type (
 		MethodsPatterns []string  `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
 	}
 
-	SecretSetting struct {
-		Admin          string `schema:"Секрет для проверки токена администратора"`
-		Application    string `schema:"Секрет для проверки токена приложений"`
-		VerifyAppToken bool   `schema:"Проверка подписи токена приложений"`
+	TokensSetting struct {
+		AdminSecret       string `schema:"Секрет для проверки токена администратора"`
+		ApplicationSecret string `schema:"Секрет для проверки токена приложений"`
+		ApplicationVerify bool   `schema:"Проверка подписи токена приложений"`
 	}
 
 	Accounting struct {
-		Enable  bool                `schema:"Статус работы учета,включает/отключает учет запросов"`
-		Setting []AccountingSetting `schema:"Настройка учета для приложений"`
+		Enable          bool                `schema:"Статус работы учета,включает/отключает учет запросов"`
+		SnapshotTimeout string              `schema:"Время частоты выгрузки учтенных запросов" valid:"required~Required"`
+		Setting         []AccountingSetting `schema:"Настройка учета для приложений"`
 	}
 
 	AccountingSetting struct {

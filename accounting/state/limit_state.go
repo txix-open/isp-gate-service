@@ -7,6 +7,8 @@ import (
 
 type (
 	LimitState interface {
+		Import(interface{}) error
+		Export() interface{}
 		check() (bool, int, time.Time)
 		update(int, time.Time)
 	}

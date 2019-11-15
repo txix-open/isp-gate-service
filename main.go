@@ -13,6 +13,7 @@ import (
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
 	"isp-gate-service/journal"
+	"isp-gate-service/model"
 	"isp-gate-service/proxy"
 	"isp-gate-service/redis"
 	"isp-gate-service/routing"
@@ -59,6 +60,7 @@ func onLocalConfigLoad(cfg *conf.Configuration) {
 func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	localCfg := config.Get().(*conf.Configuration)
 
+	model.DbClient.ReceiveConfiguration(remoteConfig.Database)
 	journal.Client.ReceiveConfiguration(remoteConfig.JournalSetting.Journal, localCfg.ModuleName)
 	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalSetting.MethodsPatterns)
 
@@ -88,6 +90,7 @@ func socketConfiguration(cfg interface{}) structure.SocketConfiguration {
 
 func onShutdown(_ context.Context, _ os.Signal) {
 	server.Http.Close()
+	accounting.Close()
 	proxy.Close()
 	redis.Client.Close()
 }

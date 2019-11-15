@@ -3,13 +3,16 @@ package accounting
 import (
 	"github.com/stretchr/testify/assert"
 	"isp-gate-service/conf"
+	"isp-gate-service/entity"
+	"isp-gate-service/model"
 	"testing"
 	"time"
 )
 
 var (
 	approveSetting = conf.Accounting{
-		Enable: true,
+		Enable:          true,
+		SnapshotTimeout: "2s",
 		Setting: []conf.AccountingSetting{
 			{ApplicationId: 1, Limits: []conf.LimitSetting{
 				{Pattern: "mdm-master/group/method", MaxCount: 1, Timeout: "290ms"},
@@ -51,6 +54,7 @@ var (
 func TestApprove(t *testing.T) {
 	a := assert.New(t)
 	ReceiveConfiguration(approveSetting)
+	model.SnapshotRep = &snapshotRepository{cache: make(map[int32]map[string]interface{})}
 
 	expected := true
 	req := reqExample[0]
@@ -78,4 +82,33 @@ func TestApprove(t *testing.T) {
 	for _, path := range req.path {
 		a.Equal(expected, GetAccounting(req.appId).Check(path))
 	}
+}
+
+type snapshotRepository struct {
+	cache map[int32]map[string]interface{}
+}
+
+func (r *snapshotRepository) GetByApplication(appId int32) (*entity.Snapshot, error) {
+	return &entity.Snapshot{
+		AppId:      appId,
+		LimitState: r.cache[appId],
+	}, nil
+}
+
+func (r *snapshotRepository) Update(list []entity.Snapshot) error {
+	for _, s := range list {
+		r.cache[s.AppId] = s.LimitState
+	}
+	return nil
+}
+
+func (r *snapshotRepository) GetAll() ([]entity.Snapshot, error) {
+	resp := make([]entity.Snapshot, 0)
+	for appId, limitState := range r.cache {
+		resp = append(resp, entity.Snapshot{
+			AppId:      appId,
+			LimitState: limitState,
+		})
+	}
+	return resp, nil
 }

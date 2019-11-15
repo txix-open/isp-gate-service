@@ -58,7 +58,7 @@ func Do(ctx *fasthttp.RequestCtx) (int32, error) {
 	)
 	if len(appToken) == 0 {
 		return 0, createError(codes.Unauthenticated)
-	} else if config.GetRemote().(*conf.RemoteConfig).Secrets.VerifyAppToken {
+	} else if config.GetRemote().(*conf.RemoteConfig).TokensSetting.ApplicationVerify {
 		if appId, err = verifyToken.Application(string(appToken)); err != nil || appId == 0 {
 			return 0, createError(codes.Unauthenticated, "invalid token")
 		}

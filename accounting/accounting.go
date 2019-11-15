@@ -5,50 +5,62 @@ import (
 	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/accounting/state"
 	"isp-gate-service/conf"
+	"isp-gate-service/log_code"
+	"isp-gate-service/model"
 	"isp-gate-service/service/matcher"
 	"sync"
+	"time"
 )
 
-var accountingByApplicationId = make(map[int32]*accounting)
+var accountingByApplicationId = make(map[int32]Accounting)
 
-type accounting struct {
-	mx          sync.Mutex
-	matcher     matcher.Matcher
-	limitStates map[string]state.LimitState
+type Accounting interface {
+	Check(string) bool
+	getLimitState() map[string]state.LimitState
 }
 
 func ReceiveConfiguration(conf conf.Accounting) {
-	newAccountingByApplicationId := make(map[int32]*accounting)
+	snapshot.Stop()
+
+	newAccountingByApplicationId := make(map[int32]Accounting)
 	if conf.Enable {
 		for _, s := range conf.Setting {
-			limitState, patternArray, err := state.InitLimitState(s.Limits)
+			limitStates, patternArray, err := state.InitLimitState(s.Limits)
 			if err != nil {
 				log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
 			}
 
-			newAccountingByApplicationId[s.ApplicationId] = &accounting{
+			if snapshot, err := model.SnapshotRep.GetByApplication(s.ApplicationId); err != nil {
+				log.Warn(log_code.ErrorSnapshotAccounting, err)
+			} else if snapshot != nil {
+				for method, limitState := range limitStates {
+					if oldLimitState, ok := snapshot.LimitState[method]; ok {
+						if err := limitState.Import(oldLimitState); err != nil {
+							log.Warn(log_code.ErrorSnapshotAccounting, err)
+						}
+					}
+				}
+			}
+
+			newAccountingByApplicationId[s.ApplicationId] = &accountant{
 				matcher:     matcher.NewCacheableMatcher(patternArray),
-				limitStates: limitState,
+				limitStates: limitStates,
 				mx:          sync.Mutex{},
 			}
+		}
+		if snapshotTimeout, err := time.ParseDuration(conf.SnapshotTimeout); err != nil {
+			log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
+		} else {
+			go snapshot.Start(snapshotTimeout)
 		}
 	}
 	accountingByApplicationId = newAccountingByApplicationId
 }
 
-func GetAccounting(appId int32) *accounting {
-	return accountingByApplicationId[appId]
+func Close() {
+	snapshot.Stop()
 }
 
-func (app *accounting) Check(method string) bool {
-	patternArray := app.matcher.Match(method)
-	stateStorage := make([]state.LimitState, len(patternArray))
-	for i, pattern := range patternArray {
-		stateStorage[i] = app.limitStates[pattern]
-	}
-
-	app.mx.Lock()
-	resp := state.Update(stateStorage)
-	app.mx.Unlock()
-	return resp
+func GetAccounting(appId int32) Accounting {
+	return accountingByApplicationId[appId]
 }
