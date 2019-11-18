@@ -34,10 +34,8 @@ func ReceiveConfiguration(conf conf.Accounting) {
 				log.Warn(log_code.ErrorSnapshotAccounting, err)
 			} else if snapshot != nil {
 				for method, limitState := range limitStates {
-					if oldLimitState, ok := snapshot.LimitState[method]; ok {
-						if err := limitState.Import(oldLimitState); err != nil {
-							log.Warn(log_code.ErrorSnapshotAccounting, err)
-						}
+					if value, ok := snapshot.LimitState[method]; ok {
+						limitState.Import(value)
 					}
 				}
 			}

@@ -1,7 +1,6 @@
 package state
 
 import (
-	"github.com/pkg/errors"
 	"time"
 )
 
@@ -12,15 +11,22 @@ type limiter struct {
 	pointer  int
 }
 
-func (lim *limiter) Export() interface{} {
-	limitState := *lim
-	return limitState
+func (lim *limiter) Export() Snapshot {
+	ls := *lim
+	return Snapshot{
+		Timeout:  ls.timeout,
+		Datetime: ls.datetime,
+		Pattern:  ls.pattern,
+		Pointer:  ls.pointer,
+	}
 }
 
-func (lim *limiter) Import(data interface{}) error {
-	importLim, ok := data.(limiter)
-	if !ok {
-		return errors.New("invalid limit state")
+func (lim *limiter) Import(data Snapshot) {
+	importLim := limiter{
+		timeout:  data.Timeout,
+		datetime: data.Datetime,
+		pattern:  data.Pattern,
+		pointer:  data.Pointer,
 	}
 
 	lenImportDatetime := len(importLim.datetime)
@@ -55,7 +61,6 @@ func (lim *limiter) Import(data interface{}) error {
 			lim.datetime[i] = importLim.datetime[importLim.pointer]
 		}
 	}
-	return nil
 }
 
 func (lim *limiter) check() (bool, int, time.Time) {

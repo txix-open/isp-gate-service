@@ -2,6 +2,7 @@ package accounting
 
 import (
 	"github.com/stretchr/testify/assert"
+	"isp-gate-service/accounting/state"
 	"isp-gate-service/conf"
 	"isp-gate-service/entity"
 	"isp-gate-service/model"
@@ -10,15 +11,16 @@ import (
 )
 
 var (
-	approveSetting = conf.Accounting{
+	accountingSetting = conf.Accounting{
 		Enable:          true,
-		SnapshotTimeout: "2s",
+		SnapshotTimeout: "890ms",
 		Setting: []conf.AccountingSetting{
 			{ApplicationId: 1, Limits: []conf.LimitSetting{
 				{Pattern: "mdm-master/group/method", MaxCount: 1, Timeout: "290ms"},
 				{Pattern: "mdm-master/group3/method", MaxCount: 10, Timeout: "10s"},
 				{Pattern: "mdm-master/group3/*", MaxCount: 5, Timeout: "10s"},
 				{Pattern: "mdm-master/group4/method", MaxCount: 2, Timeout: "0s"},
+				{Pattern: "mdm-master/group5/method", MaxCount: 3, Timeout: "10s"},
 			}},
 			{ApplicationId: 2, Limits: []conf.LimitSetting{
 				{Pattern: "mdm-master/group/method", MaxCount: 0, Timeout: "10s"},
@@ -48,13 +50,16 @@ var (
 			"mdm-master/group4/method", "mdm-master/group4/method", "mdm-master/group4/method",
 			"mdm-master/group4/method", "mdm-master/group4/method", "mdm-master/group4/method",
 		}},
+		4: {appId: 1, path: []string{
+			"mdm-master/group5/method", "mdm-master/group5/method", "mdm-master/group5/method",
+		}},
 	}
 )
 
-func TestApprove(t *testing.T) {
+func TestAccounting(t *testing.T) {
 	a := assert.New(t)
-	ReceiveConfiguration(approveSetting)
-	model.SnapshotRep = &snapshotRepository{cache: make(map[int32]map[string]interface{})}
+	model.SnapshotRep = &snapshotRepository{cache: make(map[int32]map[string]state.Snapshot)}
+	ReceiveConfiguration(accountingSetting)
 
 	expected := true
 	req := reqExample[0]
@@ -82,17 +87,33 @@ func TestApprove(t *testing.T) {
 	for _, path := range req.path {
 		a.Equal(expected, GetAccounting(req.appId).Check(path))
 	}
+
+	req = reqExample[4]
+	for _, path := range req.path {
+		a.True(GetAccounting(req.appId).Check(path))
+	}
+
+	ReceiveConfiguration(accountingSetting)
+
+	for _, path := range req.path {
+		a.False(GetAccounting(req.appId).Check(path))
+	}
+
 }
 
 type snapshotRepository struct {
-	cache map[int32]map[string]interface{}
+	cache map[int32]map[string]state.Snapshot
 }
 
 func (r *snapshotRepository) GetByApplication(appId int32) (*entity.Snapshot, error) {
-	return &entity.Snapshot{
-		AppId:      appId,
-		LimitState: r.cache[appId],
-	}, nil
+	if limitState, ok := r.cache[appId]; ok {
+		return &entity.Snapshot{
+			AppId:      appId,
+			LimitState: limitState,
+		}, nil
+	} else {
+		return nil, nil
+	}
 }
 
 func (r *snapshotRepository) Update(list []entity.Snapshot) error {

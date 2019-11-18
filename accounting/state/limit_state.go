@@ -7,10 +7,17 @@ import (
 
 type (
 	LimitState interface {
-		Import(interface{}) error
-		Export() interface{}
+		Import(Snapshot)
+		Export() Snapshot
 		check() (bool, int, time.Time)
 		update(int, time.Time)
+	}
+
+	Snapshot struct {
+		Timeout  time.Duration
+		Datetime []time.Time
+		Pattern  string
+		Pointer  int
 	}
 
 	updateRequest struct {

@@ -28,7 +28,7 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	currentTime := time.Now()
 	uri := string(ctx.RequestURI())
 
-	resp := helper.AuthenticateApproveProxy(ctx)
+	resp := helper.AuthenticateAccountingProxy(ctx)
 
 	executionTime := time.Since(currentTime) / 1e6
 
@@ -54,7 +54,7 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func (handlerHelper) AuthenticateApproveProxy(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
+func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
 	path := string(ctx.Path())
 
 	p := proxy.Find(path)
@@ -77,7 +77,7 @@ func (handlerHelper) AuthenticateApproveProxy(ctx *fasthttp.RequestCtx) domain.P
 		return domain.Create().SetError(err)
 	}
 
-	if approver := accounting.GetAccounting(applicationId); approver != nil && !approver.Check(path) {
+	if account := accounting.GetAccounting(applicationId); account != nil && !account.Check(path) {
 		err := errors.New("accounting error")
 		utils.WriteError(ctx, "forbidden", codes.ResourceExhausted, nil)
 		return domain.Create().SetError(err)

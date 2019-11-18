@@ -30,10 +30,8 @@ func TestLimiter(t *testing.T) {
 	expectedFalse, _, _ := store7.check()
 	a.False(expectedFalse)
 
-	err := store12.Import(store7.Export())
-	a.NoError(err)
-	err = store5.Import(store10.Export())
-	a.NoError(err)
+	store12.Import(store7.Export())
+	store5.Import(store10.Export())
 
 	a.Equal(store5.datetime[0], store10.datetime[store10.pointer+1])
 	a.Equal(store12.datetime[0], store7.datetime[0])
