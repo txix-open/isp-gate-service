@@ -52,6 +52,6 @@ func (s *snapshotTask) Stop() {
 }
 
 func (s *snapshotTask) complete() error {
-	snapshotList := TakeSnapshot()
+	snapshotList := takeSnapshot()
 	return model.SnapshotRep.Update(snapshotList)
 }

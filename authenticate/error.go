@@ -5,7 +5,7 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-func createError(status codes.Code, details ...interface{}) ErrorDescription {
+func createError(status codes.Code, details ...interface{}) error {
 	return ErrorDescription{grpcStatus: status, details: details}
 }
 

@@ -19,4 +19,5 @@ const (
 
 	ErrorClientDatabase     = 615
 	ErrorSnapshotAccounting = 616
+	ErrorUnloadAccounting   = 617
 )

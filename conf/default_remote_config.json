@@ -29,7 +29,11 @@
           }
         ]
       }
-    ]
+    ],
+    "unload": {
+      "count": 1,
+      "timeout": "30m"
+    }
   },
   "journalSetting": {
     "journal": {

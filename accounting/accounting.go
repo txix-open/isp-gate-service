@@ -25,9 +25,14 @@ type Accounting interface {
 
 func ReceiveConfiguration(conf conf.Accounting) {
 	snapshot.Stop()
+	Unload.Stop()
 	newAccountingByApplicationId := make(map[int32]Accounting)
 
 	if conf.Enable {
+		if err := Unload.Init(conf.Unload); err != nil {
+			log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
+		}
+
 		for _, s := range conf.Setting {
 			limitStates, patternArray, err := state.InitLimitState(s.Limits)
 			if err != nil {
@@ -59,13 +64,14 @@ func ReceiveConfiguration(conf conf.Accounting) {
 
 func Close() {
 	snapshot.Stop()
+	Unload.Stop()
 }
 
 func GetAccounting(appId int32) Accounting {
 	return accountingStorage[appId]
 }
 
-func TakeSnapshot() []entity.Snapshot {
+func takeSnapshot() []entity.Snapshot {
 	response := make([]entity.Snapshot, 0)
 	for appId, account := range accountingStorage {
 		response = append(response, entity.Snapshot{

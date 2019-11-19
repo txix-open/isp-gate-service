@@ -51,6 +51,7 @@ type (
 		Enable          bool                `schema:"Статус работы учета,включает/отключает учет запросов"`
 		SnapshotTimeout string              `schema:"Время частоты выгрузки учтенных запросов" valid:"required~Required"`
 		Setting         []AccountingSetting `schema:"Настройка учета для приложений"`
+		Unload          UnloadSetting       `schema:"Настройка выгрзуки всех запросов"`
 	}
 
 	AccountingSetting struct {
@@ -62,6 +63,11 @@ type (
 		Pattern  string `valid:"required~Required" schema:"Шаблон пути,указывается путь для которого будут применяется ограничения; поддерживается '/*' для неполного совпадения"`
 		MaxCount int    `schema:"Количество запросов"`
 		Timeout  string `schema:"Время жизни одного запроса"`
+	}
+
+	UnloadSetting struct {
+		Count   int    `schema:"Ограничение по количеству для выгрузки" valid:"required~Range(1|1000000)"`
+		Timeout string `schema:"Ограничение по времени для выгрузки" valid:"required~Required"`
 	}
 
 	HttpSetting struct {

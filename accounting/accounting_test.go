@@ -26,6 +26,10 @@ var (
 				{Pattern: "mdm-master/group/method", MaxCount: 0, Timeout: "10s"},
 			}},
 		},
+		Unload: conf.UnloadSetting{
+			Count:   100,
+			Timeout: "1h",
+		},
 	}
 
 	reqExample = []struct {
