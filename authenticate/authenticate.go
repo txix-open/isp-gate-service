@@ -108,6 +108,10 @@ func Do(ctx *fasthttp.RequestCtx) (int32, error) {
 		}
 	}
 
+	//TODO backward capability for isp-config-service 1.x.x
+	uuid := config.Get().(*conf.Configuration).InstanceUuid
+	ctx.Request.Header.Set(utils.InstanceIdHeader, uuid)
+
 	return appId, nil
 }
 
