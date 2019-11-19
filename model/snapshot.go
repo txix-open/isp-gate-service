@@ -11,7 +11,6 @@ import (
 type (
 	SnapshotRepository interface {
 		GetByApplication(int32) (*entity.Snapshot, error)
-		GetAll() ([]entity.Snapshot, error)
 		Update([]entity.Snapshot) error
 	}
 
@@ -22,18 +21,8 @@ type (
 )
 
 func (r snapshotRepository) Update(list []entity.Snapshot) error {
-	_, _ = r.getDb().Model(&list).WherePK().Delete()
-	_, err := r.getDb().Model(&list).Insert()
+	_, err := r.getDb().Model(&list).OnConflict("(app_id) DO UPDATE").Insert()
 	return err
-}
-
-func (r snapshotRepository) GetAll() ([]entity.Snapshot, error) {
-	model := make([]entity.Snapshot, 0)
-	if err := r.getDb().Model(&model).Returning("*").Select(); err != nil {
-		return nil, err
-	} else {
-		return model, nil
-	}
 }
 
 func (r snapshotRepository) GetByApplication(appId int32) (*entity.Snapshot, error) {

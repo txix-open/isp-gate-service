@@ -21,44 +21,45 @@ func (lim *limiter) Export() Snapshot {
 	}
 }
 
-func (lim *limiter) Import(data Snapshot) {
-	importLim := limiter{
-		timeout:  data.Timeout,
-		datetime: data.Datetime,
-		pattern:  data.Pattern,
-		pointer:  data.Pointer,
+func (lim *limiter) Import(oldState Snapshot) {
+	oldLim := limiter{
+		timeout:  oldState.Timeout,
+		datetime: oldState.Datetime,
+		pattern:  oldState.Pattern,
+		pointer:  oldState.Pointer,
 	}
 
-	lenImportDatetime := len(importLim.datetime)
-	lenDatetime := len(lim.datetime)
-	switch true {
-	case lenImportDatetime == lenDatetime:
-		lim.datetime = importLim.datetime
-		lim.pointer = importLim.pointer
+	lenOldDatetime := len(oldLim.datetime)
+	lenNewDatetime := len(lim.datetime)
 
-	case lenImportDatetime < lenDatetime:
-		oldPointer := importLim.pointer
+	switch true {
+	case lenOldDatetime == lenNewDatetime:
+		lim.datetime = oldLim.datetime
+		lim.pointer = oldLim.pointer
+
+	case lenOldDatetime < lenNewDatetime:
+		oldPointer := oldLim.pointer
 		for i := range lim.datetime {
-			importLim.pointer++
-			if importLim.pointer >= len(importLim.datetime) {
-				importLim.pointer = 0
+			oldLim.pointer++
+			if oldLim.pointer >= len(oldLim.datetime) {
+				oldLim.pointer = 0
 			}
 
-			lim.datetime[i] = importLim.datetime[importLim.pointer]
+			lim.datetime[i] = oldLim.datetime[oldLim.pointer]
 
-			if oldPointer == importLim.pointer {
+			if oldPointer == oldLim.pointer {
 				lim.pointer = i
 				break
 			}
 		}
 
-	case lenImportDatetime > lenDatetime:
+	case lenOldDatetime > lenNewDatetime:
 		for i := range lim.datetime {
-			importLim.pointer++
-			if importLim.pointer >= len(importLim.datetime) {
-				importLim.pointer = 0
+			oldLim.pointer++
+			if oldLim.pointer >= len(oldLim.datetime) {
+				oldLim.pointer = 0
 			}
-			lim.datetime[i] = importLim.datetime[importLim.pointer]
+			lim.datetime[i] = oldLim.datetime[oldLim.pointer]
 		}
 	}
 }

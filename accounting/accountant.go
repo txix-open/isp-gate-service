@@ -12,7 +12,7 @@ type accountant struct {
 	limitStates map[string]state.LimitState
 }
 
-func (app *accountant) Check(method string) bool {
+func (app *accountant) Accept(method string) bool {
 	patternArray := app.matcher.Match(method)
 	stateStorage := make([]state.LimitState, len(patternArray))
 	for i, pattern := range patternArray {
@@ -25,7 +25,12 @@ func (app *accountant) Check(method string) bool {
 	return resp
 }
 
-func (app *accountant) getLimitState() map[string]state.LimitState {
-	limitStates := app.limitStates
-	return limitStates
+func (app *accountant) Snapshot() map[string]state.Snapshot {
+	app.mx.Lock()
+	snapshotLimitState := make(map[string]state.Snapshot)
+	for method, limitState := range app.limitStates {
+		snapshotLimitState[method] = limitState.Export()
+	}
+	app.mx.Unlock()
+	return snapshotLimitState
 }

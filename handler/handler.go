@@ -77,7 +77,7 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domai
 		return domain.Create().SetError(err)
 	}
 
-	if account := accounting.GetAccounting(applicationId); account != nil && !account.Check(path) {
+	if account := accounting.GetAccounting(applicationId); account != nil && !account.Accept(path) {
 		err := errors.New("accounting error")
 		utils.WriteError(ctx, "forbidden", codes.ResourceExhausted, nil)
 		return domain.Create().SetError(err)

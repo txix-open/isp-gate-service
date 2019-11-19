@@ -61,10 +61,15 @@ func TestAccounting(t *testing.T) {
 	model.SnapshotRep = &snapshotRepository{cache: make(map[int32]map[string]state.Snapshot)}
 	ReceiveConfiguration(accountingSetting)
 
-	expected := true
-	req := reqExample[0]
+	req := reqExample[4]
 	for _, path := range req.path {
-		a.Equal(expected, GetAccounting(req.appId).Check(path))
+		a.True(GetAccounting(req.appId).Accept(path))
+	}
+
+	expected := true
+	req = reqExample[0]
+	for _, path := range req.path {
+		a.Equal(expected, GetAccounting(req.appId).Accept(path))
 		expected = !expected
 		time.Sleep(150 * time.Millisecond)
 	}
@@ -72,31 +77,27 @@ func TestAccounting(t *testing.T) {
 	//expected == true
 	req = reqExample[1]
 	for _, path := range req.path {
-		a.Equal(expected, GetAccounting(req.appId).Check(path))
+		a.Equal(expected, GetAccounting(req.appId).Accept(path))
 		expected = !expected
 	}
 
 	req = reqExample[2]
 	expectedArray := []bool{true, true, true, true, true, false}
 	for key, path := range req.path {
-		a.Equal(expectedArray[key], GetAccounting(req.appId).Check(path))
+		a.Equal(expectedArray[key], GetAccounting(req.appId).Accept(path))
 	}
 
 	//expected == true
 	req = reqExample[3]
 	for _, path := range req.path {
-		a.Equal(expected, GetAccounting(req.appId).Check(path))
-	}
-
-	req = reqExample[4]
-	for _, path := range req.path {
-		a.True(GetAccounting(req.appId).Check(path))
+		a.Equal(expected, GetAccounting(req.appId).Accept(path))
 	}
 
 	ReceiveConfiguration(accountingSetting)
 
+	req = reqExample[4]
 	for _, path := range req.path {
-		a.False(GetAccounting(req.appId).Check(path))
+		a.False(GetAccounting(req.appId).Accept(path))
 	}
 
 }
@@ -121,15 +122,4 @@ func (r *snapshotRepository) Update(list []entity.Snapshot) error {
 		r.cache[s.AppId] = s.LimitState
 	}
 	return nil
-}
-
-func (r *snapshotRepository) GetAll() ([]entity.Snapshot, error) {
-	resp := make([]entity.Snapshot, 0)
-	for appId, limitState := range r.cache {
-		resp = append(resp, entity.Snapshot{
-			AppId:      appId,
-			LimitState: limitState,
-		})
-	}
-	return resp, nil
 }
