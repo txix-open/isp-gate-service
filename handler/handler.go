@@ -77,12 +77,11 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domai
 		return domain.Create().SetError(err)
 	}
 
-	if account := accounting.GetAccounting(applicationId); account != nil && !account.Accept(path) {
+	if !accounting.Accept(applicationId, path) {
 		err := errors.New("accounting error")
-		utils.WriteError(ctx, "forbidden", codes.ResourceExhausted, nil)
+		utils.WriteError(ctx, "too many requests", codes.ResourceExhausted, nil)
 		return domain.Create().SetError(err)
 	}
-	go accounting.Unload.TakeRequest(applicationId, path, time.Now())
 	return p.ProxyRequest(ctx)
 }
 

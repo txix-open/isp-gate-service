@@ -51,11 +51,12 @@ type (
 		Enable          bool                `schema:"Статус работы учета,включает/отключает учет запросов"`
 		SnapshotTimeout string              `schema:"Время частоты выгрузки учтенных запросов" valid:"required~Required"`
 		Setting         []AccountingSetting `schema:"Настройка учета для приложений"`
-		Unload          UnloadSetting       `schema:"Настройка выгрзуки всех запросов"`
+		Unload          UnloadSetting       `schema:"Настройка общей выгрзуки запросов"`
 	}
 
 	AccountingSetting struct {
 		ApplicationId int32          `valid:"required~Required" schema:"Идентификатор приложения"`
+		EnableUnload  bool           `schema:"Включает в общую выгрузку запросы для этого приложения"`
 		Limits        []LimitSetting `schema:"Настройка ограничений на запросы"`
 	}
 

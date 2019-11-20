@@ -13,10 +13,10 @@ import (
 var (
 	accountingSetting = conf.Accounting{
 		Enable:          true,
-		SnapshotTimeout: "890ms",
+		SnapshotTimeout: "290ms",
 		Setting: []conf.AccountingSetting{
 			{ApplicationId: 1, Limits: []conf.LimitSetting{
-				{Pattern: "mdm-master/group/method", MaxCount: 1, Timeout: "290ms"},
+				{Pattern: "mdm-master/group/method", MaxCount: 1, Timeout: "90ms"},
 				{Pattern: "mdm-master/group3/method", MaxCount: 10, Timeout: "10s"},
 				{Pattern: "mdm-master/group3/*", MaxCount: 5, Timeout: "10s"},
 				{Pattern: "mdm-master/group4/method", MaxCount: 2, Timeout: "0s"},
@@ -67,41 +67,41 @@ func TestAccounting(t *testing.T) {
 
 	req := reqExample[4]
 	for _, path := range req.path {
-		a.True(GetAccounting(req.appId).Accept(path))
+		a.True(Accept(req.appId, path))
 	}
 
 	expected := true
 	req = reqExample[0]
 	for _, path := range req.path {
-		a.Equal(expected, GetAccounting(req.appId).Accept(path))
+		a.Equal(expected, Accept(req.appId, path))
 		expected = !expected
-		time.Sleep(150 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	//expected == true
 	req = reqExample[1]
 	for _, path := range req.path {
-		a.Equal(expected, GetAccounting(req.appId).Accept(path))
+		a.Equal(expected, Accept(req.appId, path))
 		expected = !expected
 	}
 
 	req = reqExample[2]
 	expectedArray := []bool{true, true, true, true, true, false}
 	for key, path := range req.path {
-		a.Equal(expectedArray[key], GetAccounting(req.appId).Accept(path))
+		a.Equal(expectedArray[key], Accept(req.appId, path))
 	}
 
 	//expected == true
 	req = reqExample[3]
 	for _, path := range req.path {
-		a.Equal(expected, GetAccounting(req.appId).Accept(path))
+		a.Equal(expected, Accept(req.appId, path))
 	}
 
 	ReceiveConfiguration(accountingSetting)
 
 	req = reqExample[4]
 	for _, path := range req.path {
-		a.False(GetAccounting(req.appId).Accept(path))
+		a.False(Accept(req.appId, path))
 	}
 
 }
