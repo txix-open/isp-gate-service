@@ -8,21 +8,19 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-const (
-	JsonContentType = "application/json; charset=utf-8"
-)
+const JsonContentType = "application/json; charset=utf-8"
 
-func SendError(errorMessage string, errorCode codes.Code, details []interface{}, ctx *fasthttp.RequestCtx) {
-	grpcCode := errorCode.String()
+func WriteError(ctx *fasthttp.RequestCtx, message string, code codes.Code, details []interface{}) {
+	grpcCode := code.String()
 
 	structureError := structure.GrpcError{
-		ErrorMessage: errorMessage,
+		ErrorMessage: message,
 		ErrorCode:    grpcCode,
 		Details:      details,
 	}
 
 	ctx.SetContentType(JsonContentType)
-	ctx.SetStatusCode(http.CodeToHttpStatus(errorCode))
+	ctx.SetStatusCode(http.CodeToHttpStatus(code))
 	msg, _ := json.Marshal(structureError)
 	_, _ = ctx.Write(msg)
 }

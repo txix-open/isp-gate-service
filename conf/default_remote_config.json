@@ -1,30 +1,49 @@
 {
-  "enableOriginalProtoErrors": false,
-  "proxyGrpcErrorDetails": false,
   "metrics": {
-    "address": {
-      "ip": "0.0.0.0",
-      "path": "/metrics",
-      "port": "9553"
-    },
     "gc": true,
-    "memory": true
+    "memory": true,
+    "address": {
+      "path": "/metrics",
+      "port": "9553",
+      "ip": "0.0.0.0"
+    }
   },
-  "journal": {
-    "enableRemoteTransfer": true,
+  "grpcSetting": {
+    "enableOriginalProtoErrors": false,
+    "proxyGrpcErrorDetails": false
+  },
+  "httpSetting": {
+    "maxRequestBodySizeBytes": 0
+  },
+  "accountingSetting": {
     "enable": false,
-    "compress": true,
-    "filename": "/var/log/isp-gate-service/runtime.log",
-    "maxSizeMb": 512,
-    "bufferSize": 4096,
-    "rotateTimeoutMs": 86400000
+    "setting": []
   },
   "redis": {
-    "password": "password",
-    "defaultDB": 0,
     "address": {
       "ip": "127.0.0.1",
       "port": "6379"
     }
+  },
+  "authCacheSetting": {
+    "evictTimeout": "1m",
+    "enableCash": false
+  },
+  "secrets": {
+    "admin": "secret",
+    "application": "SECRET_ACCESS_KEY",
+    "verifyAppToken": false
+  },
+  "journalSetting": {
+    "journal": {
+      "rotateTimeoutMs": 86400000,
+      "enableRemoteTransfer": true,
+      "enable": false,
+      "compress": true,
+      "filename": "/var/log/isp-gate-service/runtime.log",
+      "maxSizeMb": 512,
+      "bufferSize": 4096
+    },
+    "methodsPatterns": []
   }
 }

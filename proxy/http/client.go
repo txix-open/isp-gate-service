@@ -1,10 +1,12 @@
 package http
 
 import (
+	"errors"
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
+	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
 	"isp-gate-service/utils"
 	"net"
@@ -31,12 +33,15 @@ func (p *httpProxy) Consumer(addressList []structure.AddressConfiguration) bool 
 	return true
 }
 
-func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
+func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
 	if p.client == nil {
 		msg := "client undefined"
 		log.Error(log_code.ErrorClientHttp, msg)
-		utils.SendError(msg, codes.Internal, nil, ctx)
-		return
+		utils.WriteError(ctx, msg, codes.Internal, nil)
+		return domain.Create().
+			SetRequestBody(ctx.Request.Body()).
+			SetResponseBody(ctx.Response.Body()).
+			SetError(errors.New(msg))
 	}
 
 	req := &ctx.Request
@@ -46,10 +51,14 @@ func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) {
 		req.Header.Add("X-Forwarded-For", addr)
 	}
 
-	if err := p.client.Do(req, res); err != nil {
+	err := p.client.Do(req, res)
+	if err != nil {
 		log.Error(log_code.ErrorClientHttp, err)
-		return
 	}
+	return domain.Create().
+		SetRequestBody(ctx.Request.Body()).
+		SetResponseBody(ctx.Response.Body()).
+		SetError(err)
 }
 
 func (p *httpProxy) Close() {

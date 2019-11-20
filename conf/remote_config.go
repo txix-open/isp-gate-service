@@ -20,16 +20,49 @@ const (
 
 type (
 	RemoteConfig struct {
-		SecretKey                 string
-		ServerSetting             ServerSetting
-		GrpcSetting               GrpcSetting
-		Metrics                   structure.MetricConfiguration `schema:"Настройка метрик"`
-		Journal                   rx.Config                     `schema:"Настройка логирования"`
-		JournalingMethodsPatterns []string                      `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
-		Redis                     structure.RedisConfiguration  `schema:"Настрока Redis" valid:"required~Required"`
+		Secrets           SecretSetting                 `schema:"Настройка секретов"`
+		ServerSetting     HttpSetting                   `schema:"Настройка сервера"`
+		GrpcSetting       GrpcSetting                   `schema:"Настройка grpc соединения"`
+		Metrics           structure.MetricConfiguration `schema:"Настройка метрик"`
+		JournalSetting    Journal                       `schema:"Настройка журалирования"`
+		Redis             structure.RedisConfiguration  `schema:"Настройка Redis" valid:"required~Required"`
+		AccountingSetting Accounting                    `schema:"Настройка учета запросов"`
+		AuthCacheSetting  Cache                         `schema:"Настройка кеширования данных аутентификации приложений" valid:"required~Required"`
 	}
 
-	ServerSetting struct {
+	Cache struct {
+		EnableCash   bool   `schema:"Кеширование,включает кеширования для токена приложения"`
+		EvictTimeout string `schema:"Время жизни записи в кеше"`
+	}
+
+	Journal struct {
+		Journal         rx.Config `schema:"Настройка конфигурации"`
+		MethodsPatterns []string  `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
+	}
+
+	SecretSetting struct {
+		Admin          string `schema:"Секрет для проверки токена администратора"`
+		Application    string `schema:"Секрет для проверки токена приложений"`
+		VerifyAppToken bool   `schema:"Проверка подписи токена приложений"`
+	}
+
+	Accounting struct {
+		Enable  bool                `schema:"Статус работы учета,включает/отключает учет запросов"`
+		Setting []AccountingSetting `schema:"Настройка учета для приложений"`
+	}
+
+	AccountingSetting struct {
+		ApplicationId int32          `valid:"required~Required" schema:"Идентификатор приложения"`
+		Limits        []LimitSetting `schema:"Настройка ограничений на запросы"`
+	}
+
+	LimitSetting struct {
+		Pattern  string `valid:"required~Required" schema:"Шаблон пути,указывается путь для которого будут применяется ограничения; поддерживается '/*' для неполного совпадения"`
+		MaxCount int    `schema:"Количество запросов"`
+		Timeout  string `schema:"Время жизни одного запроса"`
+	}
+
+	HttpSetting struct {
 		MaxRequestBodySizeBytes int64 `schema:"Максимальный размер тела запроса,в байтайх, по умолчанию: 512 MB"`
 	}
 
@@ -63,9 +96,9 @@ func (cfg GrpcSetting) GetTransferFileBufferSize() int64 {
 	return cfg.MultipartDataTransferBufferSizeBytes
 }
 
-/*func (cfg GrpcSetting) GetMaxRequestBodySize() int64 {
+func (cfg HttpSetting) GetMaxRequestBodySize() int64 {
 	if cfg.MaxRequestBodySizeBytes <= 0 {
 		return defaultMaxRequestBodySize
 	}
 	return cfg.MaxRequestBodySizeBytes
-}*/
+}

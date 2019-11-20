@@ -18,8 +18,9 @@ import (
 	"google.golang.org/grpc/status"
 	"io"
 	"isp-gate-service/conf"
+	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
-	u "isp-gate-service/utils"
+	utils2 "isp-gate-service/utils"
 	"net/http"
 	"strings"
 	"time"
@@ -36,7 +37,8 @@ const (
 )
 
 var (
-	json = jsoniter.ConfigFastest
+	json      = jsoniter.ConfigFastest
+	emptyBody = make([]byte, 0)
 )
 
 func convertError(err error) ([]byte, int) {
@@ -137,14 +139,22 @@ func makeMetadata(r *fasthttp.RequestHeader, method string) (metadata.MD, string
 	return md, method
 }
 
-func checkError(err error, ctx *fasthttp.RequestCtx) (bool, bool) {
+func checkError(err error, ctx *fasthttp.RequestCtx) (bool, bool, domain.ProxyResponse) {
+	var (
+		ok   = true
+		eof  = false
+		resp = domain.ProxyResponse{}
+	)
+
 	if err != nil {
 		if err != io.EOF {
 			logHandlerError(log_code.TypeData.GetFile, "", err)
-			u.SendError(errorMsgInternal, codes.Internal, []interface{}{err.Error()}, ctx)
-			return false, false
+			utils2.WriteError(ctx, errorMsgInternal, codes.Internal, nil)
+			resp = domain.Create().SetError(err)
+			ok, eof = false, false
+		} else {
+			ok, eof = true, true
 		}
-		return true, true
 	}
-	return true, false
+	return ok, eof, resp
 }
