@@ -43,7 +43,7 @@ func Do(ctx *fasthttp.RequestCtx) (int32, error) {
 	pathStr := getPathWithoutPrefix(path)
 
 	if _, ok := routing.AllMethods[pathStr]; !ok {
-		return 0, createError(codes.Unimplemented)
+		return 0, createError("not implemented", codes.Unimplemented)
 	}
 
 	for _, notExpectedHeader := range notExpectedHeaders {
@@ -57,29 +57,29 @@ func Do(ctx *fasthttp.RequestCtx) (int32, error) {
 		appId int32 = -1
 	)
 	if len(appToken) == 0 {
-		return 0, createError(codes.Unauthenticated)
+		return 0, createError("unauthorized", codes.Unauthenticated)
 	} else if config.GetRemote().(*conf.RemoteConfig).TokensSetting.ApplicationVerify {
 		if appId, err = verifyToken.Application(string(appToken)); err != nil || appId == 0 {
-			return 0, createError(codes.Unauthenticated, "invalid token")
+			return 0, createError("unauthorized", codes.Unauthenticated, "invalid token")
 		}
 	}
 
 	verifiableKeys, err := auth.verify.ApplicationToken(string(appToken))
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, err)
-		return 0, createError(codes.Internal)
+		return 0, createError("internal Server error", codes.Internal)
 	}
 	if len(verifiableKeys) != 4 {
-		return 0, createError(codes.Unauthenticated, "unknown token")
+		return 0, createError("unauthorized", codes.Unauthenticated, "unknown token")
 	}
 
 	applicationId, err := strconv.Atoi(verifiableKeys[utils.ApplicationIdHeader])
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, errors.WithMessagef(err, "parse appId from redis"))
-		return 0, createError(codes.Internal)
+		return 0, createError("internal Server error", codes.Internal)
 	}
 	if appId != -1 && int32(applicationId) != appId {
-		return 0, createError(codes.Unauthenticated, "unknown application identity")
+		return 0, createError("unauthorized", codes.Unauthenticated, "unknown application identity")
 	}
 
 	verifiableKeys[utils.DeviceTokenHeader] = string(ctx.Request.Header.Peek(utils.DeviceTokenHeader))
@@ -89,10 +89,10 @@ func Do(ctx *fasthttp.RequestCtx) (int32, error) {
 	verifiableKeys, permittedToCall, err = auth.verify.Identity(verifiableKeys, pathStr)
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, err)
-		return 0, createError(codes.Internal)
+		return 0, createError("internal Server error", codes.Internal)
 	}
 	if permittedToCall {
-		return 0, createError(codes.PermissionDenied)
+		return 0, createError("forbidden", codes.PermissionDenied)
 	}
 
 	for key, value := range verifiableKeys {
@@ -104,7 +104,7 @@ func Do(ctx *fasthttp.RequestCtx) (int32, error) {
 	if _, ok := routing.InnerMethods[pathStr]; ok {
 		adminToken := ctx.Request.Header.Peek("x-auth-admin") //todo const key
 		if verifyToken.Admin(string(adminToken)) != nil {
-			return 0, createError(codes.PermissionDenied)
+			return 0, createError("forbidden", codes.PermissionDenied)
 		}
 	}
 

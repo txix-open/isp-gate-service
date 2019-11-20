@@ -66,14 +66,16 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domai
 
 	applicationId, err := authenticate.Do(ctx)
 	if err != nil {
+		message := "unknown error"
 		status := codes.Unknown
 		details := make([]interface{}, 0)
 		switch e := err.(type) {
 		case authenticate.ErrorDescription:
+			message = e.Message()
 			status = e.ConvertToGrpcStatus()
 			details = e.Details()
 		}
-		utils.WriteError(ctx, "unauthorized", status, details)
+		utils.WriteError(ctx, message, status, details)
 		return domain.Create().SetError(err)
 	}
 
