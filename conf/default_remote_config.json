@@ -21,6 +21,7 @@
     "setting": [
       {
         "applicationId": 0,
+        "enableUnload": false,
         "limits": [
           {
             "timeout": "1s",
