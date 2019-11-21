@@ -26,8 +26,8 @@ var (
 				{Pattern: "mdm-master/group/method", MaxCount: 0, Timeout: "10s"},
 			}},
 		},
-		Unload: conf.UnloadSetting{
-			Count:   100,
+		Storing: conf.StoringSetting{
+			Size:    100,
 			Timeout: "1h",
 		},
 	}

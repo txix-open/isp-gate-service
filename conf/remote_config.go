@@ -48,15 +48,15 @@ type (
 	}
 
 	Accounting struct {
-		Enable          bool                `schema:"Статус работы учета,включает/отключает учет запросов"`
-		SnapshotTimeout string              `schema:"Время частоты выгрузки учтенных запросов" valid:"required~Required"`
+		Enable          bool                `schema:"Учет запросов,включает/отключает учет запросов"`
+		SnapshotTimeout string              `schema:"Частота выгрузки данных учета в БД" valid:"required~Required"`
 		Setting         []AccountingSetting `schema:"Настройка учета для приложений"`
-		Unload          UnloadSetting       `schema:"Настройка общей выгрзуки запросов"`
+		Storing         StoringSetting      `schema:"Настройка хранения запросов"`
 	}
 
 	AccountingSetting struct {
 		ApplicationId int32          `valid:"required~Required" schema:"Идентификатор приложения"`
-		EnableUnload  bool           `schema:"Включает в общую выгрузку запросы для этого приложения"`
+		EnableStoring bool           `schema:"Хранение запросов,если включено, каждый факт обработки запроса будет фиксироваться в БД"`
 		Limits        []LimitSetting `schema:"Настройка ограничений на запросы"`
 	}
 
@@ -66,9 +66,9 @@ type (
 		Timeout  string `schema:"Время жизни одного запроса"`
 	}
 
-	UnloadSetting struct {
-		Count   int    `schema:"Ограничение по количеству для выгрузки" valid:"required~Range(1|1000000)"`
-		Timeout string `schema:"Ограничение по времени для выгрузки" valid:"required~Required"`
+	StoringSetting struct {
+		Size    int    `schema:"Размер буфера,размер буфера,при достижении которого данные сбрасываются в БД" valid:"required,range(1|1000000)"`
+		Timeout string `schema:"Частота сброса,периодичность сброса данных в БД" valid:"required~Required"`
 	}
 
 	HttpSetting struct {

@@ -16,7 +16,7 @@ import (
 var (
 	accountingWorking = false
 	accountingStorage = make(map[int32]Accounting)
-	unloadingStorage  = make(map[int32]bool)
+	requestsStoring   = make(map[int32]bool)
 )
 
 type Accounting interface {
@@ -27,15 +27,15 @@ type Accounting interface {
 func ReceiveConfiguration(conf conf.Accounting) {
 	Close()
 	newAccountingStorage := make(map[int32]Accounting)
-	newUnloadingStorage := make(map[int32]bool)
+	newRequestsStoring := make(map[int32]bool)
 
 	if conf.Enable {
-		if err := unload.Init(conf.Unload); err != nil {
+		if err := storage.Init(conf.Storing); err != nil {
 			log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
 		}
 
 		for _, s := range conf.Setting {
-			newUnloadingStorage[s.ApplicationId] = s.EnableUnload
+			newRequestsStoring[s.ApplicationId] = s.EnableStoring
 
 			limitStates, patternArray, err := state.InitLimitState(s.Limits)
 			if err != nil {
@@ -62,29 +62,32 @@ func ReceiveConfiguration(conf conf.Accounting) {
 		accountingWorking = false
 	}
 
-	unloadingStorage = newUnloadingStorage
+	requestsStoring = newRequestsStoring
 	accountingStorage = newAccountingStorage
 }
 
 func Accept(appId int32, path string) bool {
-	if unloadingStorage[appId] {
-		unload.TakeRequest(appId, path, time.Now())
-	}
-
 	if accouter, ok := accountingStorage[appId]; !ok {
+		if requestsStoring[appId] {
+			storage.TakeRequest(appId, path, time.Now())
+		}
 		return true
 	} else {
-		return accouter.Accept(path)
+		ok := accouter.Accept(path)
+		if ok && requestsStoring[appId] {
+			storage.TakeRequest(appId, path, time.Now())
+		}
+		return ok
 	}
 }
 
 func Close() {
 	snapshot.Stop()
-	unload.Stop()
+	storage.Stop()
 }
 
 func takeSnapshot() []entity.Snapshot {
-	response := make([]entity.Snapshot, 0)
+	response := make([]entity.Snapshot, 0, len(accountingStorage))
 	for appId, account := range accountingStorage {
 		response = append(response, entity.Snapshot{
 			AppId:      appId,

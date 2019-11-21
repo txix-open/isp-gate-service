@@ -7,22 +7,22 @@ import (
 )
 
 type (
-	UnloadRepository interface {
-		Insert([]entity.Unload) error
+	RequestsRepository interface {
+		Insert([]entity.Request) error
 	}
 
-	unloadRepository struct {
+	requestsRepository struct {
 		DB       orm.DB
 		rxClient *database.RxDbClient
 	}
 )
 
-func (r unloadRepository) Insert(model []entity.Unload) error {
+func (r requestsRepository) Insert(model []entity.Request) error {
 	_, err := r.getDb().Model(&model).Insert()
 	return err
 }
 
-func (r unloadRepository) getDb() orm.DB {
+func (r requestsRepository) getDb() orm.DB {
 	if r.DB != nil {
 		return r.DB
 	}

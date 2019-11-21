@@ -27,7 +27,7 @@ func (app *accountant) Accept(method string) bool {
 
 func (app *accountant) Snapshot() map[string]state.Snapshot {
 	app.mx.Lock()
-	snapshotLimitState := make(map[string]state.Snapshot)
+	snapshotLimitState := make(map[string]state.Snapshot, len(app.limitStates))
 	for method, limitState := range app.limitStates {
 		snapshotLimitState[method] = limitState.Export()
 	}

@@ -6,13 +6,13 @@ import (
 )
 
 type Snapshot struct {
-	TableName  string `sql:"gate_service.snapshot" json:"-"`
+	TableName  string `sql:"?db_schema.snapshot" json:"-"`
 	AppId      int32  `sql:",pk"`
 	LimitState map[string]state.Snapshot
 }
 
-type Unload struct {
-	TableName string `sql:"gate_service.unload" json:"-"`
+type Request struct {
+	TableName string `sql:"?db_schema.requests" json:"-"`
 	Id        int    `sql:",pk"`
 	AppId     int32
 	Method    string

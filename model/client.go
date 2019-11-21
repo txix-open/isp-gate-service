@@ -16,5 +16,5 @@ var (
 		}))
 
 	SnapshotRep SnapshotRepository = snapshotRepository{rxClient: DbClient}
-	UnloadRep   UnloadRepository   = unloadRepository{rxClient: DbClient}
+	RequestsRep RequestsRepository = requestsRepository{rxClient: DbClient}
 )

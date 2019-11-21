@@ -34,7 +34,7 @@ func (s *snapshotTask) Start(timeout time.Duration) {
 		case <-s.close:
 			return
 		case <-s.timeout:
-			if err := s.complete(); err != nil {
+			if err := s.saveSnapshot(); err != nil {
 				log.Error(log_code.ErrorSnapshotAccounting, err)
 			}
 			s.timeout = time.After(timeout)
@@ -51,7 +51,7 @@ func (s *snapshotTask) Stop() {
 	s.mx.Unlock()
 }
 
-func (s *snapshotTask) complete() error {
+func (s *snapshotTask) saveSnapshot() error {
 	snapshotList := takeSnapshot()
 	return model.SnapshotRep.Update(snapshotList)
 }

@@ -10,31 +10,31 @@ import (
 	"time"
 )
 
-var unload = &unloadingTask{
+var storage = &storingTask{
 	mx:          sync.Mutex{},
 	counter:     0,
 	process:     false,
 	chanTimeout: make(chan time.Time),
-	chanCounter: make(chan []entity.Unload),
+	chanCounter: make(chan []entity.Request),
 	chanClose:   make(chan bool),
 }
 
-type unloadingTask struct {
-	cache   []entity.Unload
+type storingTask struct {
+	buffer  []entity.Request
 	counter int
 
 	process     bool
 	chanTimeout <-chan time.Time
-	chanCounter chan []entity.Unload
+	chanCounter chan []entity.Request
 	chanClose   chan bool
 
 	mx sync.Mutex
 }
 
-func (u *unloadingTask) Init(setting conf.UnloadSetting) error {
+func (u *storingTask) Init(setting conf.StoringSetting) error {
 	u.mx.Lock()
 	u.process = true
-	u.cache = make([]entity.Unload, setting.Count)
+	u.buffer = make([]entity.Request, setting.Size)
 	u.counter = 0
 	u.mx.Unlock()
 
@@ -46,36 +46,36 @@ func (u *unloadingTask) Init(setting conf.UnloadSetting) error {
 	return nil
 }
 
-func (u *unloadingTask) TakeRequest(appId int32, method string, date time.Time) {
+func (u *storingTask) TakeRequest(appId int32, method string, date time.Time) {
 	u.mx.Lock()
 	if !u.process {
 		u.mx.Unlock()
 		return
 	}
 
-	u.cache[u.counter] = entity.Unload{
+	u.buffer[u.counter] = entity.Request{
 		AppId:     appId,
 		Method:    method,
 		CreatedAt: date,
 	}
 
 	u.counter++
-	if u.counter == len(u.cache) {
-		u.chanCounter <- u.cache
+	if u.counter == len(u.buffer) {
+		u.chanCounter <- u.buffer
 
-		oldLen := len(u.cache)
+		oldLen := len(u.buffer)
 		u.counter = 0
-		u.cache = make([]entity.Unload, oldLen)
+		u.buffer = make([]entity.Request, oldLen)
 	}
 
 	u.mx.Unlock()
 }
 
-func (u *unloadingTask) Stop() {
+func (u *storingTask) Stop() {
 	u.mx.Lock()
 	if u.process {
 		if u.counter != 0 {
-			defer u.unload(u.cache[:u.counter])
+			defer u.unload(u.buffer[:u.counter])
 		}
 		u.chanClose <- true
 		u.process = false
@@ -83,25 +83,25 @@ func (u *unloadingTask) Stop() {
 	u.mx.Unlock()
 }
 
-func (u *unloadingTask) run(timeout time.Duration) {
+func (u *storingTask) run(timeout time.Duration) {
 	u.chanTimeout = time.After(timeout)
 	for {
 		select {
 		case <-u.chanClose:
 			return
 		case cache := <-u.chanCounter:
-			u.unload(cache)
+			go u.unload(cache)
 			u.chanTimeout = time.After(timeout)
 		case <-u.chanTimeout:
 			u.mx.Lock()
 			if u.counter != 0 {
-				cache := u.cache[:u.counter]
-				oldLen := len(u.cache)
+				cache := u.buffer[:u.counter]
+				oldLen := len(u.buffer)
 				u.counter = 0
-				u.cache = make([]entity.Unload, oldLen)
+				u.buffer = make([]entity.Request, oldLen)
 				u.mx.Unlock()
 
-				u.unload(cache)
+				go u.unload(cache)
 			} else {
 				u.mx.Unlock()
 			}
@@ -110,8 +110,8 @@ func (u *unloadingTask) run(timeout time.Duration) {
 	}
 }
 
-func (u *unloadingTask) unload(cache []entity.Unload) {
-	if err := model.UnloadRep.Insert(cache); err != nil {
+func (u *storingTask) unload(cache []entity.Request) {
+	if err := model.RequestsRep.Insert(cache); err != nil {
 		log.Error(log_code.ErrorUnloadAccounting, err)
 	}
 }
