@@ -30,7 +30,7 @@ func ReceiveConfiguration(conf conf.Accounting) {
 	newRequestsStoring := make(map[int32]bool)
 
 	if conf.Enable {
-		if err := storage.Init(conf.Storing); err != nil {
+		if err := InitStoringTask(conf.Storing); err != nil {
 			log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
 		}
 
@@ -83,7 +83,9 @@ func Accept(appId int32, path string) bool {
 
 func Close() {
 	snapshot.Stop()
-	storage.Stop()
+	if storage != nil {
+		storage.Stop()
+	}
 }
 
 func takeSnapshot() []entity.Snapshot {

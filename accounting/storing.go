@@ -10,14 +10,7 @@ import (
 	"time"
 )
 
-var storage = &storingTask{
-	mx:          sync.Mutex{},
-	counter:     0,
-	process:     false,
-	chanTimeout: make(chan time.Time),
-	chanCounter: make(chan []entity.Request),
-	chanClose:   make(chan bool),
-}
+var storage *storingTask
 
 type storingTask struct {
 	buffer  []entity.Request
@@ -29,20 +22,17 @@ type storingTask struct {
 	chanClose   chan bool
 
 	mx sync.Mutex
+	wg sync.WaitGroup
 }
 
-func (u *storingTask) Init(setting conf.StoringSetting) error {
-	u.mx.Lock()
-	u.process = true
-	u.buffer = make([]entity.Request, setting.Size)
-	u.counter = 0
-	u.mx.Unlock()
-
+func InitStoringTask(setting conf.StoringSetting) error {
 	timeout, err := time.ParseDuration(setting.Timeout)
 	if err != nil {
 		return err
 	}
-	go u.run(timeout)
+
+	storage = newStoringTask(timeout, setting.Size)
+
 	return nil
 }
 
@@ -80,10 +70,12 @@ func (u *storingTask) Stop() {
 		u.chanClose <- true
 		u.process = false
 	}
+	u.wg.Wait()
 	u.mx.Unlock()
 }
 
 func (u *storingTask) run(timeout time.Duration) {
+	defer u.wg.Done()
 	u.chanTimeout = time.After(timeout)
 	for {
 		select {
@@ -114,4 +106,20 @@ func (u *storingTask) unload(cache []entity.Request) {
 	if err := model.RequestsRep.Insert(cache); err != nil {
 		log.Error(log_code.ErrorUnloadAccounting, err)
 	}
+}
+
+func newStoringTask(timeout time.Duration, bufSize int) *storingTask {
+	task := &storingTask{
+		mx:          sync.Mutex{},
+		counter:     0,
+		buffer:      make([]entity.Request, bufSize),
+		process:     true,
+		chanTimeout: make(chan time.Time),
+		chanCounter: make(chan []entity.Request),
+		chanClose:   make(chan bool),
+	}
+	task.wg.Add(1)
+	go task.run(timeout)
+
+	return task
 }

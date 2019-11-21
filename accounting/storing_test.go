@@ -30,8 +30,7 @@ var (
 func initStoring(setting conf.StoringSetting) (*requestsRepository, error) {
 	repository := &requestsRepository{cache: make([]entity.Request, 0), wg: &sync.WaitGroup{}}
 	model.RequestsRep = repository
-
-	err := storage.Init(setting)
+	err := InitStoringTask(setting)
 	return repository, err
 }
 
@@ -55,7 +54,7 @@ func TestStoringTask_Stop(t *testing.T) {
 	a.NoError(err)
 
 	rep.wg.Add(2)
-	for i, j := range []string{"1", "2", "3", "4", "5"} {
+	for i, j := range []string{"Stop_1", "Stop_2", "Stop_3", "Stop_4", "Stop_5"} {
 		storage.TakeRequest(int32(i), j, time.Now())
 	}
 	storage.Stop()
@@ -68,7 +67,7 @@ func TestStoringTask_Buffer(t *testing.T) {
 	a.NoError(err)
 
 	rep.wg.Add(1)
-	for i, j := range []string{"1", "2", "3", "4", "5"} {
+	for i, j := range []string{"Buffer_1", "Buffer_2", "Buffer_3", "Buffer_4", "Buffer_5"} {
 		storage.TakeRequest(int32(i), j, time.Now())
 	}
 	a.True(wait(rep.wg))
@@ -81,7 +80,7 @@ func TestStoringTask_Timeout(t *testing.T) {
 	a.NoError(err)
 
 	rep.wg.Add(1)
-	for i, j := range []string{"1", "2"} {
+	for i, j := range []string{"Timeout_1", "Timeout_2"} {
 		storage.TakeRequest(int32(i), j, time.Now())
 	}
 	a.True(wait(rep.wg))
@@ -94,7 +93,7 @@ func TestStoringTask_Unload(t *testing.T) {
 	a.NoError(err)
 
 	rep.wg.Add(2)
-	for i, j := range []string{"1", "2", "3", "4", "5"} {
+	for i, j := range []string{"Unload_1", "Unload_2", "Unload_3", "Unload_4", "Unload_5"} {
 		storage.TakeRequest(int32(i), j, time.Now())
 	}
 	a.True(wait(rep.wg))
