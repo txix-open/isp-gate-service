@@ -1,3 +1,5 @@
+## 2.0.0
+* add integration with isp-config-service 2.0
 ## 1.3.0
 * add unload requests
 ## 1.2.0
