@@ -17,13 +17,13 @@ type appClaims struct {
 type token struct{}
 
 func (t token) Admin(token string) error {
-	secret := config.GetRemote().(*conf.RemoteConfig).Secrets.Admin
+	secret := config.GetRemote().(*conf.RemoteConfig).TokensSetting.AdminSecret
 	_, err := t.parse(token, secret, jwt.MapClaims{})
 	return err
 }
 
 func (t token) Application(token string) (int32, error) {
-	secret := config.GetRemote().(*conf.RemoteConfig).Secrets.Application
+	secret := config.GetRemote().(*conf.RemoteConfig).TokensSetting.ApplicationSecret
 
 	if parsed, err := t.parse(token, secret, &appClaims{StandardClaims: &jwt.StandardClaims{}}); err != nil {
 		return 0, err

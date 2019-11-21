@@ -20,7 +20,8 @@ const (
 
 type (
 	RemoteConfig struct {
-		Secrets           SecretSetting                 `schema:"Настройка секретов"`
+		Database          structure.DBConfiguration     `schema:"Настройка подключения к базе данных"`
+		TokensSetting     TokensSetting                 `schema:"Настройка секретов"`
 		ServerSetting     HttpSetting                   `schema:"Настройка сервера"`
 		GrpcSetting       GrpcSetting                   `schema:"Настройка grpc соединения"`
 		Metrics           structure.MetricConfiguration `schema:"Настройка метрик"`
@@ -40,19 +41,22 @@ type (
 		MethodsPatterns []string  `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
 	}
 
-	SecretSetting struct {
-		Admin          string `schema:"Секрет для проверки токена администратора"`
-		Application    string `schema:"Секрет для проверки токена приложений"`
-		VerifyAppToken bool   `schema:"Проверка подписи токена приложений"`
+	TokensSetting struct {
+		AdminSecret       string `schema:"Секрет для проверки токена администратора"`
+		ApplicationSecret string `schema:"Секрет для проверки токена приложений"`
+		ApplicationVerify bool   `schema:"Проверка подписи токена приложений"`
 	}
 
 	Accounting struct {
-		Enable  bool                `schema:"Статус работы учета,включает/отключает учет запросов"`
-		Setting []AccountingSetting `schema:"Настройка учета для приложений"`
+		Enable          bool                `schema:"Учет запросов,включает/отключает учет запросов"`
+		SnapshotTimeout string              `schema:"Частота выгрузки данных учета в БД" valid:"required~Required"`
+		Setting         []AccountingSetting `schema:"Настройка учета для приложений"`
+		Storing         StoringSetting      `schema:"Настройка хранения запросов"`
 	}
 
 	AccountingSetting struct {
 		ApplicationId int32          `valid:"required~Required" schema:"Идентификатор приложения"`
+		EnableStoring bool           `schema:"Хранение запросов,если включено, каждый факт обработки запроса будет фиксироваться в БД"`
 		Limits        []LimitSetting `schema:"Настройка ограничений на запросы"`
 	}
 
@@ -60,6 +64,11 @@ type (
 		Pattern  string `valid:"required~Required" schema:"Шаблон пути,указывается путь для которого будут применяется ограничения; поддерживается '/*' для неполного совпадения"`
 		MaxCount int    `schema:"Количество запросов"`
 		Timeout  string `schema:"Время жизни одного запроса"`
+	}
+
+	StoringSetting struct {
+		Size    int    `schema:"Размер буфера,размер буфера,при достижении которого данные сбрасываются в БД" valid:"required,range(1|1000000)"`
+		Timeout string `schema:"Частота сброса,периодичность сброса данных в БД" valid:"required~Required"`
 	}
 
 	HttpSetting struct {

@@ -11,6 +11,59 @@ type limiter struct {
 	pointer  int
 }
 
+func (lim *limiter) Export() Snapshot {
+	ls := *lim
+	return Snapshot{
+		Timeout:  ls.timeout,
+		Datetime: ls.datetime,
+		Pattern:  ls.pattern,
+		Pointer:  ls.pointer,
+	}
+}
+
+func (lim *limiter) Import(oldState Snapshot) {
+	oldLim := limiter{
+		timeout:  oldState.Timeout,
+		datetime: oldState.Datetime,
+		pattern:  oldState.Pattern,
+		pointer:  oldState.Pointer,
+	}
+
+	lenOldDatetime := len(oldLim.datetime)
+	lenNewDatetime := len(lim.datetime)
+
+	switch true {
+	case lenOldDatetime == lenNewDatetime:
+		lim.datetime = oldLim.datetime
+		lim.pointer = oldLim.pointer
+
+	case lenOldDatetime < lenNewDatetime:
+		oldPointer := oldLim.pointer
+		for i := range lim.datetime {
+			oldLim.pointer++
+			if oldLim.pointer >= len(oldLim.datetime) {
+				oldLim.pointer = 0
+			}
+
+			lim.datetime[i] = oldLim.datetime[oldLim.pointer]
+
+			if oldPointer == oldLim.pointer {
+				lim.pointer = i
+				break
+			}
+		}
+
+	case lenOldDatetime > lenNewDatetime:
+		for i := range lim.datetime {
+			oldLim.pointer++
+			if oldLim.pointer >= len(oldLim.datetime) {
+				oldLim.pointer = 0
+			}
+			lim.datetime[i] = oldLim.datetime[oldLim.pointer]
+		}
+	}
+}
+
 func (lim *limiter) check() (bool, int, time.Time) {
 	if len(lim.datetime) == 0 {
 		return false, 0, time.Time{}

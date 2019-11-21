@@ -1,23 +1,51 @@
 {
-  "metrics": {
-    "gc": true,
-    "memory": true,
-    "address": {
-      "path": "/metrics",
-      "port": "9553",
-      "ip": "0.0.0.0"
-    }
+  "database": {
+    "database": "database",
+    "password": "password",
+    "username": "name",
+    "port": "5432",
+    "schema": "gate_service",
+    "address": "127.0.0.1",
+    "createSchema": true
   },
   "grpcSetting": {
-    "enableOriginalProtoErrors": false,
-    "proxyGrpcErrorDetails": false
+    "proxyGrpcErrorDetails": false,
+    "enableOriginalProtoErrors": false
   },
   "httpSetting": {
     "maxRequestBodySizeBytes": 0
   },
   "accountingSetting": {
     "enable": false,
-    "setting": []
+    "snapshotTimeout": "1h",
+    "setting": [
+      {
+        "applicationId": 0,
+        "enableStoring": false,
+        "limits": [
+          {
+            "timeout": "1s",
+            "maxCount": 500,
+            "pattern": "/example/module/group/method"
+          }
+        ]
+      }
+    ],
+    "storing": {
+      "size": 10000,
+      "timeout": "30m"
+    }
+  },
+  "journalSetting": {
+    "journal": {
+      "compress": true,
+      "filename": "/var/log/isp-gate-service/runtime.log",
+      "maxSizeMb": 512,
+      "bufferSize": 4096,
+      "rotateTimeoutMs": 86400000,
+      "enableRemoteTransfer": true,
+      "enable": false
+    }
   },
   "redis": {
     "address": {
@@ -25,25 +53,22 @@
       "port": "6379"
     }
   },
-  "authCacheSetting": {
-    "evictTimeout": "1m",
-    "enableCash": false
-  },
-  "secrets": {
-    "admin": "secret",
-    "application": "SECRET_ACCESS_KEY",
-    "verifyAppToken": false
-  },
-  "journalSetting": {
-    "journal": {
-      "rotateTimeoutMs": 86400000,
-      "enableRemoteTransfer": true,
-      "enable": false,
-      "compress": true,
-      "filename": "/var/log/isp-gate-service/runtime.log",
-      "maxSizeMb": 512,
-      "bufferSize": 4096
+  "metrics": {
+    "memory": true,
+    "address": {
+      "port": "9553",
+      "ip": "0.0.0.0",
+      "path": "/metrics"
     },
-    "methodsPatterns": []
+    "gc": true
+  },
+  "tokensSetting": {
+    "adminSecret": "secret",
+    "applicationSecret": "secret",
+    "applicationVerify": false
+  },
+  "authCacheSetting": {
+    "enableCash": false,
+    "evictTimeout": "1m"
   }
 }

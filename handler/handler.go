@@ -28,7 +28,7 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	currentTime := time.Now()
 	uri := string(ctx.RequestURI())
 
-	resp := helper.AuthenticateApproveProxy(ctx)
+	resp := helper.AuthenticateAccountingProxy(ctx)
 
 	executionTime := time.Since(currentTime) / 1e6
 
@@ -54,7 +54,7 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func (handlerHelper) AuthenticateApproveProxy(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
+func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
 	path := string(ctx.Path())
 
 	p := proxy.Find(path)
@@ -66,23 +66,24 @@ func (handlerHelper) AuthenticateApproveProxy(ctx *fasthttp.RequestCtx) domain.P
 
 	applicationId, err := authenticate.Do(ctx)
 	if err != nil {
+		message := "unknown error"
 		status := codes.Unknown
 		details := make([]interface{}, 0)
 		switch e := err.(type) {
 		case authenticate.ErrorDescription:
+			message = e.Message()
 			status = e.ConvertToGrpcStatus()
 			details = e.Details()
 		}
-		utils.WriteError(ctx, "unauthorized", status, details)
+		utils.WriteError(ctx, message, status, details)
 		return domain.Create().SetError(err)
 	}
 
-	if approver := accounting.GetAccounting(applicationId); approver != nil && !approver.Check(path) {
+	if !accounting.Accept(applicationId, path) {
 		err := errors.New("accounting error")
-		utils.WriteError(ctx, "forbidden", codes.ResourceExhausted, nil)
+		utils.WriteError(ctx, "too many requests", codes.ResourceExhausted, nil)
 		return domain.Create().SetError(err)
 	}
-
 	return p.ProxyRequest(ctx)
 }
 

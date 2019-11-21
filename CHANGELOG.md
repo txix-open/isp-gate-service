@@ -1,5 +1,7 @@
-## 1.1.1
-* add x-instance-identity header
+## 1.3.0
+* add unload requests
+## 1.2.0
+* add snapshot account
 ## 1.1.0
 * add token verification via JWT
 * add accounting for applications
