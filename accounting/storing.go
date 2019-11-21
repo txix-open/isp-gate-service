@@ -52,10 +52,7 @@ func (u *storingTask) TakeRequest(appId int32, method string, date time.Time) {
 	u.counter++
 	if u.counter == len(u.buffer) {
 		u.chanCounter <- u.buffer
-
-		oldLen := len(u.buffer)
-		u.counter = 0
-		u.buffer = make([]entity.Request, oldLen)
+		u.clearBuffer()
 	}
 
 	u.mx.Unlock()
@@ -65,12 +62,15 @@ func (u *storingTask) Stop() {
 	u.mx.Lock()
 	if u.process {
 		if u.counter != 0 {
-			defer u.unload(u.buffer[:u.counter])
+			buffer := u.clearBuffer()
+			defer func() {
+				u.unload(buffer)
+				u.wg.Wait()
+			}()
 		}
 		u.chanClose <- true
 		u.process = false
 	}
-	u.wg.Wait()
 	u.mx.Unlock()
 }
 
@@ -87,16 +87,10 @@ func (u *storingTask) run(timeout time.Duration) {
 		case <-u.chanTimeout:
 			u.mx.Lock()
 			if u.counter != 0 {
-				cache := u.buffer[:u.counter]
-				oldLen := len(u.buffer)
-				u.counter = 0
-				u.buffer = make([]entity.Request, oldLen)
-				u.mx.Unlock()
-
-				go u.unload(cache)
-			} else {
-				u.mx.Unlock()
+				buffer := u.clearBuffer()
+				go u.unload(buffer)
 			}
+			u.mx.Unlock()
 			u.chanTimeout = time.After(timeout)
 		}
 	}
@@ -106,6 +100,14 @@ func (u *storingTask) unload(cache []entity.Request) {
 	if err := model.RequestsRep.Insert(cache); err != nil {
 		log.Error(log_code.ErrorUnloadAccounting, err)
 	}
+}
+
+func (u *storingTask) clearBuffer() []entity.Request {
+	oldBuffer := u.buffer[:u.counter]
+	oldLen := len(u.buffer)
+	u.counter = 0
+	u.buffer = make([]entity.Request, oldLen)
+	return oldBuffer
 }
 
 func newStoringTask(timeout time.Duration, bufSize int) *storingTask {
