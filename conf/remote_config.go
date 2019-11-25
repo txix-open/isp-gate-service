@@ -22,7 +22,7 @@ type (
 	RemoteConfig struct {
 		Database          structure.DBConfiguration     `schema:"Настройка подключения к базе данных"`
 		TokensSetting     TokensSetting                 `schema:"Настройка секретов"`
-		ServerSetting     HttpSetting                   `schema:"Настройка сервера"`
+		HttpSetting       HttpSetting                   `schema:"Настройка сервера"`
 		GrpcSetting       GrpcSetting                   `schema:"Настройка grpc соединения"`
 		Metrics           structure.MetricConfiguration `schema:"Настройка метрик"`
 		JournalSetting    Journal                       `schema:"Настройка журалирования"`

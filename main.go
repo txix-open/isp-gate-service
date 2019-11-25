@@ -72,7 +72,7 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	metric.InitHttpServer(remoteConfig.Metrics)
 	service.Metrics.Init()
 
-	server.Http.Init(remoteConfig.ServerSetting.GetMaxRequestBodySize())
+	server.Http.Init(remoteConfig.HttpSetting.GetMaxRequestBodySize())
 }
 
 func socketConfiguration(cfg interface{}) structure.SocketConfiguration {
