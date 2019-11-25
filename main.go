@@ -40,12 +40,18 @@ func main() {
 		RequireRoutes(handleRouteUpdate).
 		RequireModule(journal.RequiredModule())
 
-	for _, location := range cfg.Locations {
-		if p, err := proxy.Init(location); err != nil {
-			log.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
-		} else if location.TargetModule != "" {
-			bs.RequireModule(location.TargetModule, p.Consumer, false)
-		}
+	requiredModules := conf.GetRequiredModules(cfg.Locations)
+	for targetModule, locations := range requiredModules {
+		bs.RequireModule(targetModule, func(list []structure.AddressConfiguration) bool {
+			for _, location := range locations {
+				if p, err := proxy.Init(location); err != nil {
+					log.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
+				} else if !p.Consumer(list) {
+					return false
+				}
+			}
+			return true
+		}, false)
 	}
 
 	bs.OnShutdown(onShutdown).

@@ -1,3 +1,6 @@
+## 2.1.0
+* fix proxy path
+* add skip authenticate
 ## 2.0.0
 * add integration with isp-config-service 2.0
 ## 1.3.0

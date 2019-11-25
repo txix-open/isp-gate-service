@@ -22,8 +22,9 @@ const (
 
 type (
 	Proxy interface {
-		ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse
+		ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.ProxyResponse
 		Consumer([]structure.AddressConfiguration) bool
+		SkipAuth() bool
 		Close()
 	}
 )
@@ -34,15 +35,15 @@ func Init(location conf.Location) (Proxy, error) {
 	}
 	switch location.Protocol {
 	case httpProtocol:
-		proxy := http.NewProxy()
+		proxy := http.NewProxy(location.SkipAuth)
 		store[location.PathPrefix] = proxy
 		return proxy, nil
 	case grpcProtocol:
-		proxy := grpc.NewProxy()
+		proxy := grpc.NewProxy(location.SkipAuth)
 		store[location.PathPrefix] = proxy
 		return proxy, nil
 	case healthCheckProtocol:
-		proxy := health_check.NewProxy()
+		proxy := health_check.NewProxy(location.SkipAuth)
 		store[location.PathPrefix] = proxy
 		return proxy, nil
 	default:
@@ -50,17 +51,31 @@ func Init(location conf.Location) (Proxy, error) {
 	}
 }
 
-func Find(path string) Proxy {
+func Find(path string) (Proxy, string) {
 	for pathPrefix, proxy := range store {
 		if strings.HasPrefix(path, pathPrefix) {
-			return proxy
+			return proxy, getPathWithoutPrefix(path)
 		}
 	}
-	return nil
+	return nil, ""
 }
 
 func Close() {
 	for _, p := range store {
 		p.Close()
 	}
+}
+
+func getPathWithoutPrefix(path string) string {
+	firstFound := false
+	for i, value := range path {
+		if value == '/' {
+			if firstFound {
+				return path[i+1:]
+			} else {
+				firstFound = true
+			}
+		}
+	}
+	return ""
 }

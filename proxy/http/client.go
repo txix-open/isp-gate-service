@@ -14,11 +14,12 @@ import (
 )
 
 type httpProxy struct {
-	client *fasthttp.HostClient
+	client   *fasthttp.HostClient
+	skipAuth bool
 }
 
-func NewProxy() *httpProxy {
-	return &httpProxy{client: nil}
+func NewProxy(skipAuth bool) *httpProxy {
+	return &httpProxy{client: nil, skipAuth: skipAuth}
 }
 
 func (p *httpProxy) Consumer(addressList []structure.AddressConfiguration) bool {
@@ -33,7 +34,7 @@ func (p *httpProxy) Consumer(addressList []structure.AddressConfiguration) bool 
 	return true
 }
 
-func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
+func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.ProxyResponse {
 	if p.client == nil {
 		msg := "client undefined"
 		log.Error(log_code.ErrorClientHttp, msg)
@@ -46,6 +47,7 @@ func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse 
 
 	req := &ctx.Request
 	res := &ctx.Response
+	req.SetRequestURI(path)
 
 	if addr, _, err := net.SplitHostPort(ctx.RemoteAddr().String()); err == nil {
 		req.Header.Add("X-Forwarded-For", addr)
@@ -59,6 +61,10 @@ func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse 
 		SetRequestBody(ctx.Request.Body()).
 		SetResponseBody(ctx.Response.Body()).
 		SetError(err)
+}
+
+func (p *httpProxy) SkipAuth() bool {
+	return p.skipAuth
 }
 
 func (p *httpProxy) Close() {

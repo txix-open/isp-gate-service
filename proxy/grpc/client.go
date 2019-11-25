@@ -16,23 +16,26 @@ import (
 )
 
 type grpcProxy struct {
-	client *backend.RxGrpcClient
+	client   *backend.RxGrpcClient
+	skipAuth bool
 }
 
-func NewProxy() *grpcProxy {
-	return &grpcProxy{client: backend.NewRxGrpcClient(
-		backend.WithDialOptions(
-			grpc.WithInsecure(), grpc.WithBlock(),
-			grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(int(conf.DefaultMaxResponseBodySize))),
-			grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(int(conf.DefaultMaxResponseBodySize))),
-		),
-		backend.WithDialingErrorHandler(func(err error) {
-			log.Errorf(log_code.ErrorClientGrpc, "dialing err: %v", err)
-		}),
-	)}
+func NewProxy(skiAuth bool) *grpcProxy {
+	return &grpcProxy{
+		client: backend.NewRxGrpcClient(
+			backend.WithDialOptions(
+				grpc.WithInsecure(), grpc.WithBlock(),
+				grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(int(conf.DefaultMaxResponseBodySize))),
+				grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(int(conf.DefaultMaxResponseBodySize))),
+			),
+			backend.WithDialingErrorHandler(func(err error) {
+				log.Errorf(log_code.ErrorClientGrpc, "dialing err: %v", err)
+			})),
+		skipAuth: skiAuth,
+	}
 }
 
-func (p *grpcProxy) ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
+func (p *grpcProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.ProxyResponse {
 	if p.client.InternalGrpcClient == nil {
 		msg := "client undefined"
 		log.Error(log_code.ErrorClientGrpc, msg)
@@ -43,12 +46,15 @@ func (p *grpcProxy) ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse 
 			SetError(errors.New(msg))
 	}
 
-	uri := string(ctx.RequestURI())
-	return handlers.Handler.Get(ctx).Complete(ctx, uri, p.client)
+	return handlers.Handler.Get(ctx).Complete(ctx, path, p.client)
 }
 
 func (p *grpcProxy) Consumer(addr []structure.AddressConfiguration) bool {
 	return p.client.ReceiveAddressList(addr)
+}
+
+func (p *grpcProxy) SkipAuth() bool {
+	return p.skipAuth
 }
 
 func (p *grpcProxy) Close() {

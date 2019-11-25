@@ -13,6 +13,7 @@ import (
 	"isp-gate-service/journal"
 	"isp-gate-service/log_code"
 	"isp-gate-service/proxy"
+	"isp-gate-service/routing"
 	"isp-gate-service/service"
 	"isp-gate-service/service/matcher"
 	"isp-gate-service/utils"
@@ -55,36 +56,44 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 }
 
 func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
-	path := string(ctx.Path())
-
-	p := proxy.Find(path)
+	initialPath := string(ctx.Path())
+	p, path := proxy.Find(initialPath)
 	if p == nil {
-		err := errors.Errorf("unknown path %s", path)
+		err := errors.Errorf("unknown path %s", initialPath)
 		utils.WriteError(ctx, "not found", codes.NotFound, nil)
 		return domain.Create().SetError(err)
 	}
 
-	applicationId, err := authenticate.Do(ctx)
-	if err != nil {
-		message := "unknown error"
-		status := codes.Unknown
-		details := make([]interface{}, 0)
-		switch e := err.(type) {
-		case authenticate.ErrorDescription:
-			message = e.Message()
-			status = e.ConvertToGrpcStatus()
-			details = e.Details()
-		}
-		utils.WriteError(ctx, message, status, details)
-		return domain.Create().SetError(err)
+	if _, ok := routing.AllMethods[path]; !ok {
+		msg := "not implemented"
+		utils.WriteError(ctx, msg, codes.Unimplemented, nil)
+		return domain.Create().SetError(errors.New(msg))
 	}
 
-	if !accounting.Accept(applicationId, path) {
-		err := errors.New("accounting error")
-		utils.WriteError(ctx, "too many requests", codes.ResourceExhausted, nil)
-		return domain.Create().SetError(err)
+	if !p.SkipAuth() {
+		applicationId, err := authenticate.Do(ctx, path)
+		if err != nil {
+			message := "unknown error"
+			status := codes.Unknown
+			details := make([]interface{}, 0)
+			switch e := err.(type) {
+			case authenticate.ErrorDescription:
+				message = e.Message()
+				status = e.ConvertToGrpcStatus()
+				details = e.Details()
+			}
+			utils.WriteError(ctx, message, status, details)
+			return domain.Create().SetError(err)
+		}
+
+		if !accounting.Accept(applicationId, path) {
+			err := errors.New("accounting error")
+			utils.WriteError(ctx, "too many requests", codes.ResourceExhausted, nil)
+			return domain.Create().SetError(err)
+		}
 	}
-	return p.ProxyRequest(ctx)
+
+	return p.ProxyRequest(ctx, path)
 }
 
 func (handlerHelper) SetMetricStatus(statusCode int) string {
