@@ -63,7 +63,7 @@ var (
 func TestAccounting(t *testing.T) {
 	a := assert.New(t)
 	model.SnapshotRep = &snapshotRepository{cache: make(map[int32]map[string]state.Snapshot)}
-	ReceiveConfiguration(accountingSetting)
+	receiveConfiguration(accountingSetting)
 
 	req := reqExample[4]
 	for _, path := range req.path {
@@ -97,7 +97,7 @@ func TestAccounting(t *testing.T) {
 		a.Equal(expected, Accept(req.appId, path))
 	}
 
-	ReceiveConfiguration(accountingSetting)
+	receiveConfiguration(accountingSetting)
 
 	req = reqExample[4]
 	for _, path := range req.path {

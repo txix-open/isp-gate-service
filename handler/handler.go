@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/integration-system/isp-lib/config"
 	log "github.com/integration-system/isp-log"
 	"github.com/pkg/errors"
@@ -57,11 +58,12 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 
 func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
 	initialPath := string(ctx.Path())
+
 	p, path := proxy.Find(initialPath)
 	if p == nil {
-		err := errors.Errorf("unknown path %s", initialPath)
-		utils.WriteError(ctx, "not found", codes.NotFound, nil)
-		return domain.Create().SetError(err)
+		msg := fmt.Sprintf("unknown proxy for '%s'", path)
+		utils.WriteError(ctx, msg, codes.NotFound, nil)
+		return domain.Create().SetError(errors.New(msg))
 	}
 
 	if _, ok := routing.AllMethods[path]; !ok {

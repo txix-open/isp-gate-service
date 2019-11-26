@@ -1,6 +1,8 @@
 package conf
 
-import "github.com/integration-system/isp-lib/structure"
+import (
+	"github.com/integration-system/isp-lib/structure"
+)
 
 type (
 	Configuration struct {
@@ -20,7 +22,7 @@ type (
 	}
 )
 
-func GetRequiredModules(locations []Location) map[string][]Location {
+func GetLocationsByTargetModule(locations []Location) map[string][]Location {
 	requiredModules := make(map[string][]Location)
 
 	for _, location := range locations {

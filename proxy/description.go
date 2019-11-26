@@ -4,7 +4,6 @@ import (
 	"github.com/integration-system/isp-lib/structure"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/proxy/grpc"
 	"isp-gate-service/proxy/health_check"
@@ -29,25 +28,25 @@ type (
 	}
 )
 
-func Init(location conf.Location) (Proxy, error) {
-	if location.PathPrefix[0] != '/' {
-		return nil, errors.Errorf("path must begin with '/' in path '%s'", location.PathPrefix)
+func Init(protocol, pathPrefix string, skipAuth bool) (Proxy, error) {
+	if pathPrefix[0] != '/' {
+		return nil, errors.Errorf("path must begin with '/' in path '%s'", pathPrefix)
 	}
-	switch location.Protocol {
+	switch protocol {
 	case httpProtocol:
-		proxy := http.NewProxy(location.SkipAuth)
-		store[location.PathPrefix] = proxy
+		proxy := http.NewProxy(skipAuth)
+		store[pathPrefix] = proxy
 		return proxy, nil
 	case grpcProtocol:
-		proxy := grpc.NewProxy(location.SkipAuth)
-		store[location.PathPrefix] = proxy
+		proxy := grpc.NewProxy(skipAuth)
+		store[pathPrefix] = proxy
 		return proxy, nil
 	case healthCheckProtocol:
-		proxy := health_check.NewProxy(location.SkipAuth)
-		store[location.PathPrefix] = proxy
+		proxy := health_check.NewProxy(skipAuth)
+		store[pathPrefix] = proxy
 		return proxy, nil
 	default:
-		return nil, errors.Errorf("unknown protocol '%s'", location.Protocol)
+		return nil, errors.Errorf("unknown protocol '%s'", protocol)
 	}
 }
 
@@ -57,7 +56,7 @@ func Find(path string) (Proxy, string) {
 			return proxy, getPathWithoutPrefix(path)
 		}
 	}
-	return nil, ""
+	return nil, getPathWithoutPrefix(path)
 }
 
 func Close() {

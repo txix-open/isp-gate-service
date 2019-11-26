@@ -49,6 +49,7 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 		err   error
 		appId int32 = -1
 	)
+
 	if len(appToken) == 0 {
 		return 0, createError("unauthorized", codes.Unauthenticated)
 	} else if config.GetRemote().(*conf.RemoteConfig).TokensSetting.ApplicationVerify {

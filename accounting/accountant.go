@@ -4,12 +4,14 @@ import (
 	"isp-gate-service/accounting/state"
 	"isp-gate-service/service/matcher"
 	"sync"
+	"sync/atomic"
 )
 
 type accountant struct {
 	mx          sync.Mutex
 	matcher     matcher.Matcher
 	limitStates map[string]state.LimitState
+	version     int64
 }
 
 func (app *accountant) Accept(method string) bool {
@@ -21,6 +23,8 @@ func (app *accountant) Accept(method string) bool {
 
 	app.mx.Lock()
 	resp := state.Update(stateStorage)
+	//only true or every request todo
+	atomic.AddInt64(&app.version, 1)
 	app.mx.Unlock()
 	return resp
 }
@@ -33,4 +37,8 @@ func (app *accountant) Snapshot() map[string]state.Snapshot {
 	}
 	app.mx.Unlock()
 	return snapshotLimitState
+}
+
+func (app *accountant) GetVersion() int64 {
+	return atomic.LoadInt64(&app.version)
 }
