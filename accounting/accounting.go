@@ -29,11 +29,11 @@ type Accounting interface {
 
 func Consumer(list []structure.AddressConfiguration) bool {
 	accountingSetting := config.GetRemote().(*conf.RemoteConfig).AccountingSetting
-	receiveConfiguration(accountingSetting)
+	ReceiveConfiguration(accountingSetting)
 	return true
 }
 
-func receiveConfiguration(conf conf.Accounting) {
+func ReceiveConfiguration(conf conf.Accounting) {
 	Close()
 
 	newAccountingStorage := make(map[int32]Accounting)

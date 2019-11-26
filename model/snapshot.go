@@ -21,7 +21,12 @@ type (
 )
 
 func (r snapshotRepository) Update(list []entity.Snapshot) error {
-	_, err := r.getDb().Model(&list).OnConflict("(app_id) DO UPDATE WHERE EXCLUDED.version > version").Insert()
+	_, err := r.getDb().Model(&list).OnConflict("(app_id) DO UPDATE").
+		Set("version = EXCLUDED.version").
+		Set("app_id = EXCLUDED.app_id").
+		Set("limit_state = EXCLUDED.limit_state").
+		Where("snapshot.version < EXCLUDED.version").
+		Insert()
 	return err
 }
 

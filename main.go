@@ -64,6 +64,7 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
 	authenticate.ReceiveConfiguration(remoteConfig.AuthCacheSetting)
+	accounting.ReceiveConfiguration(remoteConfig.AccountingSetting)
 
 	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
 	metric.InitHttpServer(remoteConfig.Metrics)

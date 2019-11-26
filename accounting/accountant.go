@@ -23,8 +23,9 @@ func (app *accountant) Accept(method string) bool {
 
 	app.mx.Lock()
 	resp := state.Update(stateStorage)
-	//only true or every request todo
-	atomic.AddInt64(&app.version, 1)
+	if resp {
+		atomic.AddInt64(&app.version, 1)
+	}
 	app.mx.Unlock()
 	return resp
 }
