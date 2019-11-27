@@ -127,7 +127,7 @@ func (w *accountingWorker) recoveryAccounting(appId int32, limitStates map[strin
 	if cash, ok := w.accountingStorage[appId]; ok {
 		cashLimitState, cashVersion := cash.Snapshot()
 
-		if dbSnapshot != nil && dbSnapshot.Version < cashVersion {
+		if dbSnapshot == nil || dbSnapshot.Version < cashVersion {
 			version = cashVersion
 			w.importLimitState(limitStates, cashLimitState)
 			importNotComplete = false
