@@ -88,7 +88,7 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domai
 			return domain.Create().SetError(err)
 		}
 
-		if !accounting.Worker.AcceptRequest(applicationId, path) {
+		if !accounting.AcceptRequest(applicationId, path) {
 			err := errors.New("accounting error")
 			utils.WriteError(ctx, "too many requests", codes.ResourceExhausted, nil)
 			return domain.Create().SetError(err)

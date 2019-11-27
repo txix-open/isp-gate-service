@@ -64,17 +64,17 @@ var (
 func TestAccounting(t *testing.T) {
 	a := assert.New(t)
 	model.SnapshotRep = newSnapshotRepository(false)
-	Worker.ReceiveConfiguration(accountingSetting)
+	ReceiveConfiguration(accountingSetting)
 
 	req := reqExample[4]
 	for _, path := range req.path {
-		a.True(Worker.AcceptRequest(req.appId, path))
+		a.True(AcceptRequest(req.appId, path))
 	}
 
 	expected := true
 	req = reqExample[0]
 	for _, path := range req.path {
-		a.Equal(expected, Worker.AcceptRequest(req.appId, path))
+		a.Equal(expected, AcceptRequest(req.appId, path))
 		expected = !expected
 		time.Sleep(50 * time.Millisecond)
 	}
@@ -82,27 +82,27 @@ func TestAccounting(t *testing.T) {
 	//expected == true
 	req = reqExample[1]
 	for _, path := range req.path {
-		a.Equal(expected, Worker.AcceptRequest(req.appId, path))
+		a.Equal(expected, AcceptRequest(req.appId, path))
 		expected = !expected
 	}
 
 	req = reqExample[2]
 	expectedArray := []bool{true, true, true, true, true, false}
 	for key, path := range req.path {
-		a.Equal(expectedArray[key], Worker.AcceptRequest(req.appId, path))
+		a.Equal(expectedArray[key], AcceptRequest(req.appId, path))
 	}
 
 	//expected == true
 	req = reqExample[3]
 	for _, path := range req.path {
-		a.Equal(expected, Worker.AcceptRequest(req.appId, path))
+		a.Equal(expected, AcceptRequest(req.appId, path))
 	}
 
-	Worker.ReceiveConfiguration(accountingSetting)
+	ReceiveConfiguration(accountingSetting)
 
 	req = reqExample[4]
 	for _, path := range req.path {
-		a.False(Worker.AcceptRequest(req.appId, path))
+		a.False(AcceptRequest(req.appId, path))
 	}
 }
 
@@ -111,20 +111,19 @@ func TestWorker_recoveryAccounting(t *testing.T) {
 	snapshotRep := newSnapshotRepository(true)
 	model.SnapshotRep = snapshotRep
 
-	oldWorker := &worker{
-		process:           false,
+	oldWorker := &accountingWorker{
 		accountingStorage: make(map[int32]Accounting),
 		requestsStoring:   make(map[int32]bool),
 	}
 
-	Worker.ReceiveConfiguration(accountingSetting)
-	oldWorker.ReceiveConfiguration(accountingSetting)
+	worker.init(accountingSetting)
+	oldWorker.init(accountingSetting)
 
 	request := "1_3_5"
 	for range request {
-		a.True(Worker.AcceptRequest(1, "mdm-master/group6/method"))
+		a.True(AcceptRequest(1, "mdm-master/group6/method"))
 	}
-	a.False(Worker.AcceptRequest(1, "mdm-master/group6/method"))
+	a.False(AcceptRequest(1, "mdm-master/group6/method"))
 
 	time.Sleep(time.Millisecond * 300)
 	a.True(snapshotRep.Wait())
@@ -133,9 +132,9 @@ func TestWorker_recoveryAccounting(t *testing.T) {
 	a.NotNil(snapshot)
 	a.Equal(len(request), int(snapshot.Version))
 
-	Worker = oldWorker
-	Worker.ReceiveConfiguration(accountingSetting)
-	a.False(Worker.AcceptRequest(1, "mdm-master/group6/method"))
+	worker = oldWorker
+	ReceiveConfiguration(accountingSetting)
+	a.False(AcceptRequest(1, "mdm-master/group6/method"))
 }
 
 type snapshotRepository struct {
