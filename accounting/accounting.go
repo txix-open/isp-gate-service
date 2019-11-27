@@ -15,29 +15,38 @@ import (
 	"time"
 )
 
-var (
-	accountingWorking = false
-	accountingStorage = make(map[int32]Accounting)
-	requestsStoring   = make(map[int32]bool)
-)
-
-type Accounting interface {
-	Accept(string) bool
-	Snapshot() map[string]state.Snapshot
-	GetVersion() int64
+var Worker = &worker{
+	process:           false,
+	accountingStorage: make(map[int32]Accounting),
+	requestsStoring:   make(map[int32]bool),
 }
 
-func Consumer(list []structure.AddressConfiguration) bool {
+type (
+	Accounting interface {
+		Accept(string) bool
+		Snapshot() (map[string]state.Snapshot, int64)
+	}
+
+	worker struct {
+		mx                sync.RWMutex
+		process           bool
+		accountingStorage map[int32]Accounting
+		requestsStoring   map[int32]bool
+	}
+)
+
+func (w *worker) Consumer(list []structure.AddressConfiguration) bool {
 	accountingSetting := config.GetRemote().(*conf.RemoteConfig).AccountingSetting
-	ReceiveConfiguration(accountingSetting)
+	w.ReceiveConfiguration(accountingSetting)
 	return true
 }
 
-func ReceiveConfiguration(conf conf.Accounting) {
-	Close()
+func (w *worker) ReceiveConfiguration(conf conf.Accounting) {
+	w.Close()
 
 	newAccountingStorage := make(map[int32]Accounting)
 	newRequestsStoring := make(map[int32]bool)
+	process := false
 
 	if conf.Enable {
 		if err := InitStoringTask(conf.Storing); err != nil {
@@ -52,7 +61,7 @@ func ReceiveConfiguration(conf conf.Accounting) {
 				log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
 			}
 
-			version := recoveryAccounting(s.ApplicationId, limitStates)
+			version := w.recoveryAccounting(s.ApplicationId, limitStates)
 
 			newAccountingStorage[s.ApplicationId] = &accountant{
 				version:     version,
@@ -68,69 +77,87 @@ func ReceiveConfiguration(conf conf.Accounting) {
 			go snapshot.Start(snapshotTimeout)
 		}
 
-		accountingWorking = true
-	} else {
-		accountingWorking = false
+		process = true
 	}
 
-	requestsStoring = newRequestsStoring
-	accountingStorage = newAccountingStorage
+	w.mx.Lock()
+	w.requestsStoring = newRequestsStoring
+	w.accountingStorage = newAccountingStorage
+	w.process = process
+	w.mx.Unlock()
 }
 
-func Accept(appId int32, path string) bool {
-	if accouter, ok := accountingStorage[appId]; !ok {
-		if requestsStoring[appId] {
+func (w *worker) AcceptRequest(appId int32, path string) bool {
+	w.mx.RLock()
+	defer w.mx.RUnlock()
+	if accouter, ok := w.accountingStorage[appId]; !ok {
+		if w.requestsStoring[appId] {
 			storage.TakeRequest(appId, path, time.Now())
 		}
 		return true
 	} else {
 		ok := accouter.Accept(path)
-		if ok && requestsStoring[appId] {
+		if ok && w.requestsStoring[appId] {
 			storage.TakeRequest(appId, path, time.Now())
 		}
 		return ok
 	}
 }
 
-func Close() {
+func (w *worker) Close() {
 	snapshot.Stop()
 	if storage != nil {
 		storage.Stop()
 	}
 }
 
-func takeSnapshot() []entity.Snapshot {
-	response := make([]entity.Snapshot, 0, len(accountingStorage))
-	for appId, account := range accountingStorage {
+func (w *worker) takeSnapshot() []entity.Snapshot {
+	w.mx.RLock()
+	response := make([]entity.Snapshot, 0, len(w.accountingStorage))
+	for appId, account := range w.accountingStorage {
+
+		limitState, version := account.Snapshot()
+
 		response = append(response, entity.Snapshot{
 			AppId:      appId,
-			LimitState: account.Snapshot(),
-			Version:    account.GetVersion(),
+			LimitState: limitState,
+			Version:    version,
 		})
 	}
+	w.mx.RUnlock()
 	return response
 }
 
-func recoveryAccounting(appId int32, limitStates map[string]state.LimitState) int64 {
+func (w *worker) recoveryAccounting(appId int32, limitStates map[string]state.LimitState) int64 {
 	version := int64(0)
-	if accountingWorking {
-		if acc, ok := accountingStorage[appId]; ok {
-			version = acc.GetVersion()
-			snapshot := acc.Snapshot()
-			importLimitState(limitStates, snapshot)
+	w.mx.RLock()
+	if w.process {
+		if acc, ok := w.accountingStorage[appId]; ok {
+			cashLimitState, cashVersion := acc.Snapshot()
+			dbSnapshot, err := model.SnapshotRep.GetByApplication(appId)
+			if err != nil {
+				log.Warn(log_code.ErrorSnapshotAccounting, err)
+			}
+
+			if dbSnapshot != nil && dbSnapshot.Version > cashVersion {
+				w.importLimitState(limitStates, dbSnapshot.LimitState)
+			} else {
+				w.importLimitState(limitStates, cashLimitState)
+			}
 		}
 	} else {
 		if snapshot, err := model.SnapshotRep.GetByApplication(appId); err != nil {
 			log.Warn(log_code.ErrorSnapshotAccounting, err)
 		} else if snapshot != nil {
 			version = snapshot.Version
-			importLimitState(limitStates, snapshot.LimitState)
+			w.importLimitState(limitStates, snapshot.LimitState)
 		}
 	}
+	w.mx.RUnlock()
 	return version
 }
 
-func importLimitState(limitStates map[string]state.LimitState, snapshot map[string]state.Snapshot) {
+func (w *worker) importLimitState(limitStates map[string]state.LimitState, snapshot map[string]state.Snapshot) {
 	for method, limitState := range limitStates {
 		if oldState, ok := snapshot[method]; ok {
 			limitState.Import(oldState)

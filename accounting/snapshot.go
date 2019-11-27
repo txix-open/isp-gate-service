@@ -52,6 +52,6 @@ func (s *snapshotTask) Stop() {
 }
 
 func (s *snapshotTask) saveSnapshot() error {
-	snapshotList := takeSnapshot()
+	snapshotList := Worker.takeSnapshot()
 	return model.SnapshotRep.Update(snapshotList)
 }

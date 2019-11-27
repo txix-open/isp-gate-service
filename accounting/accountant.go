@@ -30,16 +30,13 @@ func (app *accountant) Accept(method string) bool {
 	return resp
 }
 
-func (app *accountant) Snapshot() map[string]state.Snapshot {
+func (app *accountant) Snapshot() (map[string]state.Snapshot, int64) {
 	app.mx.Lock()
+	version := atomic.LoadInt64(&app.version)
 	snapshotLimitState := make(map[string]state.Snapshot, len(app.limitStates))
 	for method, limitState := range app.limitStates {
 		snapshotLimitState[method] = limitState.Export()
 	}
 	app.mx.Unlock()
-	return snapshotLimitState
-}
-
-func (app *accountant) GetVersion() int64 {
-	return atomic.LoadInt64(&app.version)
+	return snapshotLimitState, version
 }

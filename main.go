@@ -45,7 +45,7 @@ func main() {
 		bs.RequireModule(module, consumer, false)
 	}
 
-	bs.RequireModule(cfg.ModuleName, accounting.Consumer, false).
+	bs.RequireModule(cfg.ModuleName, accounting.Worker.Consumer, false).
 		OnShutdown(onShutdown).
 		OnRemoteConfigReceive(onRemoteConfigReceive).
 		Run()
@@ -64,7 +64,7 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
 	authenticate.ReceiveConfiguration(remoteConfig.AuthCacheSetting)
-	accounting.ReceiveConfiguration(remoteConfig.AccountingSetting)
+	accounting.Worker.ReceiveConfiguration(remoteConfig.AccountingSetting)
 
 	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
 	metric.InitHttpServer(remoteConfig.Metrics)
@@ -88,7 +88,7 @@ func socketConfiguration(cfg interface{}) structure.SocketConfiguration {
 
 func onShutdown(_ context.Context, _ os.Signal) {
 	server.Http.Close()
-	accounting.Close()
+	accounting.Worker.Close()
 	proxy.Close()
 	redis.Client.Close()
 }
