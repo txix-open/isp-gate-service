@@ -26,9 +26,6 @@ var (
 			{ApplicationId: 2, Limits: []conf.LimitSetting{
 				{Pattern: "mdm-master/group/method", MaxCount: 0, Timeout: "10s"},
 			}},
-			{ApplicationId: 3, Limits: []conf.LimitSetting{
-				{Pattern: "mdm-master/group6/method", MaxCount: 5, Timeout: "10s"},
-			}},
 		},
 		Storing: conf.StoringSetting{
 			Size:    100,
@@ -66,8 +63,12 @@ var (
 
 func TestAccounting(t *testing.T) {
 	a := assert.New(t)
-	snapshotRep := newSnapshotRepository(true)
+	snapshotRep := newSnapshotRepository(false)
 	model.SnapshotRep = snapshotRep
+	worker = &accountingWorker{
+		accountingStorage: make(map[int32]Accounting),
+		requestsStoring:   make(map[int32]bool),
+	}
 	worker.init(accountingSetting)
 
 	req := reqExample[4]
@@ -115,15 +116,19 @@ func TestWorker_recoveryAccounting(t *testing.T) {
 	snapshotRep := newSnapshotRepository(true)
 	model.SnapshotRep = snapshotRep
 
-	oldWorker := &accountingWorker{
+	worker = &accountingWorker{
+		accountingStorage: make(map[int32]Accounting),
+		requestsStoring:   make(map[int32]bool),
+	}
+	secondWorker := &accountingWorker{
 		accountingStorage: make(map[int32]Accounting),
 		requestsStoring:   make(map[int32]bool),
 	}
 
 	worker.init(accountingSetting)
-	oldWorker.init(accountingSetting)
+	secondWorker.init(accountingSetting)
 
-	appId := int32(3)
+	appId := int32(1)
 	request := "1_3_5"
 	for range request {
 		a.True(AcceptRequest(appId, "mdm-master/group6/method"))
@@ -138,7 +143,7 @@ func TestWorker_recoveryAccounting(t *testing.T) {
 	a.Equal(len(request), int(snapshot.Version))
 
 	Close()
-	worker = oldWorker
+	worker = secondWorker
 	worker.init(accountingSetting)
 	a.False(AcceptRequest(appId, "mdm-master/group6/method"))
 }
@@ -150,10 +155,11 @@ type snapshotRepository struct {
 }
 
 func newSnapshotRepository(enableWaitGroup bool) *snapshotRepository {
-	resp := new(snapshotRepository)
-	resp.enableWaitGroup = enableWaitGroup
-	resp.cache = make(map[int32]entity.Snapshot)
-	return resp
+	return &snapshotRepository{
+		enableWaitGroup: enableWaitGroup,
+		wg:              sync.WaitGroup{},
+		cache:           make(map[int32]entity.Snapshot),
+	}
 }
 
 func (r *snapshotRepository) Wait() bool {

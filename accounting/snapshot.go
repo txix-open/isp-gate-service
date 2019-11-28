@@ -2,56 +2,79 @@ package accounting
 
 import (
 	log "github.com/integration-system/isp-log"
+	"github.com/integration-system/isp-log/stdcodes"
+	"isp-gate-service/entity"
 	"isp-gate-service/log_code"
 	"isp-gate-service/model"
 	"sync"
 	"time"
 )
 
-var snapshot = &snapshotTask{
-	process: false,
-	timeout: make(chan time.Time),
-	close:   make(chan bool),
-}
+var snapshot *snapshotTask
 
 type snapshotTask struct {
-	mx      sync.Mutex
+	mx sync.Mutex
+	wg sync.WaitGroup
+
 	process bool
 	timeout <-chan time.Time
 	close   chan bool
 }
 
-func (s *snapshotTask) Start(timeout time.Duration) {
-	s.Stop()
+func InitSnapshotTask(snapshotTimeout string) {
+	timeout, err := time.ParseDuration(snapshotTimeout)
+	if err != nil {
+		log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
+	}
 
-	s.mx.Lock()
-	s.process = true
-	s.timeout = time.After(timeout)
-	s.mx.Unlock()
+	snapshot = newSnapshotTask(timeout)
+}
 
+func (t *snapshotTask) Stop() {
+	t.mx.Lock()
+	if t.process {
+		snapshotList := worker.takeSnapshot()
+		defer func() {
+			t.unload(snapshotList)
+			t.wg.Wait()
+		}()
+		t.process = false
+		t.close <- true
+	}
+	t.mx.Unlock()
+}
+
+func (t *snapshotTask) run(timeout time.Duration) {
+	defer t.wg.Done()
+	t.timeout = time.After(timeout)
 	for {
 		select {
-		case <-s.close:
+		case <-t.close:
 			return
-		case <-s.timeout:
-			if err := s.saveSnapshot(); err != nil {
-				log.Error(log_code.ErrorSnapshotAccounting, err)
-			}
-			s.timeout = time.After(timeout)
+		case <-t.timeout:
+			list := worker.takeSnapshot()
+			go t.unload(list)
+			t.timeout = time.After(timeout)
 		}
 	}
 }
 
-func (s *snapshotTask) Stop() {
-	s.mx.Lock()
-	if s.process {
-		s.process = false
-		s.close <- true
+func (t *snapshotTask) unload(list []entity.Snapshot) {
+	t.wg.Add(1)
+	if err := model.SnapshotRep.Update(list); err != nil {
+		log.Error(log_code.ErrorSnapshotAccounting, err)
 	}
-	s.mx.Unlock()
+	t.wg.Done()
 }
 
-func (s *snapshotTask) saveSnapshot() error {
-	snapshotList := worker.takeSnapshot()
-	return model.SnapshotRep.Update(snapshotList)
+func newSnapshotTask(timeout time.Duration) *snapshotTask {
+	task := &snapshotTask{
+		process: true,
+		timeout: make(chan time.Time),
+		close:   make(chan bool),
+	}
+
+	task.wg.Add(1)
+	go task.run(timeout)
+	return task
 }

@@ -1,6 +1,8 @@
 package state
 
 import (
+	log "github.com/integration-system/isp-log"
+	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/conf"
 	"time"
 )
@@ -26,19 +28,19 @@ type (
 	}
 )
 
-func InitLimitState(limits []conf.LimitSetting) (map[string]LimitState, []string, error) {
+func InitLimitState(limits []conf.LimitSetting) (map[string]LimitState, []string) {
 	limitStates := make(map[string]LimitState)
 	patternArray := make([]string, len(limits))
 
 	for i, limit := range limits {
 		timeout, err := time.ParseDuration(limit.Timeout)
 		if err != nil {
-			return nil, nil, err
+			log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
 		}
+
 		if timeout == 0 && limit.MaxCount != 0 {
 			limit.MaxCount = 1
 		}
-
 		patternArray[i] = limit.Pattern
 		limitStates[limit.Pattern] = &limiter{
 			timeout:  timeout,
@@ -47,7 +49,7 @@ func InitLimitState(limits []conf.LimitSetting) (map[string]LimitState, []string
 			pointer:  -1,
 		}
 	}
-	return limitStates, patternArray, nil
+	return limitStates, patternArray
 }
 
 func Update(states []LimitState) bool {

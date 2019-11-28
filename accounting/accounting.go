@@ -4,7 +4,6 @@ import (
 	"github.com/integration-system/isp-lib/config"
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
-	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/accounting/state"
 	"isp-gate-service/conf"
 	"isp-gate-service/entity"
@@ -58,7 +57,9 @@ func AcceptRequest(appId int32, path string) bool {
 }
 
 func Close() {
-	snapshot.Stop()
+	if snapshot != nil {
+		snapshot.Stop()
+	}
 	if storage != nil {
 		storage.Stop()
 	}
@@ -68,33 +69,23 @@ func (w *accountingWorker) init(accountingSetting conf.Accounting) {
 	Close()
 
 	newAccountingStorage := make(map[int32]Accounting)
-	newRequestsStoring := make(map[int32]bool)
+	newRequestsStoringStorage := make(map[int32]bool)
 
 	if accountingSetting.Enable {
-		if err := InitStoringTask(accountingSetting.Storing); err != nil {
-			log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
-		}
+		InitStoringTask(accountingSetting.Storing)
 
 		for _, s := range accountingSetting.Setting {
-			newRequestsStoring[s.ApplicationId] = s.EnableStoring
-
-			limitStates, patternArray, err := state.InitLimitState(s.Limits)
-			if err != nil {
-				log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
-			}
-
+			limitStates, patternArray := state.InitLimitState(s.Limits)
 			accounting := w.recoveryAccounting(s.ApplicationId, limitStates, patternArray)
+
 			newAccountingStorage[s.ApplicationId] = accounting
+			newRequestsStoringStorage[s.ApplicationId] = s.EnableStoring
 		}
 
-		if snapshotTimeout, err := time.ParseDuration(accountingSetting.SnapshotTimeout); err != nil {
-			log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
-		} else {
-			go snapshot.Start(snapshotTimeout)
-		}
+		InitSnapshotTask(accountingSetting.SnapshotTimeout)
 	}
 
-	w.requestsStoring = newRequestsStoring
+	w.requestsStoring = newRequestsStoringStorage
 	w.accountingStorage = newAccountingStorage
 }
 
