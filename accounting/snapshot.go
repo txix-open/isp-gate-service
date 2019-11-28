@@ -34,10 +34,13 @@ func (t *snapshotTask) Stop() {
 	t.mx.Lock()
 	if t.process {
 		snapshotList := worker.takeSnapshot()
-		defer func() {
-			t.unload(snapshotList)
-			t.wg.Wait()
-		}()
+		if len(snapshotList) != 0 {
+			defer func() {
+				t.wg.Add(1)
+				t.unload(snapshotList)
+				t.wg.Wait()
+			}()
+		}
 		t.process = false
 		t.close <- true
 	}
@@ -53,14 +56,16 @@ func (t *snapshotTask) run(timeout time.Duration) {
 			return
 		case <-t.timeout:
 			list := worker.takeSnapshot()
-			go t.unload(list)
+			if len(list) > 0 {
+				t.wg.Add(1)
+				go t.unload(list)
+			}
 			t.timeout = time.After(timeout)
 		}
 	}
 }
 
 func (t *snapshotTask) unload(list []entity.Snapshot) {
-	t.wg.Add(1)
 	if err := model.SnapshotRep.Update(list); err != nil {
 		log.Error(log_code.ErrorSnapshotAccounting, err)
 	}

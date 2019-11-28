@@ -63,6 +63,7 @@ func (t *storingTask) Stop() {
 		if t.counter != 0 {
 			buffer := t.clearBuffer()
 			defer func() {
+				t.wg.Add(1)
 				t.unload(buffer)
 				t.wg.Wait()
 			}()
@@ -81,12 +82,14 @@ func (t *storingTask) run(timeout time.Duration) {
 		case <-t.chanClose:
 			return
 		case cache := <-t.chanCounter:
+			t.wg.Add(1)
 			go t.unload(cache)
 			t.chanTimeout = time.After(timeout)
 		case <-t.chanTimeout:
 			t.mx.Lock()
 			if t.counter != 0 {
 				buffer := t.clearBuffer()
+				t.wg.Add(1)
 				go t.unload(buffer)
 			}
 			t.mx.Unlock()
@@ -96,7 +99,6 @@ func (t *storingTask) run(timeout time.Duration) {
 }
 
 func (t *storingTask) unload(cache []entity.Request) {
-	t.wg.Add(1)
 	if err := model.RequestsRep.Insert(cache); err != nil {
 		log.Error(log_code.ErrorUnloadAccounting, err)
 	}
