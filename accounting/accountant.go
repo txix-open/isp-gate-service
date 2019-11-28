@@ -4,7 +4,6 @@ import (
 	"isp-gate-service/accounting/state"
 	"isp-gate-service/service/matcher"
 	"sync"
-	"sync/atomic"
 )
 
 type accountant struct {
@@ -24,7 +23,7 @@ func (app *accountant) Accept(method string) bool {
 	app.mx.Lock()
 	resp := state.Update(stateStorage)
 	if resp {
-		atomic.AddInt64(&app.version, 1)
+		app.version++
 	}
 	app.mx.Unlock()
 	return resp
@@ -32,7 +31,7 @@ func (app *accountant) Accept(method string) bool {
 
 func (app *accountant) Snapshot() (map[string]state.Snapshot, int64) {
 	app.mx.Lock()
-	version := atomic.LoadInt64(&app.version)
+	version := app.version
 	snapshotLimitState := make(map[string]state.Snapshot, len(app.limitStates))
 	for method, limitState := range app.limitStates {
 		snapshotLimitState[method] = limitState.Export()
