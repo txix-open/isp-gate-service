@@ -1,8 +1,9 @@
 package accounting
 
 import (
+	"github.com/integration-system/isp-lib/config"
+	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
-	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/accounting/state"
 	"isp-gate-service/conf"
 	"isp-gate-service/entity"
@@ -13,108 +14,131 @@ import (
 	"time"
 )
 
-var (
-	accountingWorking = false
-	accountingStorage = make(map[int32]Accounting)
-	requestsStoring   = make(map[int32]bool)
-)
-
-type Accounting interface {
-	Accept(string) bool
-	Snapshot() map[string]state.Snapshot
+var worker = &accountingWorker{
+	accountingStorage: make(map[int32]Accounting),
+	requestsStoring:   make(map[int32]bool),
 }
 
-func ReceiveConfiguration(conf conf.Accounting) {
-	Close()
-	newAccountingStorage := make(map[int32]Accounting)
-	newRequestsStoring := make(map[int32]bool)
-
-	if conf.Enable {
-		if err := InitStoringTask(conf.Storing); err != nil {
-			log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
-		}
-
-		for _, s := range conf.Setting {
-			newRequestsStoring[s.ApplicationId] = s.EnableStoring
-
-			limitStates, patternArray, err := state.InitLimitState(s.Limits)
-			if err != nil {
-				log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
-			}
-
-			recoveryLimitState(s.ApplicationId, limitStates)
-
-			newAccountingStorage[s.ApplicationId] = &accountant{
-				matcher:     matcher.NewCacheableMatcher(patternArray),
-				limitStates: limitStates,
-				mx:          sync.Mutex{},
-			}
-		}
-
-		if snapshotTimeout, err := time.ParseDuration(conf.SnapshotTimeout); err != nil {
-			log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
-		} else {
-			go snapshot.Start(snapshotTimeout)
-		}
-
-		accountingWorking = true
-	} else {
-		accountingWorking = false
+type (
+	Accounting interface {
+		Accept(string) bool
+		Snapshot() (map[string]state.Snapshot, int64)
 	}
 
-	requestsStoring = newRequestsStoring
-	accountingStorage = newAccountingStorage
+	accountingWorker struct {
+		accountingStorage map[int32]Accounting
+		requestsStoring   map[int32]bool
+	}
+)
+
+func NewConnectionConsumer(list []structure.AddressConfiguration) bool {
+	accountingSetting := config.GetRemote().(*conf.RemoteConfig).AccountingSetting
+	worker.init(accountingSetting)
+	return true
 }
 
-func Accept(appId int32, path string) bool {
-	if accouter, ok := accountingStorage[appId]; !ok {
-		if requestsStoring[appId] {
-			storage.TakeRequest(appId, path, time.Now())
-		}
-		return true
-	} else {
+func ReceiveConfiguration(accountingSetting conf.Accounting) {
+	worker.init(accountingSetting)
+}
+
+func AcceptRequest(appId int32, path string) bool {
+	if accouter, ok := worker.accountingStorage[appId]; ok {
 		ok := accouter.Accept(path)
-		if ok && requestsStoring[appId] {
+		if ok && worker.requestsStoring[appId] {
 			storage.TakeRequest(appId, path, time.Now())
 		}
 		return ok
+	} else {
+		if worker.requestsStoring[appId] {
+			storage.TakeRequest(appId, path, time.Now())
+		}
+		return true
 	}
 }
 
 func Close() {
-	snapshot.Stop()
+	if snapshot != nil {
+		snapshot.Stop()
+	}
 	if storage != nil {
 		storage.Stop()
 	}
 }
 
-func takeSnapshot() []entity.Snapshot {
-	response := make([]entity.Snapshot, 0, len(accountingStorage))
-	for appId, account := range accountingStorage {
+func (w *accountingWorker) init(accountingSetting conf.Accounting) {
+	Close()
+
+	newAccountingStorage := make(map[int32]Accounting)
+	newRequestsStoringStorage := make(map[int32]bool)
+
+	if accountingSetting.Enable {
+		InitStoringTask(accountingSetting.Storing)
+
+		for _, s := range accountingSetting.Setting {
+			limitStates, patternArray := state.InitLimitState(s.Limits)
+			accounting := w.recoveryAccounting(s.ApplicationId, limitStates, patternArray)
+
+			newAccountingStorage[s.ApplicationId] = accounting
+			newRequestsStoringStorage[s.ApplicationId] = s.EnableStoring
+		}
+
+		InitSnapshotTask(accountingSetting.SnapshotTimeout)
+	}
+
+	w.requestsStoring = newRequestsStoringStorage
+	w.accountingStorage = newAccountingStorage
+}
+
+func (w *accountingWorker) takeSnapshot() []entity.Snapshot {
+	response := make([]entity.Snapshot, 0, len(w.accountingStorage))
+	for appId, account := range w.accountingStorage {
+
+		limitState, version := account.Snapshot()
+
 		response = append(response, entity.Snapshot{
 			AppId:      appId,
-			LimitState: account.Snapshot(),
+			LimitState: limitState,
+			Version:    version,
 		})
 	}
 	return response
 }
 
-func recoveryLimitState(appId int32, limitStates map[string]state.LimitState) {
-	if accountingWorking {
-		if acc, ok := accountingStorage[appId]; ok {
-			snapshot := acc.Snapshot()
-			importLimitState(limitStates, snapshot)
+func (w *accountingWorker) recoveryAccounting(appId int32, limitStates map[string]state.LimitState, patternArray []string) *accountant {
+	var (
+		version           = int64(0)
+		importNotComplete = true
+	)
+
+	dbSnapshot, err := model.SnapshotRep.GetByApplication(appId)
+	if err != nil {
+		log.Warn(log_code.ErrorSnapshotAccounting, err)
+	}
+
+	if cash, ok := w.accountingStorage[appId]; ok {
+		cashLimitState, cashVersion := cash.Snapshot()
+
+		if dbSnapshot == nil || dbSnapshot.Version < cashVersion {
+			version = cashVersion
+			w.importLimitState(limitStates, cashLimitState)
+			importNotComplete = false
 		}
-	} else {
-		if snapshot, err := model.SnapshotRep.GetByApplication(appId); err != nil {
-			log.Warn(log_code.ErrorSnapshotAccounting, err)
-		} else if snapshot != nil {
-			importLimitState(limitStates, snapshot.LimitState)
-		}
+	}
+
+	if dbSnapshot != nil && importNotComplete {
+		version = dbSnapshot.Version
+		w.importLimitState(limitStates, dbSnapshot.LimitState)
+	}
+
+	return &accountant{
+		mx:          sync.Mutex{},
+		matcher:     matcher.NewCacheableMatcher(patternArray),
+		limitStates: limitStates,
+		version:     version,
 	}
 }
 
-func importLimitState(limitStates map[string]state.LimitState, snapshot map[string]state.Snapshot) {
+func (w *accountingWorker) importLimitState(limitStates map[string]state.LimitState, snapshot map[string]state.Snapshot) {
 	for method, limitState := range limitStates {
 		if oldState, ok := snapshot[method]; ok {
 			limitState.Import(oldState)

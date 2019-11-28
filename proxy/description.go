@@ -4,7 +4,6 @@ import (
 	"github.com/integration-system/isp-lib/structure"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/proxy/grpc"
 	"isp-gate-service/proxy/health_check"
@@ -22,45 +21,60 @@ const (
 
 type (
 	Proxy interface {
-		ProxyRequest(ctx *fasthttp.RequestCtx) domain.ProxyResponse
+		ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.ProxyResponse
 		Consumer([]structure.AddressConfiguration) bool
+		SkipAuth() bool
 		Close()
 	}
 )
 
-func Init(location conf.Location) (Proxy, error) {
-	if location.PathPrefix[0] != '/' {
-		return nil, errors.Errorf("path must begin with '/' in path '%s'", location.PathPrefix)
+func Init(protocol, pathPrefix string, skipAuth bool) (Proxy, error) {
+	if pathPrefix[0] != '/' {
+		return nil, errors.Errorf("path must begin with '/' in path '%s'", pathPrefix)
 	}
-	switch location.Protocol {
+	switch protocol {
 	case httpProtocol:
-		proxy := http.NewProxy()
-		store[location.PathPrefix] = proxy
+		proxy := http.NewProxy(skipAuth)
+		store[pathPrefix] = proxy
 		return proxy, nil
 	case grpcProtocol:
-		proxy := grpc.NewProxy()
-		store[location.PathPrefix] = proxy
+		proxy := grpc.NewProxy(skipAuth)
+		store[pathPrefix] = proxy
 		return proxy, nil
 	case healthCheckProtocol:
-		proxy := health_check.NewProxy()
-		store[location.PathPrefix] = proxy
+		proxy := health_check.NewProxy(skipAuth)
+		store[pathPrefix] = proxy
 		return proxy, nil
 	default:
-		return nil, errors.Errorf("unknown protocol '%s'", location.Protocol)
+		return nil, errors.Errorf("unknown protocol '%s'", protocol)
 	}
 }
 
-func Find(path string) Proxy {
+func Find(path string) (Proxy, string) {
 	for pathPrefix, proxy := range store {
 		if strings.HasPrefix(path, pathPrefix) {
-			return proxy
+			return proxy, getPathWithoutPrefix(path)
 		}
 	}
-	return nil
+	return nil, getPathWithoutPrefix(path)
 }
 
 func Close() {
 	for _, p := range store {
 		p.Close()
 	}
+}
+
+func getPathWithoutPrefix(path string) string {
+	firstFound := false
+	for i, value := range path {
+		if value == '/' {
+			if firstFound {
+				return path[i+1:]
+			} else {
+				firstFound = true
+			}
+		}
+	}
+	return ""
 }

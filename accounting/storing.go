@@ -2,6 +2,7 @@ package accounting
 
 import (
 	log "github.com/integration-system/isp-log"
+	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/conf"
 	"isp-gate-service/entity"
 	"isp-gate-service/log_code"
@@ -25,88 +26,90 @@ type storingTask struct {
 	wg sync.WaitGroup
 }
 
-func InitStoringTask(setting conf.StoringSetting) error {
+func InitStoringTask(setting conf.StoringSetting) {
 	timeout, err := time.ParseDuration(setting.Timeout)
 	if err != nil {
-		return err
+		log.Fatal(stdcodes.ModuleInvalidRemoteConfig, err)
 	}
 
 	storage = newStoringTask(timeout, setting.Size)
-
-	return nil
 }
 
-func (u *storingTask) TakeRequest(appId int32, method string, date time.Time) {
-	u.mx.Lock()
-	if !u.process {
-		u.mx.Unlock()
+func (t *storingTask) TakeRequest(appId int32, method string, date time.Time) {
+	t.mx.Lock()
+	if !t.process {
+		t.mx.Unlock()
 		return
 	}
 
-	u.buffer[u.counter] = entity.Request{
+	t.buffer[t.counter] = entity.Request{
 		AppId:     appId,
 		Method:    method,
 		CreatedAt: date,
 	}
 
-	u.counter++
-	if u.counter == len(u.buffer) {
-		u.chanCounter <- u.buffer
-		u.clearBuffer()
+	t.counter++
+	if t.counter == len(t.buffer) {
+		t.chanCounter <- t.buffer
+		t.clearBuffer()
 	}
 
-	u.mx.Unlock()
+	t.mx.Unlock()
 }
 
-func (u *storingTask) Stop() {
-	u.mx.Lock()
-	if u.process {
-		if u.counter != 0 {
-			buffer := u.clearBuffer()
+func (t *storingTask) Stop() {
+	t.mx.Lock()
+	if t.process {
+		if t.counter != 0 {
+			buffer := t.clearBuffer()
 			defer func() {
-				u.unload(buffer)
-				u.wg.Wait()
+				t.wg.Add(1)
+				t.unload(buffer)
+				t.wg.Wait()
 			}()
 		}
-		u.chanClose <- true
-		u.process = false
+		t.chanClose <- true
+		t.process = false
 	}
-	u.mx.Unlock()
+	t.mx.Unlock()
 }
 
-func (u *storingTask) run(timeout time.Duration) {
-	defer u.wg.Done()
-	u.chanTimeout = time.After(timeout)
+func (t *storingTask) run(timeout time.Duration) {
+	defer t.wg.Done()
+	t.chanTimeout = time.After(timeout)
 	for {
 		select {
-		case <-u.chanClose:
+		case <-t.chanClose:
 			return
-		case cache := <-u.chanCounter:
-			go u.unload(cache)
-			u.chanTimeout = time.After(timeout)
-		case <-u.chanTimeout:
-			u.mx.Lock()
-			if u.counter != 0 {
-				buffer := u.clearBuffer()
-				go u.unload(buffer)
+		case cache := <-t.chanCounter:
+			t.wg.Add(1)
+			go t.unload(cache)
+			t.chanTimeout = time.After(timeout)
+		case <-t.chanTimeout:
+			t.mx.Lock()
+			if t.counter != 0 {
+				buffer := t.clearBuffer()
+				t.wg.Add(1)
+				go t.unload(buffer)
 			}
-			u.mx.Unlock()
-			u.chanTimeout = time.After(timeout)
+			t.mx.Unlock()
+			t.chanTimeout = time.After(timeout)
 		}
 	}
 }
 
-func (u *storingTask) unload(cache []entity.Request) {
+func (t *storingTask) unload(cache []entity.Request) {
 	if err := model.RequestsRep.Insert(cache); err != nil {
 		log.Error(log_code.ErrorUnloadAccounting, err)
 	}
+	t.wg.Done()
 }
 
-func (u *storingTask) clearBuffer() []entity.Request {
-	oldBuffer := u.buffer[:u.counter]
-	oldLen := len(u.buffer)
-	u.counter = 0
-	u.buffer = make([]entity.Request, oldLen)
+func (t *storingTask) clearBuffer() []entity.Request {
+	oldBuffer := t.buffer[:t.counter]
+	oldLen := len(t.buffer)
+	t.counter = 0
+	t.buffer = make([]entity.Request, oldLen)
 	return oldBuffer
 }
 

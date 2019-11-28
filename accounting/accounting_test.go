@@ -2,10 +2,10 @@ package accounting
 
 import (
 	"github.com/stretchr/testify/assert"
-	"isp-gate-service/accounting/state"
 	"isp-gate-service/conf"
 	"isp-gate-service/entity"
 	"isp-gate-service/model"
+	"sync"
 	"testing"
 	"time"
 )
@@ -21,6 +21,7 @@ var (
 				{Pattern: "mdm-master/group3/*", MaxCount: 5, Timeout: "10s"},
 				{Pattern: "mdm-master/group4/method", MaxCount: 2, Timeout: "0s"},
 				{Pattern: "mdm-master/group5/method", MaxCount: 3, Timeout: "10s"},
+				{Pattern: "mdm-master/group6/method", MaxCount: 5, Timeout: "10s"},
 			}},
 			{ApplicationId: 2, Limits: []conf.LimitSetting{
 				{Pattern: "mdm-master/group/method", MaxCount: 0, Timeout: "10s"},
@@ -62,18 +63,23 @@ var (
 
 func TestAccounting(t *testing.T) {
 	a := assert.New(t)
-	model.SnapshotRep = &snapshotRepository{cache: make(map[int32]map[string]state.Snapshot)}
-	ReceiveConfiguration(accountingSetting)
+	snapshotRep := newSnapshotRepository(false)
+	model.SnapshotRep = snapshotRep
+	worker = &accountingWorker{
+		accountingStorage: make(map[int32]Accounting),
+		requestsStoring:   make(map[int32]bool),
+	}
+	worker.init(accountingSetting)
 
 	req := reqExample[4]
 	for _, path := range req.path {
-		a.True(Accept(req.appId, path))
+		a.True(AcceptRequest(req.appId, path))
 	}
 
 	expected := true
 	req = reqExample[0]
 	for _, path := range req.path {
-		a.Equal(expected, Accept(req.appId, path))
+		a.Equal(expected, AcceptRequest(req.appId, path))
 		expected = !expected
 		time.Sleep(50 * time.Millisecond)
 	}
@@ -81,49 +87,111 @@ func TestAccounting(t *testing.T) {
 	//expected == true
 	req = reqExample[1]
 	for _, path := range req.path {
-		a.Equal(expected, Accept(req.appId, path))
+		a.Equal(expected, AcceptRequest(req.appId, path))
 		expected = !expected
 	}
 
 	req = reqExample[2]
 	expectedArray := []bool{true, true, true, true, true, false}
 	for key, path := range req.path {
-		a.Equal(expectedArray[key], Accept(req.appId, path))
+		a.Equal(expectedArray[key], AcceptRequest(req.appId, path))
 	}
 
 	//expected == true
 	req = reqExample[3]
 	for _, path := range req.path {
-		a.Equal(expected, Accept(req.appId, path))
+		a.Equal(expected, AcceptRequest(req.appId, path))
 	}
 
-	ReceiveConfiguration(accountingSetting)
+	worker.init(accountingSetting)
 
 	req = reqExample[4]
 	for _, path := range req.path {
-		a.False(Accept(req.appId, path))
+		a.False(AcceptRequest(req.appId, path))
+	}
+}
+
+func TestWorker_recoveryAccounting(t *testing.T) {
+	a := assert.New(t)
+	snapshotRep := newSnapshotRepository(true)
+	model.SnapshotRep = snapshotRep
+
+	worker = &accountingWorker{
+		accountingStorage: make(map[int32]Accounting),
+		requestsStoring:   make(map[int32]bool),
+	}
+	secondWorker := &accountingWorker{
+		accountingStorage: make(map[int32]Accounting),
+		requestsStoring:   make(map[int32]bool),
 	}
 
+	worker.init(accountingSetting)
+	secondWorker.init(accountingSetting)
+
+	appId := int32(1)
+	request := "1_3_5"
+	for range request {
+		a.True(AcceptRequest(appId, "mdm-master/group6/method"))
+	}
+	a.False(AcceptRequest(appId, "mdm-master/group6/method"))
+
+	time.Sleep(time.Millisecond * 300)
+	a.True(snapshotRep.Wait())
+	snapshot, err := model.SnapshotRep.GetByApplication(appId)
+	a.NoError(err)
+	a.NotNil(snapshot)
+	a.Equal(len(request), int(snapshot.Version))
+
+	Close()
+	worker = secondWorker
+	worker.init(accountingSetting)
+	a.False(AcceptRequest(appId, "mdm-master/group6/method"))
 }
 
 type snapshotRepository struct {
-	cache map[int32]map[string]state.Snapshot
+	enableWaitGroup bool
+	wg              sync.WaitGroup
+	cache           map[int32]entity.Snapshot
+}
+
+func newSnapshotRepository(enableWaitGroup bool) *snapshotRepository {
+	return &snapshotRepository{
+		enableWaitGroup: enableWaitGroup,
+		wg:              sync.WaitGroup{},
+		cache:           make(map[int32]entity.Snapshot),
+	}
+}
+
+func (r *snapshotRepository) Wait() bool {
+	done := make(chan struct{})
+	go func() {
+		r.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return true
+	case <-time.After(time.Second):
+		return false
+	}
 }
 
 func (r *snapshotRepository) GetByApplication(appId int32) (*entity.Snapshot, error) {
-	if limitState, ok := r.cache[appId]; ok {
-		return &entity.Snapshot{
-			AppId:      appId,
-			LimitState: limitState,
-		}, nil
+	if snapshot, ok := r.cache[appId]; ok {
+		return &snapshot, nil
 	} else {
 		return nil, nil
 	}
 }
 
 func (r *snapshotRepository) Update(list []entity.Snapshot) error {
+	if r.enableWaitGroup {
+		r.wg.Add(1)
+		defer r.wg.Done()
+	}
+
 	for _, s := range list {
-		r.cache[s.AppId] = s.LimitState
+		r.cache[s.AppId] = s
 	}
 	return nil
 }

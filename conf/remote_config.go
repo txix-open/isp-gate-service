@@ -49,9 +49,9 @@ type (
 
 	Accounting struct {
 		Enable          bool                `schema:"Учет запросов,включает/отключает учет запросов"`
-		SnapshotTimeout string              `schema:"Частота выгрузки данных учета в БД" valid:"required~Required"`
+		SnapshotTimeout string              `schema:"Частота выгрузки ограничений для приложений" valid:"required~Required"`
 		Setting         []AccountingSetting `schema:"Настройка учета для приложений"`
-		Storing         StoringSetting      `schema:"Настройка хранения запросов"`
+		Storing         StoringSetting      `schema:"Настройка хранения всех запросов"`
 	}
 
 	AccountingSetting struct {
@@ -68,7 +68,7 @@ type (
 
 	StoringSetting struct {
 		Size    int    `schema:"Размер буфера,размер буфера,при достижении которого данные сбрасываются в БД" valid:"required,range(1|1000000)"`
-		Timeout string `schema:"Частота сброса,периодичность сброса данных в БД" valid:"required~Required"`
+		Timeout string `schema:"Частота выгрузки всех учтенных запросов,периодичность сброса данных в БД" valid:"required~Required"`
 	}
 
 	HttpSetting struct {

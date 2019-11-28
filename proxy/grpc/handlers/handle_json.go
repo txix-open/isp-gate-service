@@ -19,13 +19,7 @@ var handleJson handleJsonDesc
 type handleJsonDesc struct{}
 
 func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) domain.ProxyResponse {
-	//body, err := utils.ReadJsonBody(c)
 	body := c.Request.Body()
-	/*if err != nil {
-		streaming.LogError(log_code.TypeData.JsonContent, method, err)
-		streaming.SendError(err.Error(), codes.InvalidArgument, []interface{}{err.Error()}, c)
-		return
-	}*/
 
 	md, methodName := makeMetadata(&c.Request.Header, method)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
@@ -40,7 +34,6 @@ func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *
 		return domain.Create().SetError(err)
 	}
 
-	//structBody := u.ConvertInterfaceToGrpcStruct(body)
 	resp, invokerErr := cli.Request(
 		ctx,
 		&isp.Message{

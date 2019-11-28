@@ -40,15 +40,13 @@ func main() {
 		RequireRoutes(handleRouteUpdate).
 		RequireModule(journal.RequiredModule())
 
-	for _, location := range cfg.Locations {
-		if p, err := proxy.Init(location); err != nil {
-			log.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
-		} else if location.TargetModule != "" {
-			bs.RequireModule(location.TargetModule, p.Consumer, false)
-		}
+	requiredModules := getRequiredModulesByLocations(cfg.Locations)
+	for module, consumer := range requiredModules {
+		bs.RequireModule(module, consumer, false)
 	}
 
-	bs.OnShutdown(onShutdown).
+	bs.RequireModule(cfg.ModuleName, accounting.NewConnectionConsumer, false).
+		OnShutdown(onShutdown).
 		OnRemoteConfigReceive(onRemoteConfigReceive).
 		Run()
 }
@@ -65,8 +63,8 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalSetting.MethodsPatterns)
 
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
-	accounting.ReceiveConfiguration(remoteConfig.AccountingSetting)
 	authenticate.ReceiveConfiguration(remoteConfig.AuthCacheSetting)
+	accounting.ReceiveConfiguration(remoteConfig.AccountingSetting)
 
 	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
 	metric.InitHttpServer(remoteConfig.Metrics)
@@ -107,5 +105,33 @@ func makeDeclaration(localConfig interface{}) bootstrap.ModuleInfo {
 		ModuleVersion:    version,
 		GrpcOuterAddress: cfg.HttpOuterAddress,
 		Handlers:         []interface{}{},
+	}
+}
+
+func getRequiredModulesByLocations(locations []conf.Location) map[string]func([]structure.AddressConfiguration) bool {
+	locationsByTargetModule := conf.GetLocationsByTargetModule(locations)
+	requiredModules := make(map[string]func([]structure.AddressConfiguration) bool)
+
+	for targetModule, locations := range locationsByTargetModule {
+		consumerStorage := make([]func([]structure.AddressConfiguration) bool, len(locations))
+		for i, location := range locations {
+			if p, err := proxy.Init(location.Protocol, location.PathPrefix, location.SkipAuth); err != nil {
+				log.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
+			} else {
+				consumerStorage[i] = p.Consumer
+			}
+		}
+		requiredModules[targetModule] = aggregateConsumers(consumerStorage...)
+	}
+
+	return requiredModules
+}
+
+func aggregateConsumers(consumers ...func([]structure.AddressConfiguration) bool) func([]structure.AddressConfiguration) bool {
+	return func(list []structure.AddressConfiguration) bool {
+		for _, consumer := range consumers {
+			consumer(list)
+		}
+		return true
 	}
 }

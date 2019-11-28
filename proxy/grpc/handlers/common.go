@@ -128,7 +128,7 @@ func openStream(headers *fasthttp.RequestHeader, method string, timeout time.Dur
 }
 
 func makeMetadata(r *fasthttp.RequestHeader, method string) (metadata.MD, string) {
-	method = strings.TrimPrefix(method, "/api/")
+	//method = strings.TrimPrefix(method, "/api/")
 	md := metadata.Pairs(utils.ProxyMethodNameHeader, method)
 	r.VisitAll(func(key, v []byte) {
 		lowerHeader := strings.ToLower(string(key))

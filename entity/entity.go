@@ -9,6 +9,7 @@ type Snapshot struct {
 	TableName  string `sql:"?db_schema.snapshot" json:"-"`
 	AppId      int32  `sql:",pk"`
 	LimitState map[string]state.Snapshot
+	Version    int64
 }
 
 type Request struct {

@@ -38,14 +38,7 @@ func ReceiveConfiguration(conf conf.Cache) {
 	}
 }
 
-func Do(ctx *fasthttp.RequestCtx) (int32, error) {
-	path := ctx.Path()
-	pathStr := getPathWithoutPrefix(path)
-
-	if _, ok := routing.AllMethods[pathStr]; !ok {
-		return 0, createError("not implemented", codes.Unimplemented)
-	}
-
+func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 	for _, notExpectedHeader := range notExpectedHeaders {
 		ctx.Request.Header.Del(notExpectedHeader)
 	}
@@ -56,6 +49,7 @@ func Do(ctx *fasthttp.RequestCtx) (int32, error) {
 		err   error
 		appId int32 = -1
 	)
+
 	if len(appToken) == 0 {
 		return 0, createError("unauthorized", codes.Unauthenticated)
 	} else if config.GetRemote().(*conf.RemoteConfig).TokensSetting.ApplicationVerify {
@@ -86,7 +80,7 @@ func Do(ctx *fasthttp.RequestCtx) (int32, error) {
 	verifiableKeys[utils.UserTokenHeader] = string(ctx.Request.Header.Peek(utils.UserTokenHeader))
 
 	permittedToCall := false
-	verifiableKeys, permittedToCall, err = auth.verify.Identity(verifiableKeys, pathStr)
+	verifiableKeys, permittedToCall, err = auth.verify.Identity(verifiableKeys, path)
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, err)
 		return 0, createError("internal Server error", codes.Internal)
@@ -101,7 +95,7 @@ func Do(ctx *fasthttp.RequestCtx) (int32, error) {
 		}
 	}
 
-	if _, ok := routing.InnerMethods[pathStr]; ok {
+	if _, ok := routing.InnerMethods[path]; ok {
 		adminToken := ctx.Request.Header.Peek("x-auth-admin") //todo const key
 		if verifyToken.Admin(string(adminToken)) != nil {
 			return 0, createError("forbidden", codes.PermissionDenied)
@@ -113,18 +107,4 @@ func Do(ctx *fasthttp.RequestCtx) (int32, error) {
 	ctx.Request.Header.Set(utils.InstanceIdHeader, uuid)
 
 	return appId, nil
-}
-
-func getPathWithoutPrefix(path []byte) string {
-	firstFound := false
-	for i, value := range path {
-		if value == '/' {
-			if firstFound {
-				return string(path[i+1:])
-			} else {
-				firstFound = true
-			}
-		}
-	}
-	return ""
 }

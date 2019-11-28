@@ -27,11 +27,11 @@ var (
 	}
 )
 
-func initStoring(setting conf.StoringSetting) (*requestsRepository, error) {
+func initStoring(setting conf.StoringSetting) *requestsRepository {
 	repository := &requestsRepository{cache: make([]entity.Request, 0), wg: &sync.WaitGroup{}}
 	model.RequestsRep = repository
-	err := InitStoringTask(setting)
-	return repository, err
+	InitStoringTask(setting)
+	return repository
 }
 
 func wait(wg *sync.WaitGroup) bool {
@@ -50,8 +50,7 @@ func wait(wg *sync.WaitGroup) bool {
 
 func TestStoringTask_Stop(t *testing.T) {
 	a := assert.New(t)
-	rep, err := initStoring(bufferSetting)
-	a.NoError(err)
+	rep := initStoring(bufferSetting)
 
 	rep.wg.Add(2)
 	for i, j := range []string{"Stop_1", "Stop_2", "Stop_3", "Stop_4", "Stop_5"} {
@@ -63,8 +62,7 @@ func TestStoringTask_Stop(t *testing.T) {
 
 func TestStoringTask_Buffer(t *testing.T) {
 	a := assert.New(t)
-	rep, err := initStoring(bufferSetting)
-	a.NoError(err)
+	rep := initStoring(bufferSetting)
 
 	rep.wg.Add(1)
 	for i, j := range []string{"Buffer_1", "Buffer_2", "Buffer_3", "Buffer_4", "Buffer_5"} {
@@ -76,8 +74,7 @@ func TestStoringTask_Buffer(t *testing.T) {
 
 func TestStoringTask_Timeout(t *testing.T) {
 	a := assert.New(t)
-	rep, err := initStoring(timeoutSetting)
-	a.NoError(err)
+	rep := initStoring(timeoutSetting)
 
 	rep.wg.Add(1)
 	for i, j := range []string{"Timeout_1", "Timeout_2"} {
@@ -89,8 +86,7 @@ func TestStoringTask_Timeout(t *testing.T) {
 
 func TestStoringTask_Unload(t *testing.T) {
 	a := assert.New(t)
-	rep, err := initStoring(unloadSetting)
-	a.NoError(err)
+	rep := initStoring(unloadSetting)
 
 	rep.wg.Add(2)
 	for i, j := range []string{"Unload_1", "Unload_2", "Unload_3", "Unload_4", "Unload_5"} {

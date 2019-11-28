@@ -10,6 +10,7 @@ type accountant struct {
 	mx          sync.Mutex
 	matcher     matcher.Matcher
 	limitStates map[string]state.LimitState
+	version     int64
 }
 
 func (app *accountant) Accept(method string) bool {
@@ -21,16 +22,20 @@ func (app *accountant) Accept(method string) bool {
 
 	app.mx.Lock()
 	resp := state.Update(stateStorage)
+	if resp {
+		app.version++
+	}
 	app.mx.Unlock()
 	return resp
 }
 
-func (app *accountant) Snapshot() map[string]state.Snapshot {
+func (app *accountant) Snapshot() (map[string]state.Snapshot, int64) {
 	app.mx.Lock()
+	version := app.version
 	snapshotLimitState := make(map[string]state.Snapshot, len(app.limitStates))
 	for method, limitState := range app.limitStates {
 		snapshotLimitState[method] = limitState.Export()
 	}
 	app.mx.Unlock()
-	return snapshotLimitState
+	return snapshotLimitState, version
 }
