@@ -1,3 +1,5 @@
+## 2.2.0
+* add websocket proxy
 ## 2.1.0
 * fix proxy path
 * add skip authenticate

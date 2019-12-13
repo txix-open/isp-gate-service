@@ -23,6 +23,10 @@ func NewProxy(skipAuth bool) *httpProxy {
 }
 
 func (p *httpProxy) Consumer(addressList []structure.AddressConfiguration) bool {
+	if len(addressList) == 0 {
+		p.client = nil
+		return true
+	}
 	addresses := make([]string, len(addressList))
 	for key, addr := range addressList {
 		addresses[key] = addr.GetAddress()
@@ -35,7 +39,8 @@ func (p *httpProxy) Consumer(addressList []structure.AddressConfiguration) bool 
 }
 
 func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.ProxyResponse {
-	if p.client == nil {
+	client := p.client
+	if client == nil {
 		msg := "client undefined"
 		log.Error(log_code.ErrorClientHttp, msg)
 		utils.WriteError(ctx, msg, codes.Internal, nil)
@@ -53,7 +58,7 @@ func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.P
 		req.Header.Add("X-Forwarded-For", addr)
 	}
 
-	err := p.client.Do(req, res)
+	err := client.Do(req, res)
 	if err != nil {
 		log.Error(log_code.ErrorClientHttp, err)
 	}
