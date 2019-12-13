@@ -16,6 +16,11 @@ import (
 	"time"
 )
 
+const (
+	// TODO move to isp-lib
+	AdminTokenHeader = "x-auth-admin"
+)
+
 var notExpectedHeaders = []string{
 	utils.SystemIdHeader, utils.DomainIdHeader, utils.ServiceIdHeader, utils.ApplicationIdHeader,
 }
@@ -43,7 +48,7 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 		ctx.Request.Header.Del(notExpectedHeader)
 	}
 
-	appToken := ctx.Request.Header.Peek(utils.ApplicationTokenHeader)
+	appToken := getParam(utils.ApplicationTokenHeader, &ctx.Request)
 
 	var (
 		err   error
@@ -76,8 +81,8 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 		return 0, createError("unauthorized", codes.Unauthenticated, "unknown application identity")
 	}
 
-	verifiableKeys[utils.DeviceTokenHeader] = string(ctx.Request.Header.Peek(utils.DeviceTokenHeader))
-	verifiableKeys[utils.UserTokenHeader] = string(ctx.Request.Header.Peek(utils.UserTokenHeader))
+	verifiableKeys[utils.DeviceTokenHeader] = string(getParam(utils.DeviceTokenHeader, &ctx.Request))
+	verifiableKeys[utils.UserTokenHeader] = string(getParam(utils.UserTokenHeader, &ctx.Request))
 
 	permittedToCall := false
 	verifiableKeys, permittedToCall, err = auth.verify.Identity(verifiableKeys, path)
@@ -96,7 +101,7 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 	}
 
 	if _, ok := routing.InnerMethods[path]; ok {
-		adminToken := ctx.Request.Header.Peek("x-auth-admin") //todo const key
+		adminToken := getParam(AdminTokenHeader, &ctx.Request)
 		if verifyToken.Admin(string(adminToken)) != nil {
 			return 0, createError("forbidden", codes.PermissionDenied)
 		}
@@ -107,4 +112,12 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 	ctx.Request.Header.Set(utils.InstanceIdHeader, uuid)
 
 	return appId, nil
+}
+
+func getParam(key string, req *fasthttp.Request) []byte {
+	val := req.Header.Peek(key)
+	if len(val) != 0 {
+		return val
+	}
+	return req.URI().QueryArgs().Peek(key)
 }
