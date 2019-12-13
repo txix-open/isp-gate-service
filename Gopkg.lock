@@ -42,6 +42,14 @@
   version = "v3.2.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:35e6ba92e1d4e89f4dc51b9868a5d35c3a03d9d2ffc956380502835cf0812a73"
+  name = "github.com/fasthttp/websocket"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1e7306f3b587255aa9ddb1d5dd122750e00623cf"
+
+[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -183,7 +191,7 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:2f0bb39ac14ba6a8b8d3b065e10fbfce9f555bda35935fda71001dbba703b707"
+  digest = "1:fd6dd9f3a50fce97343298aec27f3748df9ed9fc30abe082bfc01ef6c00f2f8a"
   name = "github.com/integration-system/isp-lib"
   packages = [
     "backend",
@@ -201,8 +209,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "9ecfa413468d829dce66fe95562b4366b0dfb2a0"
-  version = "v2.0.0"
+  revision = "abfa9a9776d64e6d04d495bfe00db8ca4dcbe7fc"
+  version = "v2.0.1"
 
 [[projects]]
   branch = "master"
@@ -377,6 +385,14 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "cac0b30c2563378d434b5af411844adff8e32960"
+
+[[projects]]
+  branch = "master"
+  digest = "1:8232b87605be15cba8bb9b5089d91a79bb678406aa8b48aaf7b582a104aa5b14"
+  name = "github.com/savsgio/gotils"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "524bc4f475005d9dbedc1bc77248a07aef318ef0"
 
 [[projects]]
   digest = "1:04457f9f6f3ffc5fea48e71d62f2ca256637dee0a04d710288e27e05c8b41976"
@@ -633,6 +649,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/dgrijalva/jwt-go",
+    "github.com/fasthttp/websocket",
     "github.com/go-pg/pg",
     "github.com/go-pg/pg/orm",
     "github.com/go-redis/redis",

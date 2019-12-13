@@ -8,6 +8,7 @@ import (
 	"isp-gate-service/proxy/grpc"
 	"isp-gate-service/proxy/health_check"
 	"isp-gate-service/proxy/http"
+	"isp-gate-service/proxy/websocket"
 	"strings"
 )
 
@@ -15,6 +16,7 @@ var store = make(map[string]Proxy)
 
 const (
 	httpProtocol        = "http"
+	websocketProtocol   = "websocket"
 	grpcProtocol        = "grpc"
 	healthCheckProtocol = "healthсheck"
 )
@@ -43,6 +45,10 @@ func Init(protocol, pathPrefix string, skipAuth bool) (Proxy, error) {
 		return proxy, nil
 	case healthCheckProtocol:
 		proxy := health_check.NewProxy(skipAuth)
+		store[pathPrefix] = proxy
+		return proxy, nil
+	case websocketProtocol:
+		proxy := websocket.NewProxy(skipAuth)
 		store[pathPrefix] = proxy
 		return proxy, nil
 	default:

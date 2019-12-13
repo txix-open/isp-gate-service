@@ -20,7 +20,7 @@ type grpcProxy struct {
 	skipAuth bool
 }
 
-func NewProxy(skiAuth bool) *grpcProxy {
+func NewProxy(skipAuth bool) *grpcProxy {
 	return &grpcProxy{
 		client: backend.NewRxGrpcClient(
 			backend.WithDialOptions(
@@ -31,7 +31,7 @@ func NewProxy(skiAuth bool) *grpcProxy {
 			backend.WithDialingErrorHandler(func(err error) {
 				log.Errorf(log_code.ErrorClientGrpc, "dialing err: %v", err)
 			})),
-		skipAuth: skiAuth,
+		skipAuth: skipAuth,
 	}
 }
 
