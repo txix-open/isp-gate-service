@@ -13,6 +13,8 @@ import (
 	"isp-gate-service/utils"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 )
 
 const (
@@ -70,6 +72,8 @@ func (p *websocketProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) dom
 
 	reqHeaders := fasthttp.RequestHeader{}
 	ctx.Request.Header.CopyTo(&reqHeaders)
+	reqHost := string(ctx.Request.URI().Host())
+	reqScheme := string(ctx.Request.URI().Scheme())
 
 	if addr, _, err := net.SplitHostPort(ctx.RemoteAddr().String()); err == nil {
 		reqHeaders.Add("X-Forwarded-For", addr)
@@ -85,7 +89,7 @@ func (p *websocketProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) dom
 		}
 
 		addr := addrs.Get()
-		url := "ws://" + addr.GetAddress() + "/" + path
+		urlAddr := "ws://" + addr.GetAddress() + "/" + path
 		header := http.Header{}
 
 		reqHeaders.VisitAll(func(key, value []byte) {
@@ -95,14 +99,22 @@ func (p *websocketProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) dom
 			}
 		})
 
-		outgoingConn, _, err := outgoingDialer.Dial(url, header)
+		cookie := make([]*http.Cookie, 0)
+		reqHeaders.VisitAllCookie(func(key, value []byte) {
+			cookie = append(cookie, &http.Cookie{Domain: reqHost, Name: string(key), Value: string(value)})
+		})
+		cookies := &cookiejar.Jar{}
+		cookies.SetCookies(&url.URL{Host: reqHost, Scheme: reqScheme}, cookie)
+		outgoingDialer.Jar = cookies
+
+		outgoingConn, _, err := outgoingDialer.Dial(urlAddr, header)
 		if err == nil {
 			go func() {
 				_ = p.proxyConn(outgoingConn, incomingConn)
 			}()
 			_ = p.proxyConn(incomingConn, outgoingConn)
 		} else {
-			log.Errorf(log_code.ErrorWebsocketProxy, "unable to connect to service %s: %v", url, err)
+			log.Errorf(log_code.ErrorWebsocketProxy, "unable to connect to service %s: %v", urlAddr, err)
 			_ = incomingConn.Close()
 		}
 	})
