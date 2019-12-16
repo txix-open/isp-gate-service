@@ -1,3 +1,5 @@
+## 2.3.0
+* add support for tokens in get params
 ## 2.2.0
 * add websocket proxy
 ## 2.1.0
