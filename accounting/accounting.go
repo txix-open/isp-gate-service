@@ -79,12 +79,11 @@ func (w *accountingWorker) init(accountingSetting conf.Accounting) {
 			newAccountingStorage[s.ApplicationId] = accounting
 			newRequestsStoringStorage[s.ApplicationId] = s.EnableStoring
 		}
+		InitStoringTask(accountingSetting.Storing)
+		InitSnapshotTask(accountingSetting.SnapshotTimeout)
 	}
 	w.requestsStoring = newRequestsStoringStorage
 	w.accountingStorage = newAccountingStorage
-
-	InitStoringTask(accountingSetting.Storing)
-	InitSnapshotTask(accountingSetting.SnapshotTimeout)
 }
 
 func (w *accountingWorker) takeSnapshot() []entity.Snapshot {
