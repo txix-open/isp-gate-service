@@ -151,6 +151,7 @@ func TestWorker_recoveryAccounting(t *testing.T) {
 type snapshotRepository struct {
 	enableWaitGroup bool
 	wg              sync.WaitGroup
+	mx              sync.Mutex
 	cache           map[int32]entity.Snapshot
 }
 
@@ -177,6 +178,9 @@ func (r *snapshotRepository) Wait() bool {
 }
 
 func (r *snapshotRepository) GetByApplication(appId int32) (*entity.Snapshot, error) {
+	r.mx.Lock()
+	defer r.mx.Unlock()
+
 	if snapshot, ok := r.cache[appId]; ok {
 		return &snapshot, nil
 	} else {
@@ -185,6 +189,9 @@ func (r *snapshotRepository) GetByApplication(appId int32) (*entity.Snapshot, er
 }
 
 func (r *snapshotRepository) Update(list []entity.Snapshot) error {
+	r.mx.Lock()
+	defer r.mx.Unlock()
+
 	if r.enableWaitGroup {
 		r.wg.Add(1)
 		defer r.wg.Done()
