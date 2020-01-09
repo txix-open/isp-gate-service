@@ -155,7 +155,7 @@
   revision = "368713356c71961354e09ab9b734740ebdd94784"
 
 [[projects]]
-  digest = "1:143c6b11b882aae2896e07caad401ec0be62c330a85526b954a2cc5bdb3f75d7"
+  digest = "1:0e89aed3581cac97a24fcbde2cc3dcc7bf7168401c56284c81213fa2cc273ed5"
   name = "github.com/integration-system/isp-etp-go"
   packages = [
     "ack",
@@ -165,8 +165,8 @@
     "parser",
   ]
   pruneopts = "UT"
-  revision = "6e92a3dda2cf7c6ec82fc1a1ae922248754e49d9"
-  version = "v2.0.0"
+  revision = "aab01a1b29ac06ebeb0216b9b43708491b8d5aee"
+  version = "v2.0.2"
 
 [[projects]]
   branch = "master"
