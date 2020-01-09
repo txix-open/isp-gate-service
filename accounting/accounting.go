@@ -90,8 +90,10 @@ func (w *accountingWorker) init(accountingSetting conf.Accounting) {
 }
 
 func (w *accountingWorker) takeSnapshot() []entity.Snapshot {
-	response := make([]entity.Snapshot, 0, len(w.accountingStorage))
-	for appId, account := range w.accountingStorage {
+	lastStorage := w.accountingStorage
+
+	response := make([]entity.Snapshot, 0, len(lastStorage))
+	for appId, account := range lastStorage {
 
 		limitState, version := account.Snapshot()
 
