@@ -103,7 +103,9 @@ type requestsRepository struct {
 }
 
 func (r *requestsRepository) Insert(model []entity.Request) error {
+	r.mx.Lock()
 	r.cache = append(r.cache, model...)
+	r.mx.Unlock()
 	r.wg.Done()
 	return nil
 }
