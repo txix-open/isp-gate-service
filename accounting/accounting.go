@@ -79,11 +79,14 @@ func (w *accountingWorker) init(accountingSetting conf.Accounting) {
 			newAccountingStorage[s.ApplicationId] = accounting
 			newRequestsStoringStorage[s.ApplicationId] = s.EnableStoring
 		}
+		w.requestsStoring = newRequestsStoringStorage
+		w.accountingStorage = newAccountingStorage
 		InitStoringTask(accountingSetting.Storing)
 		InitSnapshotTask(accountingSetting.SnapshotTimeout)
+	} else {
+		w.requestsStoring = newRequestsStoringStorage
+		w.accountingStorage = newAccountingStorage
 	}
-	w.requestsStoring = newRequestsStoringStorage
-	w.accountingStorage = newAccountingStorage
 }
 
 func (w *accountingWorker) takeSnapshot() []entity.Snapshot {
@@ -114,8 +117,8 @@ func (w *accountingWorker) recoveryAccounting(appId int32, limitStates map[strin
 		log.Warn(log_code.ErrorSnapshotAccounting, err)
 	}
 
-	if cash, ok := w.accountingStorage[appId]; ok {
-		cashLimitState, cashVersion := cash.Snapshot()
+	if cache, ok := w.accountingStorage[appId]; ok {
+		cashLimitState, cashVersion := cache.Snapshot()
 
 		if dbSnapshot == nil || dbSnapshot.Version < cashVersion {
 			version = cashVersion
