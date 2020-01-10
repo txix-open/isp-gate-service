@@ -1,3 +1,5 @@
+## 2.4.0
+* add access checkout by user id
 ## 2.3.0
 * add support for tokens in get params
 ## 2.2.0

@@ -60,37 +60,38 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 	permittedToCall := false
 
 	if resp, err := rdClient.Client.Get().Pipelined(func(p rd.Pipeliner) error {
-		if cmd := p.Select(int(redis.ApplicationPermissionDb)); v.notEmptyError(cmd.Err()) {
-			return cmd.Err()
+		if _, err := p.Select(int(redis.ApplicationPermissionDb)).Result(); v.notEmptyError(err) {
+			return err
 		}
-		if cmd := p.Get(secondDbKey); v.notEmptyError(cmd.Err()) {
-			return cmd.Err()
-		}
-
-		if cmd := p.Select(int(redis.UserTokenDb)); v.notEmptyError(cmd.Err()) {
-			return cmd.Err()
-		}
-		if cmd := p.Get(thirdDbKey); v.notEmptyError(cmd.Err()) {
-			return cmd.Err()
+		if _, err := p.Get(secondDbKey).Result(); v.notEmptyError(err) {
+			return err
 		}
 
-		if cmd := p.Select(int(redis.DeviceTokenDb)); v.notEmptyError(cmd.Err()) {
-			return cmd.Err()
+		if _, err := p.Select(int(redis.UserTokenDb)).Result(); v.notEmptyError(err) {
+			return err
 		}
-		if cmd := p.Get(fifthDbKey); v.notEmptyError(cmd.Err()) {
-			return cmd.Err()
+		if _, err := p.Get(thirdDbKey).Result(); v.notEmptyError(err) {
+			return err
 		}
+
+		if _, err := p.Select(int(redis.DeviceTokenDb)).Result(); v.notEmptyError(err) {
+			return err
+		}
+		if _, err := p.Get(fifthDbKey).Result(); v.notEmptyError(err) {
+			return err
+		}
+
 		return nil
 	}); v.notEmptyError(err) {
 		return t, false, err
 	} else {
-		// It is not permitted to call this methodParts
+		// ===== NOT PERMITTED BY APPLICATION ID =====
 		if msg, err := v.findStringCmd(resp, 1); err != nil {
 			return t, false, err
 		} else if msg == permittedToCallInfo {
 			permittedToCall = true
 		}
-		//  ===== CHECK USER TOKEN =====
+		// ===== CHECK USER TOKEN =====
 		if msg, err := v.findStringCmd(resp, 3); err != nil {
 			return t, false, err
 		} else {
@@ -101,6 +102,26 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 			return t, false, err
 		} else {
 			t[utils.DeviceIdHeader] = msg
+		}
+
+		// ===== NOT PERMITTED BY USER ID =====
+		fourthDbKey := fmt.Sprintf("%s|%s", t[utils.UserIdHeader], uri)
+		if resp, err := rdClient.Client.Get().Pipelined(func(p rd.Pipeliner) error {
+			if _, err := p.Select(int(redis.UserPermissionDb)).Result(); v.notEmptyError(err) {
+				return err
+			}
+			if _, err := p.Get(fourthDbKey).Result(); v.notEmptyError(err) {
+				return err
+			}
+			return nil
+		}); v.notEmptyError(err) {
+			return t, false, err
+		} else {
+			if msg, err := v.findStringCmd(resp, 1); err != nil {
+				return t, false, err
+			} else if msg == permittedToCallInfo {
+				permittedToCall = true
+			}
 		}
 	}
 	return t, permittedToCall, nil
