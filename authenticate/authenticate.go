@@ -84,6 +84,15 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 	verifiableKeys[utils.DeviceTokenHeader] = string(getParam(utils.DeviceTokenHeader, &ctx.Request))
 	verifiableKeys[utils.UserTokenHeader] = string(getParam(utils.UserTokenHeader, &ctx.Request))
 
+	if verifiableKeys[utils.UserTokenHeader] != "" {
+		userId, err := verifyToken.User(verifiableKeys[utils.UserTokenHeader])
+		if err != nil {
+			return 0, createError("forbidden", codes.PermissionDenied)
+		} else {
+			verifiableKeys[utils.UserIdHeader] = userId
+		}
+	}
+
 	permittedToCall := false
 	verifiableKeys, permittedToCall, err = auth.verify.Identity(verifiableKeys, path)
 	if err != nil {

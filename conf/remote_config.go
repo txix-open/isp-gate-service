@@ -45,6 +45,7 @@ type (
 		AdminSecret       string `schema:"Секрет для проверки токена администратора"`
 		ApplicationSecret string `schema:"Секрет для проверки токена приложений"`
 		ApplicationVerify bool   `schema:"Проверка подписи токена приложений"`
+		UserSecret        string `schema:"Секрет для проверки токена пользователя"`
 	}
 
 	Accounting struct {
