@@ -43,11 +43,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:35e6ba92e1d4e89f4dc51b9868a5d35c3a03d9d2ffc956380502835cf0812a73"
+  digest = "1:dfc03bd895603c3186f77cd6069f3953a1f14713a9c9901b52d837afd19205c0"
   name = "github.com/fasthttp/websocket"
   packages = ["."]
   pruneopts = "UT"
-  revision = "1e7306f3b587255aa9ddb1d5dd122750e00623cf"
+  revision = "41f3051261751fe62d58a04b14bd522a96f0f7e9"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"

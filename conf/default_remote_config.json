@@ -65,7 +65,8 @@
   "tokensSetting": {
     "adminSecret": "secret",
     "applicationSecret": "secret",
-    "applicationVerify": false
+    "applicationVerify": false,
+    "userSecret": "secret"
   },
   "authCacheSetting": {
     "enableCash": false,
