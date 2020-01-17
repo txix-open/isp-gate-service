@@ -15,10 +15,11 @@ type (
 	}
 
 	Location struct {
-		SkipAuth     bool
-		PathPrefix   string `valid:"required~Required"`
-		Protocol     string `valid:"required~Required"`
-		TargetModule string `valid:"required~Required"`
+		SkipAuth       bool
+		SkipExistCheck bool
+		PathPrefix     string `valid:"required~Required"`
+		Protocol       string `valid:"required~Required"`
+		TargetModule   string `valid:"required~Required"`
 	}
 )
 

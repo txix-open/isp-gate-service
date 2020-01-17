@@ -7,8 +7,8 @@ httpOuterAddress:
 httpInnerAddress:
   ip: 0.0.0.0
   port: 9003
-moduleName: isp-gate
-instanceUuid: ec183598-746a-425f-b5e5-27b7fa8bc6af
+moduleName: gate
+instanceUuid: 9d89354b-c728-4b48-b002-a7d3b229f151
 locations:
   - pathPrefix: /api
     protocol: grpc

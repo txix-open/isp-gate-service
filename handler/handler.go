@@ -66,10 +66,12 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domai
 		return domain.Create().SetError(errors.New(msg))
 	}
 
-	if _, ok := routing.AllMethods[path]; !ok {
-		msg := "not implemented"
-		utils.WriteError(ctx, msg, codes.Unimplemented, nil)
-		return domain.Create().SetError(errors.New(msg))
+	if !p.SkipExistCheck() {
+		if _, ok := routing.AllMethods[path]; !ok {
+			msg := "not implemented"
+			utils.WriteError(ctx, msg, codes.Unimplemented, nil)
+			return domain.Create().SetError(errors.New(msg))
+		}
 	}
 
 	if !p.SkipAuth() {

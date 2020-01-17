@@ -16,11 +16,12 @@ import (
 )
 
 type grpcProxy struct {
-	client   *backend.RxGrpcClient
-	skipAuth bool
+	client         *backend.RxGrpcClient
+	skipAuth       bool
+	skipExistCheck bool
 }
 
-func NewProxy(skipAuth bool) *grpcProxy {
+func NewProxy(skipAuth, skipExistCheck bool) *grpcProxy {
 	return &grpcProxy{
 		client: backend.NewRxGrpcClient(
 			backend.WithDialOptions(
@@ -31,7 +32,8 @@ func NewProxy(skipAuth bool) *grpcProxy {
 			backend.WithDialingErrorHandler(func(err error) {
 				log.Errorf(log_code.ErrorClientGrpc, "dialing err: %v", err)
 			})),
-		skipAuth: skipAuth,
+		skipAuth:       skipAuth,
+		skipExistCheck: skipExistCheck,
 	}
 }
 
@@ -55,6 +57,10 @@ func (p *grpcProxy) Consumer(addr []structure.AddressConfiguration) bool {
 
 func (p *grpcProxy) SkipAuth() bool {
 	return p.skipAuth
+}
+
+func (p *grpcProxy) SkipExistCheck() bool {
+	return p.skipExistCheck
 }
 
 func (p *grpcProxy) Close() {

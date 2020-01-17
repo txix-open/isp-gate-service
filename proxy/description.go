@@ -26,29 +26,30 @@ type (
 		ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.ProxyResponse
 		Consumer([]structure.AddressConfiguration) bool
 		SkipAuth() bool
+		SkipExistCheck() bool
 		Close()
 	}
 )
 
-func Init(protocol, pathPrefix string, skipAuth bool) (Proxy, error) {
+func Init(protocol, pathPrefix string, skipAuth, skipExistCheck bool) (Proxy, error) {
 	if pathPrefix[0] != '/' {
 		return nil, errors.Errorf("path must begin with '/' in path '%s'", pathPrefix)
 	}
 	switch protocol {
 	case httpProtocol:
-		proxy := http.NewProxy(skipAuth)
+		proxy := http.NewProxy(skipAuth, skipExistCheck)
 		store[pathPrefix] = proxy
 		return proxy, nil
 	case grpcProtocol:
-		proxy := grpc.NewProxy(skipAuth)
+		proxy := grpc.NewProxy(skipAuth, skipExistCheck)
 		store[pathPrefix] = proxy
 		return proxy, nil
 	case healthCheckProtocol:
-		proxy := health_check.NewProxy(skipAuth)
+		proxy := health_check.NewProxy(skipAuth, skipExistCheck)
 		store[pathPrefix] = proxy
 		return proxy, nil
 	case websocketProtocol:
-		proxy := websocket.NewProxy(skipAuth)
+		proxy := websocket.NewProxy(skipAuth, skipExistCheck)
 		store[pathPrefix] = proxy
 		return proxy, nil
 	default:

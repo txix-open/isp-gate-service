@@ -1,3 +1,6 @@
+## 2.5.0
+* add skip for check exist method 
+* add handler for user methods 
 ## 2.4.0
 * add access checkout by user id
 ## 2.3.0
