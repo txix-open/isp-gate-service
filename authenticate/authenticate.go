@@ -88,9 +88,8 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 		userId, err := verifyToken.User(verifiableKeys[utils.UserTokenHeader])
 		if err != nil {
 			return 0, createError("forbidden", codes.PermissionDenied)
-		} else {
-			verifiableKeys[utils.UserIdHeader] = userId
 		}
+		verifiableKeys[utils.UserIdHeader] = userId
 	}
 
 	permittedToCall := false
@@ -112,6 +111,11 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 	if _, ok := routing.InnerMethods[path]; ok {
 		adminToken := getParam(AdminTokenHeader, &ctx.Request)
 		if verifyToken.Admin(string(adminToken)) != nil {
+			return 0, createError("forbidden", codes.PermissionDenied)
+		}
+	}
+	if verifiableKeys[utils.UserIdHeader] == "" {
+		if _, ok := routing.AuthUserMethods[path]; ok {
 			return 0, createError("forbidden", codes.PermissionDenied)
 		}
 	}

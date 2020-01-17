@@ -115,7 +115,8 @@ func getRequiredModulesByLocations(locations []conf.Location) map[string]func([]
 	for targetModule, locations := range locationsByTargetModule {
 		consumerStorage := make([]func([]structure.AddressConfiguration) bool, len(locations))
 		for i, location := range locations {
-			if p, err := proxy.Init(location.Protocol, location.PathPrefix, location.SkipAuth); err != nil {
+			p, err := proxy.Init(location.Protocol, location.PathPrefix, location.SkipAuth, location.SkipExistCheck)
+			if err != nil {
 				log.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
 			} else {
 				consumerStorage[i] = p.Consumer
