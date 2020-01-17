@@ -103,7 +103,6 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 		if msg, err := v.findStringCmd(resp, 3); err != nil {
 			return t, false, err
 		} else {
-
 			if msg != t[utils.UserIdHeader] {
 				return t, false, errors.Errorf("doesn't match user id")
 			}

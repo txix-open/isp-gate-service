@@ -22,7 +22,12 @@ const (
 )
 
 var notExpectedHeaders = []string{
-	utils.SystemIdHeader, utils.DomainIdHeader, utils.ServiceIdHeader, utils.ApplicationIdHeader,
+	utils.SystemIdHeader,
+	utils.DomainIdHeader,
+	utils.ServiceIdHeader,
+	utils.ApplicationIdHeader,
+	utils.UserIdHeader,
+	utils.DeviceIdHeader,
 }
 
 var auth = authenticate{}
