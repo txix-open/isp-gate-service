@@ -1,3 +1,5 @@
+## 2.5.2
+* fix init http
 ## 2.5.1
 * fix code response when doesn't match user id
 * fix config reload
