@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/integration-system/go-cmp/cmp"
 	"github.com/integration-system/isp-lib/bootstrap"
 	"github.com/integration-system/isp-lib/config"
 	"github.com/integration-system/isp-lib/config/schema"
@@ -70,7 +71,9 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	metric.InitHttpServer(remoteConfig.Metrics)
 	service.Metrics.Init()
 
-	server.Http.Init(remoteConfig.HttpSetting.GetMaxRequestBodySize())
+	if !cmp.Equal(remoteConfig.HttpSetting, oldRemoteConfig.HttpSetting) {
+		server.Http.Init(remoteConfig.HttpSetting.GetMaxRequestBodySize())
+	}
 }
 
 func socketConfiguration(cfg interface{}) structure.SocketConfiguration {
