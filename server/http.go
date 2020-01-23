@@ -57,6 +57,7 @@ func (s *httpSrv) run(MaxRequestBodySize int64) {
 
 func (s *httpSrv) Close() {
 	if s.srv != nil {
+		s.working = false
 		if err := s.srv.Shutdown(); err != nil {
 			log.Warn(log_code.WarnHttpServerShutdown, err)
 		}
