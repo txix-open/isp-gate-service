@@ -53,12 +53,13 @@ func (v *runtimeVerify) ApplicationToken(token string) (map[string]string, error
 	}
 }
 
-func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]string, bool, error) {
+func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]string, bool, bool, error) {
 	secondDbKey := fmt.Sprintf("%s|%s", t[utils.ApplicationIdHeader], uri)
 	thirdDbKey := fmt.Sprintf("%s|%s", t[utils.UserTokenHeader], t[utils.DomainIdHeader])
 	fourthDbKey := fmt.Sprintf("%s|%s", t[utils.UserIdHeader], uri)
 	fifthDbKey := fmt.Sprintf("%s|%s", t[utils.DeviceTokenHeader], t[utils.DomainIdHeader])
 	permittedToCall := false
+	validUserId := true
 
 	if resp, err := rdClient.Client.Get().Pipelined(func(p rd.Pipeliner) error {
 		if _, err := p.Select(int(redis.ApplicationPermissionDb)).Result(); v.notEmptyError(err) {
@@ -91,36 +92,36 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 
 		return nil
 	}); v.notEmptyError(err) {
-		return t, false, err
+		return t, false, false, err
 	} else {
 		// ===== NOT PERMITTED BY APPLICATION ID =====
 		if msg, err := v.findStringCmd(resp, 1); err != nil {
-			return t, false, err
+			return t, false, false, err
 		} else if msg == permittedToCallInfo {
 			permittedToCall = true
 		}
 		// ===== CHECK USER TOKEN =====
 		if msg, err := v.findStringCmd(resp, 3); err != nil {
-			return t, false, err
+			return t, false, false, err
 		} else {
 			if msg != t[utils.UserIdHeader] {
-				return t, false, errors.Errorf("doesn't match user id")
+				validUserId = false
 			}
 		}
 		// ===== NOT PERMITTED BY USER ID =====
 		if msg, err := v.findStringCmd(resp, 5); err != nil {
-			return t, false, err
+			return t, false, false, err
 		} else if msg == permittedToCallInfo {
 			permittedToCall = true
 		}
 		// ===== CHECK DEVICE TOKEN =====
 		if msg, err := v.findStringCmd(resp, 7); err != nil {
-			return t, false, err
+			return t, false, false, err
 		} else {
 			t[utils.DeviceIdHeader] = msg
 		}
 	}
-	return t, permittedToCall, nil
+	return t, permittedToCall, validUserId, nil
 }
 
 func (v *runtimeVerify) notEmptyError(err error) bool {

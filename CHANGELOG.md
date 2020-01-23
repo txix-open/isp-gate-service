@@ -1,3 +1,6 @@
+## 2.5.1
+* fix code response when doesn't match user id
+* fix config reload
 ## 2.5.0
 * add skip for check exist method 
 * add handler for user methods

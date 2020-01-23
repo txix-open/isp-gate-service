@@ -98,10 +98,16 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 	}
 
 	permittedToCall := false
-	verifiableKeys, permittedToCall, err = auth.verify.Identity(verifiableKeys, path)
+	validUserId := true
+	verifiableKeys, permittedToCall, validUserId, err = auth.verify.Identity(verifiableKeys, path)
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, err)
-		return 0, createError("internal Server error", codes.Internal)
+		return 0, createError("internal server error", codes.Internal)
+	}
+	if !validUserId {
+		msg := "doesn't match user id"
+		log.Error(log_code.ErrorAuthenticate, msg)
+		return 0, createError(msg, codes.PermissionDenied)
 	}
 	if permittedToCall {
 		return 0, createError("forbidden", codes.PermissionDenied)

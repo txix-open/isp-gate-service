@@ -47,6 +47,6 @@ func (cv *cacheableVerify) ApplicationToken(token string) (map[string]string, er
 	}
 }
 
-func (cv *cacheableVerify) Identity(identity map[string]string, uri string) (map[string]string, bool, error) {
+func (cv *cacheableVerify) Identity(identity map[string]string, uri string) (map[string]string, bool, bool, error) {
 	return cv.rv.Identity(identity, uri)
 }
