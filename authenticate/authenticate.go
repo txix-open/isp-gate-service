@@ -61,10 +61,10 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 	)
 
 	if len(appToken) == 0 {
-		return 0, createError("unauthorized", codes.Unauthenticated)
+		return 0, createError("unauthorized", codes.Unauthenticated, "application token required")
 	} else if config.GetRemote().(*conf.RemoteConfig).TokensSetting.ApplicationVerify {
 		if appId, err = verifyToken.Application(string(appToken)); err != nil || appId == 0 {
-			return 0, createError("unauthorized", codes.Unauthenticated, "invalid token")
+			return 0, createError("unauthorized", codes.Unauthenticated, "received invalid application token")
 		}
 	}
 
@@ -74,7 +74,7 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 		return 0, createError("internal Server error", codes.Internal)
 	}
 	if len(verifiableKeys) != 4 {
-		return 0, createError("unauthorized", codes.Unauthenticated, "unknown token")
+		return 0, createError("unauthorized", codes.Unauthenticated, "received unexpected identities")
 	}
 
 	applicationId, err := strconv.Atoi(verifiableKeys[utils.ApplicationIdHeader])
@@ -83,34 +83,30 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 		return 0, createError("internal Server error", codes.Internal)
 	}
 	if appId != -1 && int32(applicationId) != appId {
-		return 0, createError("unauthorized", codes.Unauthenticated, "unknown application identity")
+		return 0, createError("unauthorized", codes.Unauthenticated, "received unexpected application identity")
 	}
 
-	verifiableKeys[utils.DeviceTokenHeader] = string(getParam(utils.DeviceTokenHeader, &ctx.Request))
-	verifiableKeys[utils.UserTokenHeader] = string(getParam(utils.UserTokenHeader, &ctx.Request))
-
-	if verifiableKeys[utils.UserTokenHeader] != "" {
-		userId, err := verifyToken.User(verifiableKeys[utils.UserTokenHeader])
+	userToken := string(getParam(utils.UserTokenHeader, &ctx.Request))
+	if userToken != "" {
+		userId, err := verifyToken.User(userToken)
 		if err != nil {
-			return 0, createError("forbidden", codes.PermissionDenied)
+			return 0, createError("unauthorized", codes.Unauthenticated, "received invalid user token")
 		}
 		verifiableKeys[utils.UserIdHeader] = userId
 	}
 
-	permittedToCall := false
-	validUserId := true
-	verifiableKeys, permittedToCall, validUserId, err = auth.verify.Identity(verifiableKeys, path)
+	verifiableKeys[utils.UserTokenHeader] = userToken
+	verifiableKeys[utils.DeviceTokenHeader] = string(getParam(utils.DeviceTokenHeader, &ctx.Request))
+	verifiableKeys, err = auth.verify.Identity(verifiableKeys, path)
 	if err != nil {
-		log.Error(log_code.ErrorAuthenticate, err)
-		return 0, createError("internal server error", codes.Internal)
-	}
-	if !validUserId {
-		msg := "doesn't match user id"
-		log.Error(log_code.ErrorAuthenticate, msg)
-		return 0, createError(msg, codes.PermissionDenied)
-	}
-	if permittedToCall {
-		return 0, createError("forbidden", codes.PermissionDenied)
+		switch err {
+		case veritification.ErrorInvalidUserId:
+			return 0, createError("unauthorized", codes.Unauthenticated, err.Error())
+		case veritification.ErrorPermittedToCallUser, veritification.ErrorPermittedToCallApplication:
+			return 0, createError("forbidden", codes.PermissionDenied, err.Error())
+		default:
+			return 0, createError("internal server error", codes.Internal)
+		}
 	}
 
 	for key, value := range verifiableKeys {
@@ -120,14 +116,17 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 	}
 
 	if _, ok := routing.InnerMethods[path]; ok {
-		adminToken := getParam(AdminTokenHeader, &ctx.Request)
-		if verifyToken.Admin(string(adminToken)) != nil {
-			return 0, createError("forbidden", codes.PermissionDenied)
+		adminToken := string(getParam(AdminTokenHeader, &ctx.Request))
+		if adminToken == "" {
+			return 0, createError("unauthorized", codes.Unauthenticated, "admin token required")
+		}
+		if verifyToken.Admin(adminToken) != nil {
+			return 0, createError("unauthorized", codes.Unauthenticated, "received invalid admin token")
 		}
 	}
 	if verifiableKeys[utils.UserIdHeader] == "" {
 		if _, ok := routing.AuthUserMethods[path]; ok {
-			return 0, createError("forbidden", codes.PermissionDenied)
+			return 0, createError("unauthorized", codes.Unauthenticated, "user token required")
 		}
 	}
 
