@@ -53,13 +53,11 @@ func (v *runtimeVerify) ApplicationToken(token string) (map[string]string, error
 	}
 }
 
-func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]string, bool, bool, error) {
+func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]string, error) {
 	secondDbKey := fmt.Sprintf("%s|%s", t[utils.ApplicationIdHeader], uri)
 	thirdDbKey := fmt.Sprintf("%s|%s", t[utils.UserTokenHeader], t[utils.DomainIdHeader])
 	fourthDbKey := fmt.Sprintf("%s|%s", t[utils.UserIdHeader], uri)
 	fifthDbKey := fmt.Sprintf("%s|%s", t[utils.DeviceTokenHeader], t[utils.DomainIdHeader])
-	permittedToCall := false
-	validUserId := true
 
 	if resp, err := rdClient.Client.Get().Pipelined(func(p rd.Pipeliner) error {
 		if _, err := p.Select(int(redis.ApplicationPermissionDb)).Result(); v.notEmptyError(err) {
@@ -92,36 +90,41 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 
 		return nil
 	}); v.notEmptyError(err) {
-		return t, false, false, err
+		return t, err
 	} else {
 		// ===== NOT PERMITTED BY APPLICATION ID =====
-		if msg, err := v.findStringCmd(resp, 1); err != nil {
-			return t, false, false, err
-		} else if msg == permittedToCallInfo {
-			permittedToCall = true
+		msg, err := v.findStringCmd(resp, 1)
+		if err != nil {
+			return t, err
+		}
+		if msg == permittedToCallInfo {
+			return t, newError(ErrorCodePermittedToCall, "application has no rights to call this method")
 		}
 		// ===== CHECK USER TOKEN =====
-		if msg, err := v.findStringCmd(resp, 3); err != nil {
-			return t, false, false, err
-		} else {
-			if msg != t[utils.UserIdHeader] {
-				validUserId = false
-			}
+		msg, err = v.findStringCmd(resp, 3)
+		if err != nil {
+			return t, err
+		}
+		userIdentity, found := t[utils.UserIdHeader]
+		if found && msg != userIdentity {
+			return t, newError(ErrorCodeInvalidUserId, "received unexpected user identity")
 		}
 		// ===== NOT PERMITTED BY USER ID =====
-		if msg, err := v.findStringCmd(resp, 5); err != nil {
-			return t, false, false, err
-		} else if msg == permittedToCallInfo {
-			permittedToCall = true
+		msg, err = v.findStringCmd(resp, 5)
+		if err != nil {
+			return t, err
+		}
+		if msg == permittedToCallInfo {
+			return t, newError(ErrorCodePermittedToCall, "user has no rights to call this method")
 		}
 		// ===== CHECK DEVICE TOKEN =====
-		if msg, err := v.findStringCmd(resp, 7); err != nil {
-			return t, false, false, err
-		} else {
-			t[utils.DeviceIdHeader] = msg
+		msg, err = v.findStringCmd(resp, 7)
+		if err != nil {
+			return t, err
 		}
+		t[utils.DeviceIdHeader] = msg
 	}
-	return t, permittedToCall, validUserId, nil
+	return t, nil
 }
 
 func (v *runtimeVerify) notEmptyError(err error) bool {
