@@ -99,16 +99,11 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 	verifiableKeys[utils.DeviceTokenHeader] = string(getParam(utils.DeviceTokenHeader, &ctx.Request))
 	verifiableKeys, err = auth.verify.Identity(verifiableKeys, path)
 	if err != nil {
-		switch e := err.(type) {
-		case veritification.Error:
-			switch e.Code {
-			case veritification.ErrorCodeInvalidUserId:
-				return 0, createError("unauthorized", codes.Unauthenticated, e.Error())
-			case veritification.ErrorCodePermittedToCall:
-				return 0, createError("forbidden", codes.PermissionDenied, e.Error())
-			default:
-				return 0, createError("internal server error", codes.Internal)
-			}
+		switch err {
+		case veritification.ErrorInvalidUserId:
+			return 0, createError("unauthorized", codes.Unauthenticated, err.Error())
+		case veritification.ErrorPermittedToCallUser, veritification.ErrorPermittedToCallApplication:
+			return 0, createError("forbidden", codes.PermissionDenied, err.Error())
 		default:
 			return 0, createError("internal server error", codes.Internal)
 		}

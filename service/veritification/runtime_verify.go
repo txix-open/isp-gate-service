@@ -98,7 +98,7 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 			return t, err
 		}
 		if msg == permittedToCallInfo {
-			return t, newError(ErrorCodePermittedToCall, "application has no rights to call this method")
+			return t, ErrorPermittedToCallApplication
 		}
 		// ===== CHECK USER TOKEN =====
 		msg, err = v.findStringCmd(resp, 3)
@@ -107,7 +107,7 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 		}
 		userIdentity, found := t[utils.UserIdHeader]
 		if found && msg != userIdentity {
-			return t, newError(ErrorCodeInvalidUserId, "received unexpected user identity")
+			return t, ErrorInvalidUserId
 		}
 		// ===== NOT PERMITTED BY USER ID =====
 		msg, err = v.findStringCmd(resp, 5)
@@ -115,7 +115,7 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 			return t, err
 		}
 		if msg == permittedToCallInfo {
-			return t, newError(ErrorCodePermittedToCall, "user has no rights to call this method")
+			return t, ErrorPermittedToCallUser
 		}
 		// ===== CHECK DEVICE TOKEN =====
 		msg, err = v.findStringCmd(resp, 7)

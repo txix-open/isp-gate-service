@@ -1,26 +1,9 @@
 package veritification
 
-const (
-	ErrorCodeInvalidUserId   code = 0
-	ErrorCodePermittedToCall code = 1
+import "errors"
+
+var (
+	ErrorInvalidUserId              = errors.New("received unexpected user identity")
+	ErrorPermittedToCallApplication = errors.New("application has no rights to call this method")
+	ErrorPermittedToCallUser        = errors.New("user has no rights to call this method")
 )
-
-type (
-	code int
-
-	Error struct {
-		Code    code
-		message string
-	}
-)
-
-func (e Error) Error() string {
-	return e.message
-}
-
-func newError(code code, message string) Error {
-	return Error{
-		Code:    code,
-		message: message,
-	}
-}
