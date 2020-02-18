@@ -34,16 +34,16 @@ func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *
 		return domain.Create().SetError(err)
 	}
 
-	resp, invokerErr := cli.Request(
+	msg, invokerErr := cli.Request(
 		ctx,
 		&isp.Message{
 			Body: &isp.Message_BytesBody{BytesBody: body},
 		},
 	)
 
-	if data, status, err := getResponse(resp, invokerErr); err == nil {
+	if response, status, err := getResponse(msg, invokerErr); err == nil {
 		c.SetStatusCode(status)
-		_, _ = c.Write(data)
+		_, _ = c.Write(response)
 		return domain.Create().SetError(invokerErr)
 	} else {
 		logHandlerError(log_code.TypeData.JsonContent, methodName, err)
