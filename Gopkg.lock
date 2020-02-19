@@ -664,6 +664,7 @@
     "github.com/go-redis/redis",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes/struct",
+    "github.com/integration-system/go-cmp/cmp",
     "github.com/integration-system/isp-journal/rx",
     "github.com/integration-system/isp-lib/backend",
     "github.com/integration-system/isp-lib/bootstrap",

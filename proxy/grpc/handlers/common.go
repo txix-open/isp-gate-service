@@ -139,17 +139,26 @@ func makeMetadata(r *fasthttp.RequestHeader, method string) (metadata.MD, string
 	return md, method
 }
 
-func checkError(err error, ctx *fasthttp.RequestCtx) (bool, bool, domain.ProxyResponse) {
+func checkError(err error, ctx *fasthttp.RequestCtx, method string) (bool, bool, domain.ProxyResponse) {
 	var (
-		ok   = true
-		eof  = false
-		resp = domain.ProxyResponse{}
+		ok                    = true
+		eof                   = false
+		resp                  = domain.ProxyResponse{}
+		msg                   = errorMsgInternal
+		code                  = codes.Internal
+		details []interface{} = nil
 	)
 
 	if err != nil {
 		if err != io.EOF {
-			logHandlerError(log_code.TypeData.GetFile, "", err)
-			utils2.WriteError(ctx, errorMsgInternal, codes.Internal, nil)
+			s, itStatus := status.FromError(err)
+			if itStatus {
+				msg = s.Message()
+				code = s.Code()
+				details = s.Details()
+			}
+			logHandlerError(log_code.TypeData.GetFile, method, err)
+			utils2.WriteError(ctx, msg, code, details)
 			resp = domain.Create().SetError(err)
 			ok, eof = false, false
 		} else {

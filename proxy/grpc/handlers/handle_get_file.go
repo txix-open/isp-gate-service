@@ -57,20 +57,20 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 
 	msg, err := stream.Recv()
 	if err != nil {
-		bytes, status, err := getResponse(nil, err)
+		response, status, err := getResponse(nil, err)
 		if err == nil {
 			ctx.SetStatusCode(status)
-			ctx.SetBody(bytes)
+			ctx.SetBody(response)
 		}
 		return domain.Create().SetError(err)
 	}
 	bf := s.BeginFile{}
 	err = bf.FromMessage(msg)
 	if err != nil {
-		bytes, status, err := getResponse(nil, err)
+		response, status, err := getResponse(nil, err)
 		if err == nil {
 			ctx.SetStatusCode(status)
-			ctx.SetBody(bytes)
+			ctx.SetBody(response)
 		}
 		return domain.Create().SetError(err)
 	}
