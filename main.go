@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"os"
+
 	"github.com/integration-system/isp-lib/bootstrap"
 	"github.com/integration-system/isp-lib/config"
 	"github.com/integration-system/isp-lib/config/schema"
@@ -20,12 +22,10 @@ import (
 	"isp-gate-service/server"
 	"isp-gate-service/service"
 	"isp-gate-service/service/matcher"
-	"os"
 )
 
 var (
 	version = "0.1.0"
-	date    = "undefined"
 )
 
 func main() {

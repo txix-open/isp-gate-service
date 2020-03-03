@@ -2,25 +2,31 @@ package websocket
 
 import (
 	"errors"
+	"io"
+	"net"
+	"net/http"
+	"net/http/cookiejar"
+	"net/url"
+	"sync"
+
 	"github.com/fasthttp/websocket"
 	"github.com/integration-system/isp-lib/structure"
 	log "github.com/integration-system/isp-log"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
-	"io"
 	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
 	"isp-gate-service/utils"
-	"net"
-	"net/http"
-	"net/http/cookiejar"
-	"net/url"
 )
 
 const (
 	writeBufSize = 4 << 10
 	readBufSize  = 4 << 10
 )
+
+var pool = &sync.Pool{New: func() interface{} {
+	return make([]byte, readBufSize)
+}}
 
 // used to filter client request headers
 var forbiddenDuplicateHeaders = map[string]struct{}{
@@ -139,9 +145,11 @@ func (p *websocketProxy) Close() {
 }
 
 func (p *websocketProxy) proxyConn(from, to *websocket.Conn) error {
+	buf := pool.Get().([]byte)
 	defer func() {
 		_ = from.Close()
 		_ = to.Close()
+		pool.Put(buf)
 	}()
 	for {
 		msgType, reader, err := from.NextReader()
@@ -152,7 +160,7 @@ func (p *websocketProxy) proxyConn(from, to *websocket.Conn) error {
 		if err != nil {
 			return err
 		}
-		if _, err := io.Copy(writer, reader); err != nil {
+		if _, err := io.CopyBuffer(writer, reader, buf); err != nil {
 			return err
 		}
 		if err := writer.Close(); err != nil {

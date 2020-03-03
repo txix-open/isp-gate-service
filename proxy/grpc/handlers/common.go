@@ -1,6 +1,11 @@
 package handlers
 
 import (
+	"bytes"
+	"io"
+	"net/http"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/integration-system/isp-lib/backend"
@@ -16,14 +21,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"io"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
 	utils2 "isp-gate-service/utils"
-	"net/http"
-	"strings"
-	"time"
 )
 
 const (
@@ -129,11 +130,12 @@ func openStream(headers *fasthttp.RequestHeader, method string, timeout time.Dur
 
 func makeMetadata(r *fasthttp.RequestHeader, method string) (metadata.MD, string) {
 	//method = strings.TrimPrefix(method, "/api/")
-	md := metadata.Pairs(utils.ProxyMethodNameHeader, method)
+	md := make(metadata.MD, 5)
+	md[utils.ProxyMethodNameHeader] = []string{method}
 	r.VisitAll(func(key, v []byte) {
-		lowerHeader := strings.ToLower(string(key))
-		if len(v) > 0 && strings.HasPrefix(lowerHeader, "x-") {
-			md = metadata.Join(md, metadata.Pairs(lowerHeader, string(v)))
+		lowerHeader := bytes.ToLower(key)
+		if len(v) > 0 && bytes.HasPrefix(lowerHeader, []byte("x-")) {
+			md[string(lowerHeader)] = []string{string(v)}
 		}
 	})
 	return md, method

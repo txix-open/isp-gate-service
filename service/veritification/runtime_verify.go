@@ -1,7 +1,6 @@
 package veritification
 
 import (
-	"fmt"
 	rd "github.com/go-redis/redis"
 	"github.com/integration-system/isp-lib/config"
 	"github.com/integration-system/isp-lib/redis"
@@ -24,7 +23,7 @@ type runtimeVerify struct{}
 
 func (v *runtimeVerify) ApplicationToken(token string) (map[string]string, error) {
 	instanceUuid := config.Get().(*conf.Configuration).InstanceUuid
-	key := fmt.Sprintf("%s|%s", token, instanceUuid)
+	key := makeDbKey(token, instanceUuid)
 
 	if resp, err := rdClient.Client.Get().Pipelined(func(p rd.Pipeliner) error {
 		if cmd := p.Select(int(redis.ApplicationTokenDb)); v.notEmptyError(cmd.Err()) {
@@ -44,8 +43,9 @@ func (v *runtimeVerify) ApplicationToken(token string) (map[string]string, error
 		} else if stringStringMapCmd, ok := resp[1].(*rd.StringStringMapCmd); !ok {
 			return nil, nil
 		} else {
-			identityMap := make(map[string]string)
-			for i, value := range stringStringMapCmd.Val() {
+			vals := stringStringMapCmd.Val()
+			identityMap := make(map[string]string, len(vals))
+			for i, value := range vals {
 				identityMap[headerKeyByRedisIdentity[i]] = value
 			}
 			return identityMap, nil
@@ -54,10 +54,10 @@ func (v *runtimeVerify) ApplicationToken(token string) (map[string]string, error
 }
 
 func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]string, error) {
-	secondDbKey := fmt.Sprintf("%s|%s", t[utils.ApplicationIdHeader], uri)
-	thirdDbKey := fmt.Sprintf("%s|%s", t[utils.UserTokenHeader], t[utils.DomainIdHeader])
-	fourthDbKey := fmt.Sprintf("%s|%s", t[utils.UserIdHeader], uri)
-	fifthDbKey := fmt.Sprintf("%s|%s", t[utils.DeviceTokenHeader], t[utils.DomainIdHeader])
+	secondDbKey := makeDbKey(t[utils.ApplicationIdHeader], uri)
+	thirdDbKey := makeDbKey(t[utils.UserTokenHeader], t[utils.DomainIdHeader])
+	fourthDbKey := makeDbKey(t[utils.UserIdHeader], uri)
+	fifthDbKey := makeDbKey(t[utils.DeviceTokenHeader], t[utils.DomainIdHeader])
 
 	if resp, err := rdClient.Client.Get().Pipelined(func(p rd.Pipeliner) error {
 		if _, err := p.Select(int(redis.ApplicationPermissionDb)).Result(); v.notEmptyError(err) {
@@ -152,4 +152,8 @@ func (v *runtimeVerify) findStringCmd(cmders []rd.Cmder, arrayKey int) (string, 
 	} else {
 		return "", errors.New("not found cmd")
 	}
+}
+
+func makeDbKey(key, val string) string {
+	return key + "|" + val
 }
