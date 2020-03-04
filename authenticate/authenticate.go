@@ -37,11 +37,11 @@ type authenticate struct {
 }
 
 func ReceiveConfiguration(conf conf.Cache) {
-	if conf.EnableCash {
+	if conf.EnableCache {
 		if timeout, err := time.ParseDuration(conf.EvictTimeout); err != nil {
 			log.Fatalf(stdcodes.ModuleInvalidRemoteConfig, "invalid timeout '%s'", timeout)
 		} else {
-			auth.verify = veritification.NewCacheableVerify(timeout)
+			auth.verify = veritification.NewCacheablesVerify(timeout)
 		}
 	} else {
 		auth.verify = veritification.NewRuntimeVerify()

@@ -69,7 +69,7 @@
     "userSecret": "secret"
   },
   "authCacheSetting": {
-    "enableCash": false,
+    "enableCache": false,
     "evictTimeout": "1m"
   }
 }

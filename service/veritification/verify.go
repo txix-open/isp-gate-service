@@ -15,8 +15,8 @@ func NewRuntimeVerify() Verify {
 	return &runtimeVerify{}
 }
 
-func NewCacheableVerify(timeout time.Duration) Verify {
-	return &cacheableVerify{
+func NewCacheablesVerify(timeout time.Duration) Verify {
+	return &cacheablesVerify{
 		cache:   make(map[string]cacheInfo),
 		timeout: timeout,
 		rv:      &runtimeVerify{},

@@ -6,7 +6,7 @@ import (
 )
 
 type (
-	cacheableVerify struct {
+	cacheablesVerify struct {
 		cache   map[string]cacheInfo
 		timeout time.Duration
 		rv      *runtimeVerify
@@ -19,34 +19,42 @@ type (
 	}
 )
 
-func (cv *cacheableVerify) ApplicationToken(token string) (map[string]string, error) {
+func (cv *cacheablesVerify) ApplicationToken(token string) (map[string]string, error) {
 	cv.lock.RLock()
 	cache, ok := cv.cache[token]
 	cv.lock.RUnlock()
 	if ok {
-		if time.Now().Sub(cache.created) > cv.timeout {
-			return cache.identity, nil
+		if time.Now().Sub(cache.created) < cv.timeout {
+			return cv.copyCache(cache.identity), nil
 		}
 	}
 
 	cv.lock.Lock()
 	defer cv.lock.Unlock()
-	if cache, ok = cv.cache[token]; ok {
-		if time.Now().Sub(cache.created) > cv.timeout {
-			return cache.identity, nil
-		} else {
-			delete(cv.cache, token)
+	cache, ok = cv.cache[token]
+	if ok {
+		if time.Now().Sub(cache.created) < cv.timeout {
+			return cv.copyCache(cache.identity), nil
 		}
+		delete(cv.cache, token)
 	}
-	if identity, err := cv.rv.ApplicationToken(token); err != nil {
+
+	identity, err := cv.rv.ApplicationToken(token)
+	if err != nil {
 		return nil, err
-	} else {
-		cv.cache[token] = cacheInfo{created: time.Now(), identity: identity}
-		resp := identity
-		return resp, nil
 	}
+	cv.cache[token] = cacheInfo{created: time.Now(), identity: identity}
+	return cv.copyCache(identity), nil
 }
 
-func (cv *cacheableVerify) Identity(identity map[string]string, uri string) (map[string]string, error) {
+func (cv *cacheablesVerify) Identity(identity map[string]string, uri string) (map[string]string, error) {
 	return cv.rv.Identity(identity, uri)
+}
+
+func (cv *cacheablesVerify) copyCache(cache map[string]string) map[string]string {
+	resp := make(map[string]string)
+	for key, value := range cache {
+		resp[key] = value
+	}
+	return resp
 }
