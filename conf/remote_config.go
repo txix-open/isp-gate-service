@@ -32,7 +32,7 @@ type (
 	}
 
 	Cache struct {
-		EnableCash   bool   `schema:"Кеширование,включает кеширования для токена приложения"`
+		EnableCache  bool   `schema:"Кеширование,включает кеширования для токена приложения"`
 		EvictTimeout string `schema:"Время жизни записи в кеше"`
 	}
 

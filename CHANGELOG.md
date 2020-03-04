@@ -1,3 +1,5 @@
+## 2.5.4
+* fix auth cache
 ## 2.5.3
 * fix grpc multipart error response
 ## 2.5.2
