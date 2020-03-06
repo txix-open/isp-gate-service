@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/integration-system/go-cmp/cmp"
-	"github.com/integration-system/isp-lib/config"
+	"github.com/integration-system/isp-lib/v2/config"
 	log "github.com/integration-system/isp-log"
 	"github.com/valyala/fasthttp"
 	"isp-gate-service/conf"
@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 )
+
+const defaultTimeout = 60 * time.Second
 
 var Http = &httpSrv{mx: sync.Mutex{}}
 
@@ -30,7 +32,7 @@ func (s *httpSrv) Init(new, old conf.HttpSetting) {
 	}
 }
 
-func (s *httpSrv) run(MaxRequestBodySize int64) {
+func (s *httpSrv) run(maxRequestBodySize int64) {
 	s.mx.Lock()
 	s.working = true
 	if s.srv != nil {
@@ -38,13 +40,12 @@ func (s *httpSrv) run(MaxRequestBodySize int64) {
 			log.Warn(log_code.WarnHttpServerShutdown, err)
 		}
 	}
-	maxRequestBodySize := MaxRequestBodySize
 	localConfig := config.Get().(*conf.Configuration)
 	restAddress := localConfig.HttpInnerAddress.GetAddress()
 	s.srv = &fasthttp.Server{
 		Handler:            handler.CompleteRequest,
-		WriteTimeout:       time.Second * 60,
-		ReadTimeout:        time.Second * 60,
+		WriteTimeout:       defaultTimeout,
+		ReadTimeout:        defaultTimeout,
 		MaxRequestBodySize: int(maxRequestBodySize),
 	}
 	go func() {

@@ -2,7 +2,7 @@ package authenticate
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"github.com/integration-system/isp-lib/config"
+	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"isp-gate-service/conf"

@@ -17,13 +17,14 @@ type storingTask struct {
 	buffer  []entity.Request
 	counter int
 
-	process     bool
 	chanTimeout <-chan time.Time
 	chanCounter chan []entity.Request
 	chanClose   chan bool
 
 	mx sync.Mutex
 	wg sync.WaitGroup
+
+	process bool
 }
 
 func InitStoringTask(setting conf.StoringSetting) {
@@ -63,7 +64,7 @@ func (t *storingTask) Stop() {
 		if t.counter != 0 {
 			buffer := t.clearBuffer()
 			defer func() {
-				t.wg.Add(1)
+				t.wg.Add(1) //nolint
 				t.unload(buffer)
 				t.wg.Wait()
 			}()
@@ -82,14 +83,14 @@ func (t *storingTask) run(timeout time.Duration) {
 		case <-t.chanClose:
 			return
 		case cache := <-t.chanCounter:
-			t.wg.Add(1)
+			t.wg.Add(1) //nolint
 			go t.unload(cache)
 			t.chanTimeout = time.After(timeout)
 		case <-t.chanTimeout:
 			t.mx.Lock()
 			if t.counter != 0 {
 				buffer := t.clearBuffer()
-				t.wg.Add(1)
+				t.wg.Add(1) //nolint
 				go t.unload(buffer)
 			}
 			t.mx.Unlock()
@@ -123,7 +124,7 @@ func newStoringTask(timeout time.Duration, bufSize int) *storingTask {
 		chanCounter: make(chan []entity.Request),
 		chanClose:   make(chan bool),
 	}
-	task.wg.Add(1)
+	task.wg.Add(1) //nolint
 	go task.run(timeout)
 
 	return task

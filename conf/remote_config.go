@@ -1,8 +1,9 @@
+//nolint
 package conf
 
 import (
 	"github.com/integration-system/isp-journal/rx"
-	"github.com/integration-system/isp-lib/structure"
+	"github.com/integration-system/isp-lib/v2/structure"
 	"time"
 )
 

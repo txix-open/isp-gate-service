@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/integration-system/isp-lib/metric"
+	"github.com/integration-system/isp-lib/v2/metric"
 	"github.com/rcrowley/go-metrics"
 	"sync"
 	"time"
@@ -41,7 +41,7 @@ func (m *metricService) UpdateMethodResponseTime(uri string, time time.Duration)
 
 func (m *metricService) UpdateStatusCounter(status string) {
 	if m.notEmptyHolder() {
-		m.getOrRegisterCounter(status).Inc(1)
+		m.getOrRegisterCounter(status).Inc(1) //nolint
 	}
 }
 

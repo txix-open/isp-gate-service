@@ -1,11 +1,11 @@
 package model
 
 import (
-	"github.com/go-pg/pg"
-	"github.com/integration-system/isp-lib/database"
+	"github.com/go-pg/pg/v9"
+	"github.com/integration-system/isp-lib/v2/database"
 	"isp-gate-service/entity"
 
-	"github.com/go-pg/pg/orm"
+	"github.com/go-pg/pg/v9/orm"
 )
 
 type (

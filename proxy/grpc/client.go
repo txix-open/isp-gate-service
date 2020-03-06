@@ -1,8 +1,8 @@
 package grpc
 
 import (
-	"github.com/integration-system/isp-lib/backend"
-	"github.com/integration-system/isp-lib/structure"
+	"github.com/integration-system/isp-lib/v2/backend"
+	"github.com/integration-system/isp-lib/v2/structure"
 	log "github.com/integration-system/isp-log"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"

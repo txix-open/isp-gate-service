@@ -1,3 +1,5 @@
+## 2.6.0
+* migrate to go mod
 ## 2.5.4
 * fix auth cache
 ## 2.5.3

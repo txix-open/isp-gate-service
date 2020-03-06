@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/integration-system/isp-lib/backend"
-	"github.com/integration-system/isp-lib/config"
-	s "github.com/integration-system/isp-lib/streaming"
-	u "github.com/integration-system/isp-lib/utils"
+	"github.com/integration-system/isp-lib/v2/backend"
+	"github.com/integration-system/isp-lib/v2/config"
+	isp "github.com/integration-system/isp-lib/v2/proto/stubs"
+	s "github.com/integration-system/isp-lib/v2/streaming"
+	u "github.com/integration-system/isp-lib/v2/utils"
 	log "github.com/integration-system/isp-log"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
@@ -23,16 +24,12 @@ var getFile getFileDesc
 type getFileDesc struct{}
 
 func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) domain.ProxyResponse {
-	cfg := config.GetRemote().(*conf.RemoteConfig).GrpcSetting
-	timeout := cfg.GetStreamInvokeTimeout()
-
 	req, err := g.readJsonBody(ctx)
 	if err != nil {
-		logHandlerError(log_code.TypeData.GetFile, method, err)
-		utils.WriteError(ctx, err.Error(), codes.InvalidArgument, nil)
-		return domain.Create().SetError(err)
+		return g.formError(ctx, err, method, err.Error(), codes.InvalidArgument)
 	}
 
+	timeout := config.GetRemote().(*conf.RemoteConfig).GrpcSetting.GetStreamInvokeTimeout()
 	stream, cancel, err := openStream(&ctx.Request.Header, method, timeout, client)
 	defer func() {
 		if cancel != nil {
@@ -40,18 +37,14 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 		}
 	}()
 	if err != nil {
-		logHandlerError(log_code.TypeData.GetFile, method, err)
-		utils.WriteError(ctx, errorMsgInternal, codes.Internal, nil)
-		return domain.Create().SetError(err)
+		return g.formError(ctx, err, method, errorMsgInternal, codes.Internal)
 	}
 
 	if req != nil {
 		value := u.ConvertInterfaceToGrpcStruct(req)
 		err := stream.Send(backend.WrapBody(value))
 		if err != nil {
-			logHandlerError(log_code.TypeData.GetFile, method, err)
-			utils.WriteError(ctx, errorMsgInternal, codes.Internal, nil)
-			return domain.Create().SetError(err)
+			return g.formError(ctx, err, method, errorMsgInternal, codes.Internal)
 		}
 	}
 
@@ -64,6 +57,7 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 		}
 		return domain.Create().SetError(err)
 	}
+
 	bf := s.BeginFile{}
 	err = bf.FromMessage(msg)
 	if err != nil {
@@ -83,14 +77,20 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 		header.Set(headerKeyTransferEncoding, "chunked")
 	}
 
+	err = g.write(ctx, stream, method)
+	return domain.Create().SetError(err)
+}
+
+//nolint
+func (getFileDesc) write(ctx *fasthttp.RequestCtx, stream isp.BackendService_RequestStreamClient, method string) error {
 	for {
 		msg, err := stream.Recv()
 		if s.IsEndOfFile(msg) || err == io.EOF {
-			break
+			return nil
 		}
 		if err != nil {
 			logHandlerError(log_code.TypeData.GetFile, method, err)
-			break
+			return err
 		}
 		bytes := msg.GetBytesBody()
 		if bytes == nil {
@@ -98,15 +98,14 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 				log_code.MdTypeData: log_code.TypeData.GetFile,
 				log_code.MdMethod:   method,
 			}).Errorf(log_code.WarnProxyGrpcHandler, "Method %s. Expected bytes array", method)
-			break
+			return nil
 		}
 		_, err = ctx.Write(bytes)
 		if err != nil {
 			logHandlerError(log_code.TypeData.GetFile, method, err)
-			break
+			return err
 		}
 	}
-	return domain.Create().SetError(err)
 }
 
 func (getFileDesc) readJsonBody(ctx *fasthttp.RequestCtx) (interface{}, error) {
@@ -115,18 +114,23 @@ func (getFileDesc) readJsonBody(ctx *fasthttp.RequestCtx) (interface{}, error) {
 	if len(requestBody) == 0 {
 		requestBody = []byte("{}")
 	}
-	if requestBody[0] == '{' {
+	switch requestBody[0] {
+	case '{':
 		body = make(map[string]interface{})
-	} else if requestBody[0] == '[' {
+	case '[':
 		body = make([]interface{}, 0)
-	} else {
+	default:
 		return nil, errors.New("Invalid json format. Expected object or array")
 	}
-
 	err := json.Unmarshal(requestBody, &body)
-
 	if err != nil {
 		return nil, errors.New("Not able to read request body")
 	}
 	return body, err
+}
+
+func (getFileDesc) formError(ctx *fasthttp.RequestCtx, err error, method, msg string, code codes.Code) domain.ProxyResponse {
+	logHandlerError(log_code.TypeData.GetFile, method, err)
+	utils.WriteError(ctx, msg, code, nil)
+	return domain.Create().SetError(err)
 }

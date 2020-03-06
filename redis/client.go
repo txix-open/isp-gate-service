@@ -1,8 +1,8 @@
 package redis
 
 import (
-	rd "github.com/integration-system/isp-lib/redis"
-	"github.com/integration-system/isp-lib/structure"
+	rd "github.com/integration-system/isp-lib/v2/redis"
+	"github.com/integration-system/isp-lib/v2/structure"
 	log "github.com/integration-system/isp-log"
 	"isp-gate-service/log_code"
 )
