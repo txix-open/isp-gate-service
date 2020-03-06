@@ -150,7 +150,7 @@ func (p *websocketProxy) proxyConn(from, to *websocket.Conn) error {
 	defer func() {
 		_ = from.Close()
 		_ = to.Close()
-		pool.Put(buf) //nolint
+		pool.Put(buf)
 	}()
 	for {
 		msgType, reader, err := from.NextReader()
