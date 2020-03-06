@@ -25,7 +25,8 @@ const (
 )
 
 var pool = &sync.Pool{New: func() interface{} {
-	return make([]byte, readBufSize)
+	buf := make([]byte, readBufSize)
+	return &buf
 }}
 
 // used to filter client request headers
@@ -145,11 +146,11 @@ func (p *websocketProxy) Close() {
 }
 
 func (p *websocketProxy) proxyConn(from, to *websocket.Conn) error {
-	buf := pool.Get().([]byte)
+	buf := pool.Get().(*[]byte)
 	defer func() {
 		_ = from.Close()
 		_ = to.Close()
-		pool.Put(&buf)
+		pool.Put(buf) //nolint
 	}()
 	for {
 		msgType, reader, err := from.NextReader()
@@ -160,7 +161,7 @@ func (p *websocketProxy) proxyConn(from, to *websocket.Conn) error {
 		if err != nil {
 			return err
 		}
-		if _, err := io.CopyBuffer(writer, reader, buf); err != nil {
+		if _, err := io.CopyBuffer(writer, reader, *buf); err != nil {
 			return err
 		}
 		if err := writer.Close(); err != nil {
