@@ -37,7 +37,7 @@ func main() {
 		DeclareMe(makeDeclaration).
 		SocketConfiguration(socketConfiguration).
 		RequireRoutes(handleRouteUpdate).
-		RequireModule("journal", invoker.Journal.ReceiveServiceAddressList, true)
+		RequireModule("journal", invoker.Journal.ReceiveServiceAddressList, false)
 
 	requiredModules := getRequiredModulesByLocations(cfg.Locations)
 	for module, consumer := range requiredModules {
