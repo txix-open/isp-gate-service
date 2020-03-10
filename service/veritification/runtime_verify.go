@@ -2,9 +2,9 @@ package veritification
 
 import (
 	rd "github.com/go-redis/redis"
-	"github.com/integration-system/isp-lib/config"
-	"github.com/integration-system/isp-lib/redis"
-	"github.com/integration-system/isp-lib/utils"
+	"github.com/integration-system/isp-lib/v2/config"
+	"github.com/integration-system/isp-lib/v2/redis"
+	"github.com/integration-system/isp-lib/v2/utils"
 	"github.com/pkg/errors"
 	"isp-gate-service/conf"
 	rdClient "isp-gate-service/redis"

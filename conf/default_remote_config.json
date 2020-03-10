@@ -1,15 +1,15 @@
 {
   "database": {
-    "database": "database",
-    "password": "password",
-    "username": "name",
-    "port": "5432",
+    "address": "{{ msp_pgsql_address }}",
+    "port": "{{ msp_pgsql_port }}",
     "schema": "gate_service",
-    "address": "127.0.0.1",
+    "database": "{{ msp_pgsql_name }}",
+    "username": "{{ msp_pgsql_user }}",
+    "password": "{{ msp_pgsql_password }}",
     "createSchema": true
   },
   "grpcSetting": {
-    "proxyGrpcErrorDetails": false,
+    "proxyGrpcErrorDetails": true,
     "enableOriginalProtoErrors": false
   },
   "httpSetting": {
@@ -17,56 +17,46 @@
   },
   "accountingSetting": {
     "enable": false,
-    "snapshotTimeout": "1h",
+    "snapshotTimeout": "15m",
     "setting": [
-      {
-        "applicationId": 0,
-        "enableStoring": false,
-        "limits": [
-          {
-            "timeout": "1s",
-            "maxCount": 500,
-            "pattern": "/example/module/group/method"
-          }
-        ]
-      }
     ],
     "storing": {
       "size": 10000,
-      "timeout": "30m"
+      "timeout": "10m"
     }
   },
   "journalSetting": {
     "journal": {
-      "compress": true,
       "filename": "/var/log/isp-gate-service/runtime.log",
       "maxSizeMb": 512,
       "bufferSize": 4096,
       "rotateTimeoutMs": 86400000,
       "enableRemoteTransfer": true,
-      "enable": false
+      "enable": false,
+      "compress": true
     }
   },
   "redis": {
+    "password": "{{ msp_redis_password }}",
+    "defaultDB": 0,
     "address": {
-      "ip": "127.0.0.1",
-      "port": "6379"
+      "ip": "{{ msp_redis_address }}",
+      "port": "{{ msp_redis_port }}"
     }
   },
   "metrics": {
+    "gc": true,
     "memory": true,
     "address": {
+      "path": "/metrics",
       "port": "9553",
-      "ip": "0.0.0.0",
-      "path": "/metrics"
-    },
-    "gc": true
+      "ip": "0.0.0.0"
+    }
   },
   "tokensSetting": {
-    "adminSecret": "secret",
-    "applicationSecret": "secret",
+    "applicationSecret": "{{ msp_app_secret }}",
     "applicationVerify": false,
-    "userSecret": "secret"
+    "adminSecret": "{{ msp_admin_secret }}"
   },
   "authCacheSetting": {
     "enableCache": false,

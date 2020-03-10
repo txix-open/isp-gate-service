@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"github.com/integration-system/isp-lib/backend"
-	"github.com/integration-system/isp-lib/config"
-	isp "github.com/integration-system/isp-lib/proto/stubs"
-	s "github.com/integration-system/isp-lib/streaming"
+	"github.com/integration-system/isp-lib/v2/backend"
+	"github.com/integration-system/isp-lib/v2/config"
+	isp "github.com/integration-system/isp-lib/v2/proto/stubs"
+	s "github.com/integration-system/isp-lib/v2/streaming"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
 	"isp-gate-service/conf"
@@ -22,7 +22,6 @@ type sendMultipartDataDesc struct{}
 func (h sendMultipartDataDesc) Complete(c *fasthttp.RequestCtx, method string, client *backend.RxGrpcClient) domain.ProxyResponse {
 	cfg := config.GetRemote().(*conf.RemoteConfig).GrpcSetting
 	timeout := cfg.GetStreamInvokeTimeout()
-	bufferSize := cfg.GetTransferFileBufferSize()
 
 	stream, cancel, err := openStream(&c.Request.Header, method, timeout, client)
 	defer func() {
@@ -49,8 +48,25 @@ func (h sendMultipartDataDesc) Complete(c *fasthttp.RequestCtx, method string, c
 		return domain.Create().SetError(err)
 	}
 
-	formData := make(map[string]interface{}, len(form.Value))
+	resp, proxyResp, ok := h.formResponse(c, stream, form, method)
+	err = stream.CloseSend()
+	if err != nil {
+		logHandlerError(log_code.TypeData.SendMultipart, method, err)
+	}
 
+	if ok {
+		arrayBody := strings.Join(resp, ",")
+		_, err = c.WriteString("[" + arrayBody + "]")
+		if err != nil {
+			logHandlerError(log_code.TypeData.SendMultipart, method, err)
+		}
+	}
+	return proxyResp
+}
+
+func (h sendMultipartDataDesc) formResponse(c *fasthttp.RequestCtx, stream isp.BackendService_RequestStreamClient,
+	form *multipart.Form, method string) ([]string, domain.ProxyResponse, bool) {
+	formData := make(map[string]interface{}, len(form.Value))
 	for k, v := range form.Value {
 		if len(v) > 0 {
 			formData[k] = v[0]
@@ -58,13 +74,13 @@ func (h sendMultipartDataDesc) Complete(c *fasthttp.RequestCtx, method string, c
 	}
 
 	var (
-		proxyResp domain.ProxyResponse
 		resp      = make([]string, 0)
-		buffer    = make([]byte, bufferSize)
+		buffer    = make([]byte, config.GetRemote().(*conf.RemoteConfig).GrpcSetting.GetTransferFileBufferSize())
+		proxyResp domain.ProxyResponse
 		ok        = true
-		eof       = false
+		eof       bool
+		err       error
 	)
-
 	for formDataName, files := range form.File {
 		if len(files) == 0 {
 			continue
@@ -110,28 +126,14 @@ func (h sendMultipartDataDesc) Complete(c *fasthttp.RequestCtx, method string, c
 		}
 		resp = append(resp, string(response))
 	}
-
-	err = stream.CloseSend()
-	if err != nil {
-		logHandlerError(log_code.TypeData.SendMultipart, method, err)
-	}
-
-	if ok {
-		arrayBody := strings.Join(resp, ",")
-		_, err = c.WriteString("[" + arrayBody + "]")
-		if err != nil {
-			logHandlerError(log_code.TypeData.SendMultipart, method, err)
-		}
-	}
-	return proxyResp
+	return resp, proxyResp, ok
 }
 
 func (sendMultipartDataDesc) transferFile(f multipart.File, stream isp.BackendService_RequestStreamClient,
 	buffer []byte, ctx *fasthttp.RequestCtx, method string) (bool, bool, domain.ProxyResponse) {
-
 	var (
 		ok        = true
-		eof       = false
+		eof       bool
 		proxyResp domain.ProxyResponse
 	)
 	for {

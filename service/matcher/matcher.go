@@ -18,14 +18,14 @@ func NewRuntimeMatcher(patterns []string) Matcher {
 
 func NewCacheableMatcher(patterns []string) Matcher {
 	return &cacheableMatcher{
-		cache: make(map[string][]string, 0),
+		cache: make(map[string][]string),
 		rm:    runtimeMatcher{patterns: patterns},
 	}
 }
 
 func NewAtLeastOneMatcher(patterns []string) AtLeastOneMatcher {
 	return &atLeastOneMatcher{
-		cache: make(map[string]bool, 0),
+		cache: make(map[string]bool),
 		rm:    runtimeMatcher{patterns: patterns},
 	}
 }

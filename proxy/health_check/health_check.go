@@ -1,7 +1,7 @@
 package health_check
 
 import (
-	"github.com/integration-system/isp-lib/structure"
+	"github.com/integration-system/isp-lib/v2/structure"
 	"github.com/valyala/fasthttp"
 	"isp-gate-service/domain"
 )

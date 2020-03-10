@@ -2,19 +2,17 @@ package main
 
 import (
 	"context"
-	"os"
-
-	"github.com/integration-system/isp-lib/bootstrap"
-	"github.com/integration-system/isp-lib/config"
-	"github.com/integration-system/isp-lib/config/schema"
-	"github.com/integration-system/isp-lib/metric"
-	"github.com/integration-system/isp-lib/structure"
+	"github.com/integration-system/isp-lib/v2/bootstrap"
+	"github.com/integration-system/isp-lib/v2/config"
+	"github.com/integration-system/isp-lib/v2/config/schema"
+	"github.com/integration-system/isp-lib/v2/metric"
+	"github.com/integration-system/isp-lib/v2/structure"
 	log "github.com/integration-system/isp-log"
 	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
-	"isp-gate-service/journal"
+	"isp-gate-service/invoker"
 	"isp-gate-service/model"
 	"isp-gate-service/proxy"
 	"isp-gate-service/redis"
@@ -22,6 +20,7 @@ import (
 	"isp-gate-service/server"
 	"isp-gate-service/service"
 	"isp-gate-service/service/matcher"
+	"os"
 )
 
 var (
@@ -38,7 +37,7 @@ func main() {
 		DeclareMe(makeDeclaration).
 		SocketConfiguration(socketConfiguration).
 		RequireRoutes(handleRouteUpdate).
-		RequireModule(journal.RequiredModule())
+		RequireModule("journal", invoker.Journal.ReceiveServiceAddressList, true)
 
 	requiredModules := getRequiredModulesByLocations(cfg.Locations)
 	for module, consumer := range requiredModules {
@@ -59,7 +58,7 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	localCfg := config.Get().(*conf.Configuration)
 
 	model.DbClient.ReceiveConfiguration(remoteConfig.Database)
-	journal.Client.ReceiveConfiguration(remoteConfig.JournalSetting.Journal, localCfg.ModuleName)
+	invoker.Journal.ReceiveConfiguration(remoteConfig.JournalSetting.Journal, localCfg.ModuleName)
 	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalSetting.MethodsPatterns)
 
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
@@ -104,7 +103,7 @@ func makeDeclaration(localConfig interface{}) bootstrap.ModuleInfo {
 		ModuleName:       cfg.ModuleName,
 		ModuleVersion:    version,
 		GrpcOuterAddress: cfg.HttpOuterAddress,
-		Handlers:         []interface{}{},
+		Endpoints:        []structure.EndpointDescriptor{},
 	}
 }
 

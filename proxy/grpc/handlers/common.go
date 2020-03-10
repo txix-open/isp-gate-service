@@ -8,12 +8,12 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	"github.com/integration-system/isp-lib/backend"
-	"github.com/integration-system/isp-lib/config"
-	http2 "github.com/integration-system/isp-lib/http"
-	isp "github.com/integration-system/isp-lib/proto/stubs"
-	"github.com/integration-system/isp-lib/structure"
-	"github.com/integration-system/isp-lib/utils"
+	"github.com/integration-system/isp-lib/v2/backend"
+	"github.com/integration-system/isp-lib/v2/config"
+	http2 "github.com/integration-system/isp-lib/v2/http"
+	isp "github.com/integration-system/isp-lib/v2/proto/stubs"
+	"github.com/integration-system/isp-lib/v2/structure"
+	"github.com/integration-system/isp-lib/v2/utils"
 	log "github.com/integration-system/isp-log"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/valyala/fasthttp"
@@ -37,55 +37,52 @@ const (
 	errorMsgInvalidArg = "Not able to read request body"
 )
 
-var (
-	json      = jsoniter.ConfigFastest
-	emptyBody = make([]byte, 0)
-)
+var json = jsoniter.ConfigFastest
 
 func convertError(err error) ([]byte, int) {
 	s, ok := status.FromError(err)
 	if ok {
 		cfg := config.GetRemote().(*conf.RemoteConfig).GrpcSetting
 		if cfg.EnableOriginalProtoErrors {
-			if body, err := proto.Marshal(s.Proto()); err != nil {
+			body, err := proto.Marshal(s.Proto())
+			if err != nil {
 				return []byte(utils.ServiceError), http.StatusServiceUnavailable
-			} else {
-				return body, http2.CodeToHttpStatus(s.Code())
 			}
-		} else {
-			details := s.Details()
-			newDetails := make([]interface{}, len(details))
-			for i, detail := range details {
-				switch typeOfDetail := detail.(type) {
-				case *structpb.Struct:
-					newDetails[i] = utils.ConvertGrpcStructToInterface(
-						&structpb.Value{Kind: &structpb.Value_StructValue{StructValue: typeOfDetail}},
-					)
-				case *isp.Message:
-					newDetails[i] = utils.ConvertGrpcStructToInterface(
-						backend.ResolveBody(typeOfDetail),
-					)
-				default:
-					newDetails[i] = typeOfDetail
-				}
-			}
+			return body, http2.CodeToHttpStatus(s.Code())
+		}
 
-			var respBody interface{}
-			if cfg.ProxyGrpcErrorDetails && len(newDetails) > 0 {
-				respBody = newDetails[0]
-			} else {
-				respBody = structure.GrpcError{ErrorMessage: s.Message(), ErrorCode: s.Code().String(), Details: newDetails}
-			}
-			if errorData, err := json.Marshal(respBody); err != nil {
-				log.Warn(log_code.WarnConvertErrorDataMarshalResponse, err)
-				return []byte(utils.ServiceError), http.StatusServiceUnavailable
-			} else {
-				return errorData, http2.CodeToHttpStatus(s.Code())
+		details := s.Details()
+		newDetails := make([]interface{}, len(details))
+		for i, detail := range details {
+			switch typeOfDetail := detail.(type) {
+			case *structpb.Struct:
+				newDetails[i] = utils.ConvertGrpcStructToInterface(
+					&structpb.Value{Kind: &structpb.Value_StructValue{StructValue: typeOfDetail}},
+				)
+			case *isp.Message:
+				newDetails[i] = utils.ConvertGrpcStructToInterface(
+					backend.ResolveBody(typeOfDetail),
+				)
+			default:
+				newDetails[i] = typeOfDetail
 			}
 		}
-	} else {
-		return []byte(utils.ServiceError), http.StatusServiceUnavailable
+
+		var respBody interface{}
+		if cfg.ProxyGrpcErrorDetails && len(newDetails) > 0 {
+			respBody = newDetails[0]
+		} else {
+			respBody = structure.GrpcError{ErrorMessage: s.Message(), ErrorCode: s.Code().String(), Details: newDetails}
+		}
+
+		errorData, err := json.Marshal(respBody)
+		if err != nil {
+			log.Warn(log_code.WarnConvertErrorDataMarshalResponse, err)
+			return []byte(utils.ServiceError), http.StatusServiceUnavailable
+		}
+		return errorData, http2.CodeToHttpStatus(s.Code())
 	}
+	return []byte(utils.ServiceError), http.StatusServiceUnavailable
 }
 
 func getResponse(msg *isp.Message, err error) ([]byte, int, error) {
@@ -113,7 +110,6 @@ func logHandlerError(typeData, method string, err error) {
 
 func openStream(headers *fasthttp.RequestHeader, method string, timeout time.Duration, client *backend.RxGrpcClient) (
 	isp.BackendService_RequestStreamClient, context.CancelFunc, error) {
-
 	cli, err := client.Conn()
 	if err != nil {
 		return nil, nil, err
@@ -129,7 +125,6 @@ func openStream(headers *fasthttp.RequestHeader, method string, timeout time.Dur
 }
 
 func makeMetadata(r *fasthttp.RequestHeader, method string) (metadata.MD, string) {
-	//method = strings.TrimPrefix(method, "/api/")
 	md := make(metadata.MD, 5)
 	md[utils.ProxyMethodNameHeader] = []string{method}
 	r.VisitAll(func(key, v []byte) {

@@ -24,7 +24,7 @@ func (cv *cacheablesVerify) ApplicationToken(token string) (map[string]string, e
 	cache, ok := cv.cache[token]
 	cv.lock.RUnlock()
 	if ok {
-		if time.Now().Sub(cache.created) < cv.timeout {
+		if time.Since(cache.created) < cv.timeout {
 			return cv.copyCache(cache.identity), nil
 		}
 	}
@@ -33,7 +33,7 @@ func (cv *cacheablesVerify) ApplicationToken(token string) (map[string]string, e
 	defer cv.lock.Unlock()
 	cache, ok = cv.cache[token]
 	if ok {
-		if time.Now().Sub(cache.created) < cv.timeout {
+		if time.Since(cache.created) < cv.timeout {
 			return cv.copyCache(cache.identity), nil
 		}
 		delete(cv.cache, token)

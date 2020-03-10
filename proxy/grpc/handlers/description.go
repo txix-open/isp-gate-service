@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"github.com/integration-system/isp-lib/backend"
-	u "github.com/integration-system/isp-lib/utils"
+	"github.com/integration-system/isp-lib/v2/backend"
+	u "github.com/integration-system/isp-lib/v2/utils"
 	"github.com/valyala/fasthttp"
 	"isp-gate-service/domain"
 	"isp-gate-service/utils"
@@ -26,12 +26,12 @@ func (h handlerHelper) Get(ctx *fasthttp.RequestCtx) handler {
 	if isMultipart {
 		ctx.Response.Header.SetContentType(utils.JsonContentType)
 		return sendMultipartData
-	} else if isExpectFile {
-		return getFile
-	} else {
-		ctx.Response.Header.SetContentType(utils.JsonContentType)
-		return handleJson
 	}
+	if isExpectFile {
+		return getFile
+	}
+	ctx.Response.Header.SetContentType(utils.JsonContentType)
+	return handleJson
 }
 
 func (h handlerHelper) isMultipart(ctx *fasthttp.RequestCtx) bool {
@@ -47,8 +47,5 @@ func (h handlerHelper) isMultipart(ctx *fasthttp.RequestCtx) bool {
 		return false
 	}
 	_, ok := params["boundary"]
-	if !ok {
-		return false
-	}
-	return true
+	return ok
 }

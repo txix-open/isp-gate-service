@@ -1,8 +1,8 @@
 package accounting
 
 import (
-	"github.com/integration-system/isp-lib/config"
-	"github.com/integration-system/isp-lib/structure"
+	"github.com/integration-system/isp-lib/v2/config"
+	"github.com/integration-system/isp-lib/v2/structure"
 	log "github.com/integration-system/isp-log"
 	"isp-gate-service/accounting/state"
 	"isp-gate-service/conf"
@@ -94,9 +94,7 @@ func (w *accountingWorker) takeSnapshot() []entity.Snapshot {
 
 	response := make([]entity.Snapshot, 0, len(lastStorage))
 	for appId, account := range lastStorage {
-
 		limitState, version := account.Snapshot()
-
 		response = append(response, entity.Snapshot{
 			AppId:      appId,
 			LimitState: limitState,

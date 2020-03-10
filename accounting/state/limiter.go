@@ -32,7 +32,7 @@ func (lim *limiter) Import(oldState Snapshot) {
 	lenOldDatetime := len(oldLim.datetime)
 	lenNewDatetime := len(lim.datetime)
 
-	switch true {
+	switch {
 	case lenOldDatetime == lenNewDatetime:
 		lim.datetime = oldLim.datetime
 		lim.pointer = oldLim.pointer
@@ -72,7 +72,7 @@ func (lim *limiter) check() (bool, int, time.Time) {
 		return true, 0, time.Now()
 	}
 
-	pointer := lim.pointer + 1
+	pointer := lim.pointer + 1 //nolint
 	if pointer >= len(lim.datetime) {
 		pointer = 0
 	}

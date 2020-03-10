@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/fasthttp/websocket"
-	"github.com/integration-system/isp-lib/structure"
+	"github.com/integration-system/isp-lib/v2/structure"
 	log "github.com/integration-system/isp-log"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
@@ -25,7 +25,8 @@ const (
 )
 
 var pool = &sync.Pool{New: func() interface{} {
-	return make([]byte, readBufSize)
+	buf := make([]byte, readBufSize)
+	return &buf
 }}
 
 // used to filter client request headers
@@ -90,9 +91,7 @@ func (p *websocketProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) dom
 		outgoingDialer := websocket.Dialer{
 			ReadBufferSize:  readBufSize,
 			WriteBufferSize: writeBufSize,
-			NetDial: func(network, address string) (net.Conn, error) {
-				return net.Dial(network, address)
-			},
+			NetDial:         net.Dial,
 		}
 
 		addr := addrs.Get()
@@ -114,6 +113,7 @@ func (p *websocketProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) dom
 		cookies.SetCookies(&url.URL{Host: reqHost, Scheme: reqScheme}, cookie)
 		outgoingDialer.Jar = cookies
 
+		//nolint
 		outgoingConn, _, err := outgoingDialer.Dial(urlAddr, header)
 		if err == nil {
 			go func() {
@@ -123,6 +123,7 @@ func (p *websocketProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) dom
 		} else {
 			log.Errorf(log_code.ErrorWebsocketProxy, "unable to connect to service %s: %v", urlAddr, err)
 			_ = incomingConn.Close()
+			_ = outgoingConn.Close()
 		}
 	})
 
@@ -145,7 +146,7 @@ func (p *websocketProxy) Close() {
 }
 
 func (p *websocketProxy) proxyConn(from, to *websocket.Conn) error {
-	buf := pool.Get().([]byte)
+	buf := pool.Get().(*[]byte)
 	defer func() {
 		_ = from.Close()
 		_ = to.Close()
@@ -160,7 +161,7 @@ func (p *websocketProxy) proxyConn(from, to *websocket.Conn) error {
 		if err != nil {
 			return err
 		}
-		if _, err := io.CopyBuffer(writer, reader, buf); err != nil {
+		if _, err := io.CopyBuffer(writer, reader, *buf); err != nil {
 			return err
 		}
 		if err := writer.Close(); err != nil {

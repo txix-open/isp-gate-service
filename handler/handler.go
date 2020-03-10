@@ -2,7 +2,7 @@ package handler
 
 import (
 	"fmt"
-	"github.com/integration-system/isp-lib/config"
+	"github.com/integration-system/isp-lib/v2/config"
 	log "github.com/integration-system/isp-log"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
@@ -11,7 +11,7 @@ import (
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
-	"isp-gate-service/journal"
+	"isp-gate-service/invoker"
 	"isp-gate-service/log_code"
 	"isp-gate-service/proxy"
 	"isp-gate-service/routing"
@@ -21,6 +21,8 @@ import (
 	"net/http"
 	"time"
 )
+
+const execution = 1e6
 
 var helper handlerHelper
 
@@ -32,7 +34,7 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 
 	resp := helper.AuthenticateAccountingProxy(ctx)
 
-	executionTime := time.Since(currentTime) / 1e6
+	executionTime := time.Since(currentTime) / execution
 
 	statusCode := ctx.Response.StatusCode()
 	service.Metrics.UpdateStatusCounter(helper.SetMetricStatus(statusCode))
@@ -44,11 +46,11 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	if config.GetRemote().(*conf.RemoteConfig).JournalSetting.Journal.Enable {
 		if matcher.JournalMethods.Match(uri) {
 			if err != nil {
-				if err := journal.Client.Error(uri, requestBody, responseBody, err); err != nil {
+				if err := invoker.Journal.Error(uri, requestBody, responseBody, err); err != nil {
 					log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
 				}
 			} else {
-				if err := journal.Client.Info(uri, requestBody, responseBody); err != nil {
+				if err := invoker.Journal.Info(uri, requestBody, responseBody); err != nil {
 					log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
 				}
 			}
@@ -80,8 +82,7 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domai
 			message := "unknown error"
 			status := codes.Unknown
 			details := make([]interface{}, 0)
-			switch e := err.(type) {
-			case authenticate.ErrorDescription:
+			if e, ok := err.(authenticate.ErrorDescription); ok {
 				message = e.Message()
 				status = e.ConvertToGrpcStatus()
 				details = e.Details()

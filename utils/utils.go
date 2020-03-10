@@ -2,8 +2,8 @@ package utils
 
 import (
 	"encoding/json"
-	"github.com/integration-system/isp-lib/http"
-	"github.com/integration-system/isp-lib/structure"
+	"github.com/integration-system/isp-lib/v2/http"
+	"github.com/integration-system/isp-lib/v2/structure"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
 )
