@@ -3,6 +3,7 @@
 * add content-type, content-length header to response
 * close journal
 * journal module is not more required
+* add missing journaling
 ## 2.6.0
 * migrate to go mod
 ## 2.5.4

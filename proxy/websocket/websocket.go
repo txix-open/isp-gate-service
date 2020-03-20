@@ -127,10 +127,7 @@ func (p *websocketProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) dom
 		}
 	})
 
-	return domain.Create().
-		SetRequestBody(ctx.Request.Body()).
-		SetResponseBody(ctx.Response.Body()).
-		SetError(err)
+	return domain.Create().SetError(err)
 }
 
 func (p *websocketProxy) SkipAuth() bool {

@@ -31,7 +31,7 @@ func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *
 	if err != nil {
 		logHandlerError(log_code.TypeData.JsonContent, methodName, err)
 		utils.WriteError(c, errorMsgInternal, codes.Internal, nil)
-		return domain.Create().SetError(err)
+		return domain.Create().SetRequestBody(body).SetResponseBody(c.Response.Body()).SetError(err)
 	}
 
 	msg, invokerErr := cli.Request(
@@ -46,10 +46,10 @@ func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *
 		c.SetContentTypeBytes(utils.JsonContentType)
 		c.Response.Header.SetContentLength(len(response))
 		_, _ = c.Write(response)
-		return domain.Create().SetError(invokerErr)
+		return domain.Create().SetRequestBody(body).SetResponseBody(c.Response.Body()).SetError(invokerErr)
 	} else {
 		logHandlerError(log_code.TypeData.JsonContent, methodName, err)
 		utils.WriteError(c, errorMsgInternal, codes.Internal, nil)
-		return domain.Create().SetError(err)
+		return domain.Create().SetRequestBody(body).SetResponseBody(c.Response.Body()).SetError(err)
 	}
 }
