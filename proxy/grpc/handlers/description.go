@@ -24,13 +24,13 @@ func (h handlerHelper) Get(ctx *fasthttp.RequestCtx) handler {
 	isExpectFile := string(ctx.Request.Header.Peek(u.ExpectFileHeader)) == "true"
 
 	if isMultipart {
-		ctx.Response.Header.SetContentType(utils.JsonContentType)
+		ctx.Response.Header.SetContentTypeBytes(utils.JsonContentType)
 		return sendMultipartData
 	}
 	if isExpectFile {
 		return getFile
 	}
-	ctx.Response.Header.SetContentType(utils.JsonContentType)
+	ctx.Response.Header.SetContentTypeBytes(utils.JsonContentType)
 	return handleJson
 }
 

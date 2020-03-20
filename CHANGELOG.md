@@ -1,3 +1,8 @@
+## 2.6.2
+* fix panic if journal enable and error logging
+* add content-type, content-length header to response
+* close journal
+* journal module is not more required
 ## 2.6.0
 * migrate to go mod
 ## 2.5.4

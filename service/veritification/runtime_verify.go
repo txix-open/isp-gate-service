@@ -25,7 +25,7 @@ func (v *runtimeVerify) ApplicationToken(token string) (map[string]string, error
 	instanceUuid := config.Get().(*conf.Configuration).InstanceUuid
 	key := makeDbKey(token, instanceUuid)
 
-	if resp, err := rdClient.Client.Get().Pipelined(func(p rd.Pipeliner) error {
+	if resp, err := rdClient.Client.Pipelined(func(p rd.Pipeliner) error {
 		if cmd := p.Select(int(redis.ApplicationTokenDb)); v.notEmptyError(cmd.Err()) {
 			return cmd.Err()
 		}
@@ -59,7 +59,7 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 	fourthDbKey := makeDbKey(t[utils.UserIdHeader], uri)
 	fifthDbKey := makeDbKey(t[utils.DeviceTokenHeader], t[utils.DomainIdHeader])
 
-	if resp, err := rdClient.Client.Get().Pipelined(func(p rd.Pipeliner) error {
+	if resp, err := rdClient.Client.Pipelined(func(p rd.Pipeliner) error {
 		if _, err := p.Select(int(redis.ApplicationPermissionDb)).Result(); v.notEmptyError(err) {
 			return err
 		}

@@ -43,6 +43,8 @@ func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *
 
 	if response, status, err := getResponse(msg, invokerErr); err == nil {
 		c.SetStatusCode(status)
+		c.SetContentTypeBytes(utils.JsonContentType)
+		c.Response.Header.SetContentLength(len(response))
 		_, _ = c.Write(response)
 		return domain.Create().SetError(invokerErr)
 	} else {

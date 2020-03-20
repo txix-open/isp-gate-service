@@ -89,7 +89,8 @@ func onShutdown(_ context.Context, _ os.Signal) {
 	server.Http.Close()
 	accounting.Close()
 	proxy.Close()
-	redis.Client.Close()
+	_ = redis.Client.Close()
+	_ = invoker.Journal.Close()
 }
 
 func handleRouteUpdate(configs structure.RoutingConfig) bool {

@@ -16,7 +16,7 @@ type ErrorDescription struct {
 }
 
 func (e ErrorDescription) Error() string {
-	return fmt.Sprintf("%v", e)
+	return fmt.Sprintf("code: %v, message: %s, details: %v", e.grpcStatus, e.message, e.details)
 }
 
 func (e ErrorDescription) Message() string {

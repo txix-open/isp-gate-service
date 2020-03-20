@@ -30,49 +30,47 @@ type handlerHelper struct{}
 
 func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	currentTime := time.Now()
-	uri := string(ctx.RequestURI())
 
-	resp := helper.AuthenticateAccountingProxy(ctx)
+	method, resp := helper.AuthenticateAccountingProxy(ctx)
 
 	executionTime := time.Since(currentTime) / execution
 
 	statusCode := ctx.Response.StatusCode()
 	service.Metrics.UpdateStatusCounter(helper.SetMetricStatus(statusCode))
 	if statusCode == http.StatusOK {
-		service.Metrics.UpdateMethodResponseTime(uri, executionTime)
+		service.Metrics.UpdateMethodResponseTime(method, executionTime)
 	}
 
-	requestBody, responseBody, err := resp.Get()
-	if config.GetRemote().(*conf.RemoteConfig).JournalSetting.Journal.Enable {
-		if matcher.JournalMethods.Match(uri) {
-			if err != nil {
-				if err := invoker.Journal.Error(uri, requestBody, responseBody, err); err != nil {
-					log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
-				}
-			} else {
-				if err := invoker.Journal.Info(uri, requestBody, responseBody); err != nil {
-					log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
-				}
+	logEnable := config.GetRemote().(*conf.RemoteConfig).JournalSetting.Journal.Enable
+	if logEnable && matcher.JournalMethods.Match(method) {
+		requestBody, responseBody, err := resp.Get()
+		if err != nil {
+			if err := invoker.Journal.Error(method, requestBody, responseBody, err); err != nil {
+				log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
+			}
+		} else {
+			if err := invoker.Journal.Info(method, requestBody, responseBody); err != nil {
+				log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
 			}
 		}
 	}
 }
 
-func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domain.ProxyResponse {
+func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) (string, domain.ProxyResponse) {
 	initialPath := string(ctx.Path())
 
 	p, path := proxy.Find(initialPath)
 	if p == nil {
 		msg := fmt.Sprintf("unknown proxy for '%s'", path)
 		utils.WriteError(ctx, msg, codes.NotFound, nil)
-		return domain.Create().SetError(errors.New(msg))
+		return path, domain.Create().SetError(errors.New(msg))
 	}
 
 	if !p.SkipExistCheck() {
 		if _, ok := routing.AllMethods[path]; !ok {
 			msg := "not implemented"
 			utils.WriteError(ctx, msg, codes.Unimplemented, nil)
-			return domain.Create().SetError(errors.New(msg))
+			return path, domain.Create().SetError(errors.New(msg))
 		}
 	}
 
@@ -88,17 +86,17 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) domai
 				details = e.Details()
 			}
 			utils.WriteError(ctx, message, status, details)
-			return domain.Create().SetError(err)
+			return path, domain.Create().SetError(err)
 		}
 
 		if !accounting.AcceptRequest(applicationId, path) {
 			err := errors.New("accounting error")
 			utils.WriteError(ctx, "too many requests", codes.ResourceExhausted, nil)
-			return domain.Create().SetError(err)
+			return path, domain.Create().SetError(err)
 		}
 	}
 
-	return p.ProxyRequest(ctx, path)
+	return path, p.ProxyRequest(ctx, path)
 }
 
 func (handlerHelper) SetMetricStatus(statusCode int) string {
