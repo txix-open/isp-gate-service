@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"os"
+
 	"github.com/integration-system/isp-lib/v2/bootstrap"
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/integration-system/isp-lib/v2/config/schema"
@@ -20,7 +22,6 @@ import (
 	"isp-gate-service/server"
 	"isp-gate-service/service"
 	"isp-gate-service/service/matcher"
-	"os"
 )
 
 var (
@@ -50,7 +51,7 @@ func main() {
 		Run()
 }
 
-func onLocalConfigLoad(cfg *conf.Configuration) {
+func onLocalConfigLoad(_ *conf.Configuration) {
 
 }
 
@@ -118,12 +119,12 @@ func getRequiredModulesByLocations(locations []conf.Location) map[string]func([]
 			p, err := proxy.Init(location.Protocol, location.PathPrefix, location.SkipAuth, location.SkipExistCheck)
 			if err != nil {
 				log.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
-			} else {
-				consumerStorage[i] = p.Consumer
 			}
+			consumerStorage[i] = p.Consumer
 		}
 		requiredModules[targetModule] = aggregateConsumers(consumerStorage...)
 	}
+	proxy.PostInit()
 
 	return requiredModules
 }
