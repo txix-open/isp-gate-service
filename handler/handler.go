@@ -2,6 +2,9 @@ package handler
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/integration-system/isp-lib/v2/config"
 	log "github.com/integration-system/isp-log"
 	"github.com/pkg/errors"
@@ -18,8 +21,6 @@ import (
 	"isp-gate-service/service"
 	"isp-gate-service/service/matcher"
 	"isp-gate-service/utils"
-	"net/http"
-	"time"
 )
 
 const execution = 1e6
@@ -61,9 +62,9 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) (stri
 
 	p, path := proxy.Find(initialPath)
 	if p == nil {
-		msg := fmt.Sprintf("unknown proxy for '%s'", path)
+		msg := fmt.Sprintf("unknown proxy for '%s'", initialPath)
 		utils.WriteError(ctx, msg, codes.NotFound, nil)
-		return path, domain.Create().SetError(errors.New(msg))
+		return initialPath, domain.Create().SetError(errors.New(msg))
 	}
 
 	if !p.SkipExistCheck() {

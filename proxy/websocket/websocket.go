@@ -95,7 +95,10 @@ func (p *websocketProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) dom
 		}
 
 		addr := addrs.Get()
-		urlAddr := "ws://" + addr.GetAddress() + "/" + path
+		uri := ctx.Request.URI()
+		uri.SetSchemeBytes([]byte("ws"))
+		uri.SetHost(addr.GetAddress())
+		uri.SetPath("/" + path)
 		header := http.Header{}
 
 		reqHeaders.VisitAll(func(key, value []byte) {
@@ -114,14 +117,14 @@ func (p *websocketProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) dom
 		outgoingDialer.Jar = cookies
 
 		//nolint
-		outgoingConn, _, err := outgoingDialer.Dial(urlAddr, header)
+		outgoingConn, _, err := outgoingDialer.Dial(uri.String(), header)
 		if err == nil {
 			go func() {
 				_ = p.proxyConn(outgoingConn, incomingConn)
 			}()
 			_ = p.proxyConn(incomingConn, outgoingConn)
 		} else {
-			log.Errorf(log_code.ErrorWebsocketProxy, "unable to connect to service %s: %v", urlAddr, err)
+			log.Errorf(log_code.ErrorWebsocketProxy, "unable to connect to service %s: %v", uri.String(), err)
 			_ = incomingConn.Close()
 			_ = outgoingConn.Close()
 		}
