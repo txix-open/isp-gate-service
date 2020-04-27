@@ -1,3 +1,6 @@
+## 2.6.3
+* fix search from locations
+* fix proxying URI in http and ws
 ## 2.6.2
 * fix panic if journal enable and error logging
 * add content-type, content-length header to response
