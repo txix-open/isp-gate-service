@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"github.com/integration-system/isp-log/stdcodes"
+	"log"
 	"os"
 
 	"github.com/integration-system/isp-lib/v2/bootstrap"
@@ -9,8 +11,6 @@ import (
 	"github.com/integration-system/isp-lib/v2/config/schema"
 	"github.com/integration-system/isp-lib/v2/metric"
 	"github.com/integration-system/isp-lib/v2/structure"
-	log "github.com/integration-system/isp-log"
-	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
@@ -40,7 +40,10 @@ func main() {
 		RequireRoutes(handleRouteUpdate).
 		RequireModule("journal", invoker.Journal.ReceiveServiceAddressList, false)
 
-	requiredModules := getRequiredModulesByLocations(cfg.Locations)
+	requiredModules, err := proxy.InitProxies(cfg.Locations)
+	if err != nil {
+		log.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
+	}
 	for module, consumer := range requiredModules {
 		bs.RequireModule(module, consumer, false)
 	}
@@ -106,34 +109,5 @@ func makeDeclaration(localConfig interface{}) bootstrap.ModuleInfo {
 		ModuleVersion:    version,
 		GrpcOuterAddress: cfg.HttpOuterAddress,
 		Endpoints:        []structure.EndpointDescriptor{},
-	}
-}
-
-func getRequiredModulesByLocations(locations []conf.Location) map[string]func([]structure.AddressConfiguration) bool {
-	locationsByTargetModule := conf.GetLocationsByTargetModule(locations)
-	requiredModules := make(map[string]func([]structure.AddressConfiguration) bool)
-
-	for targetModule, locations := range locationsByTargetModule {
-		consumerStorage := make([]func([]structure.AddressConfiguration) bool, len(locations))
-		for i, location := range locations {
-			p, err := proxy.Init(location.Protocol, location.PathPrefix, location.SkipAuth, location.SkipExistCheck)
-			if err != nil {
-				log.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
-			}
-			consumerStorage[i] = p.Consumer
-		}
-		requiredModules[targetModule] = aggregateConsumers(consumerStorage...)
-	}
-	proxy.PostInit()
-
-	return requiredModules
-}
-
-func aggregateConsumers(consumers ...func([]structure.AddressConfiguration) bool) func([]structure.AddressConfiguration) bool {
-	return func(list []structure.AddressConfiguration) bool {
-		for _, consumer := range consumers {
-			consumer(list)
-		}
-		return true
 	}
 }

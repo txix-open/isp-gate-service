@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"isp-gate-service/conf"
 	"sort"
 	"strings"
 
@@ -14,7 +15,9 @@ import (
 	"isp-gate-service/proxy/websocket"
 )
 
-var store = make([]storeItem, 0)
+var (
+	store = make([]storeItem, 0)
+)
 
 const (
 	httpProtocol        = "http"
@@ -37,10 +40,37 @@ type (
 	}
 )
 
-func Init(protocol, pathPrefix string, skipAuth, skipExistCheck bool) (Proxy, error) {
-	if pathPrefix[0] != '/' {
-		return nil, errors.Errorf("path must begin with '/' in path '%s'", pathPrefix)
+func InitProxies(locations []conf.Location) (map[string]func([]structure.AddressConfiguration) bool, error) {
+	locationsByTargetModule := conf.GetLocationsByTargetModule(locations)
+	requiredModules := make(map[string]func([]structure.AddressConfiguration) bool)
+
+	for targetModule, locations := range locationsByTargetModule {
+		consumerStorage := make([]func([]structure.AddressConfiguration) bool, len(locations))
+		for i, location := range locations {
+			if location.PathPrefix[0] != '/' {
+				return nil, errors.Errorf("path must begin with '/' in path '%s'", location.PathPrefix)
+			}
+			p, err := makeProxy(location.Protocol, location.SkipAuth, location.SkipExistCheck)
+			if err != nil {
+				return nil, err
+			}
+			store = append(store, storeItem{
+				pathPrefix: location.PathPrefix,
+				proxy:      p,
+			})
+			consumerStorage[i] = p.Consumer
+		}
+		requiredModules[targetModule] = aggregateConsumers(consumerStorage...)
 	}
+
+	sort.Slice(store, func(i, j int) bool {
+		return store[i].pathPrefix > store[j].pathPrefix
+	})
+
+	return requiredModules, nil
+}
+
+func makeProxy(protocol string, skipAuth, skipExistCheck bool) (Proxy, error) {
 	var proxy Proxy
 	switch protocol {
 	case httpProtocol:
@@ -55,17 +85,7 @@ func Init(protocol, pathPrefix string, skipAuth, skipExistCheck bool) (Proxy, er
 		return nil, errors.Errorf("unknown protocol '%s'", protocol)
 	}
 
-	store = append(store, storeItem{
-		pathPrefix: pathPrefix,
-		proxy:      proxy,
-	})
 	return proxy, nil
-}
-
-func PostInit() {
-	sort.Slice(store, func(i, j int) bool {
-		return store[i].pathPrefix > store[j].pathPrefix
-	})
 }
 
 func Find(path string) (Proxy, string) {
@@ -89,4 +109,13 @@ func getPathWithoutPrefix(path, prefix string) string {
 		return s[1:]
 	}
 	return s
+}
+
+func aggregateConsumers(consumers ...func([]structure.AddressConfiguration) bool) func([]structure.AddressConfiguration) bool {
+	return func(list []structure.AddressConfiguration) bool {
+		for _, consumer := range consumers {
+			consumer(list)
+		}
+		return true
+	}
 }
