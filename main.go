@@ -46,7 +46,6 @@ func main() {
 	for module, consumer := range requiredModules {
 		bs.RequireModule(module, consumer, false)
 	}
-
 	bs.RequireModule(cfg.ModuleName, accounting.NewConnectionConsumer, false).
 		OnShutdown(onShutdown).
 		OnRemoteConfigReceive(onRemoteConfigReceive).
