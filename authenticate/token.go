@@ -8,7 +8,10 @@ import (
 	"isp-gate-service/conf"
 )
 
-var verifyToken token
+var (
+	errInvalidToken = errors.New("invalid token")
+	verifyToken     token
+)
 
 type appClaims struct {
 	*jwt.StandardClaims
@@ -37,7 +40,7 @@ func (t token) Application(token string) (int32, error) {
 	}
 	claims, ok := parsed.Claims.(*appClaims)
 	if !ok {
-		return 0, errors.New("token is invalid")
+		return 0, errInvalidToken
 	}
 	return claims.AppId, nil
 }
@@ -51,7 +54,7 @@ func (t token) User(token string) (string, error) {
 	}
 	claims, ok := parsed.Claims.(*userClaims)
 	if !ok {
-		return "", errors.New("token is invalid")
+		return "", errInvalidToken
 	}
 
 	return cast.ToString(claims.UserId), nil
@@ -69,7 +72,7 @@ func (token) parse(token, secret string, claims jwt.Claims) (*jwt.Token, error) 
 		return nil, err
 	}
 	if !parsed.Valid {
-		return nil, errors.New("token is invalid")
+		return nil, errInvalidToken
 	}
 	return parsed, nil
 }

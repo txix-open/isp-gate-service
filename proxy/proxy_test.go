@@ -1,4 +1,4 @@
-package proxy
+package proxy //nolint
 
 import (
 	"testing"
@@ -23,7 +23,8 @@ func Test_getPathWithoutPrefix(t *testing.T) {
 			prefix: "/api",
 		}, want: "service/group/method"},
 	}
-	for _, tt := range tests {
+	for _, test := range tests {
+		tt := test
 		t.Run(tt.name, func(t *testing.T) {
 			if got := getPathWithoutPrefix(tt.args.path, tt.args.prefix); got != tt.want {
 				t.Errorf("getPathWithoutPrefix() = %v, want %v", got, tt.want)

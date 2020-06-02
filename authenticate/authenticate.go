@@ -124,11 +124,12 @@ func (v *verifiable) verifyAppToken() error {
 		return createError("unauthorized", codes.Unauthenticated, "received unexpected identities")
 	}
 
-	applicationId, err := strconv.Atoi(verifiableHeaders[utils.ApplicationIdHeader])
+	applicationId, err := strconv.ParseInt(verifiableHeaders[utils.ApplicationIdHeader], 10, 32)
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, errors.WithMessagef(err, "parse appId from redis"))
 		return createError("internal Server error", codes.Internal)
 	}
+	//nolint
 	if v.appId != -1 && int32(applicationId) != v.appId {
 		return createError("unauthorized", codes.Unauthenticated, "received unexpected application identity")
 	}

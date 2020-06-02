@@ -41,7 +41,7 @@ func (m *metricService) UpdateMethodResponseTime(uri string, time time.Duration)
 
 func (m *metricService) UpdateStatusCounter(status string) {
 	if m.notEmptyHolder() {
-		m.getOrRegisterCounter(status).Inc(1) //nolint
+		m.getOrRegisterCounter(status).Inc(1)
 	}
 }
 

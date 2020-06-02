@@ -2,15 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/integration-system/isp-log/stdcodes"
-	"log"
-	"os"
-
 	"github.com/integration-system/isp-lib/v2/bootstrap"
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/integration-system/isp-lib/v2/config/schema"
 	"github.com/integration-system/isp-lib/v2/metric"
 	"github.com/integration-system/isp-lib/v2/structure"
+	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
@@ -22,6 +19,8 @@ import (
 	"isp-gate-service/server"
 	"isp-gate-service/service"
 	"isp-gate-service/service/matcher"
+	"log"
+	"os"
 )
 
 var (

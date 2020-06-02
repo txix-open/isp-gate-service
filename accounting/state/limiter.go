@@ -72,7 +72,7 @@ func (lim *limiter) check() (bool, int, time.Time) {
 		return true, 0, time.Now()
 	}
 
-	pointer := lim.pointer + 1 //nolint
+	pointer := lim.pointer + 1
 	if pointer >= len(lim.datetime) {
 		pointer = 0
 	}

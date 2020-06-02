@@ -14,6 +14,10 @@ import (
 	"isp-gate-service/utils"
 )
 
+var (
+	errNotInitialized = errors.New("http proxy not initialized")
+)
+
 type httpProxy struct {
 	client         *fasthttp.HostClient
 	skipAuth       bool
@@ -43,13 +47,12 @@ func (p *httpProxy) Consumer(addressList []structure.AddressConfiguration) bool 
 func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.ProxyResponse {
 	client := p.client
 	if client == nil {
-		msg := "client undefined"
-		log.Error(log_code.ErrorClientHttp, msg)
-		utils.WriteError(ctx, msg, codes.Internal, nil)
+		log.Error(log_code.ErrorClientHttp, errNotInitialized)
+		utils.WriteError(ctx, errNotInitialized.Error(), codes.Internal, nil)
 		return domain.Create().
 			SetRequestBody(ctx.Request.Body()).
 			SetResponseBody(ctx.Response.Body()).
-			SetError(errors.New(msg))
+			SetError(errNotInitialized)
 	}
 
 	req := &ctx.Request

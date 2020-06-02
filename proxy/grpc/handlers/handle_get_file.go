@@ -19,7 +19,10 @@ import (
 	"strconv"
 )
 
-var getFile getFileDesc
+var (
+	errInvalidJson = errors.New("invalid json format. Expected object or array")
+	getFile        getFileDesc
+)
 
 type getFileDesc struct{}
 
@@ -120,11 +123,11 @@ func (getFileDesc) readJsonBody(ctx *fasthttp.RequestCtx) (interface{}, error) {
 	case '[':
 		body = make([]interface{}, 0)
 	default:
-		return nil, errors.New("Invalid json format. Expected object or array")
+		return nil, errInvalidJson
 	}
 	err := json.Unmarshal(requestBody, &body)
 	if err != nil {
-		return nil, errors.New("Not able to read request body")
+		return nil, err
 	}
 	return body, err
 }

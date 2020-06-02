@@ -23,9 +23,15 @@ import (
 	"isp-gate-service/utils"
 )
 
-const execution = 1e6
+const (
+	execution = 1e6
+)
 
-var helper handlerHelper
+var (
+	errAccounting = errors.New("accounting error")
+
+	helper handlerHelper
+)
 
 type handlerHelper struct{}
 
@@ -43,6 +49,7 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	}
 
 	logEnable := config.GetRemote().(*conf.RemoteConfig).JournalSetting.Journal.Enable
+	//nolint
 	if logEnable && matcher.JournalMethods.Match(method) {
 		requestBody, responseBody, err := resp.Get()
 		if err != nil {
@@ -91,7 +98,7 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) (stri
 		}
 
 		if !accounting.AcceptRequest(applicationId, path) {
-			err := errors.New("accounting error")
+			err := errAccounting
 			utils.WriteError(ctx, "too many requests", codes.ResourceExhausted, nil)
 			return path, domain.Create().SetError(err)
 		}

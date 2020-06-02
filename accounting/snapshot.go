@@ -36,7 +36,7 @@ func (t *snapshotTask) Stop() {
 		snapshotList := worker.takeSnapshot()
 		if len(snapshotList) != 0 {
 			defer func() {
-				t.wg.Add(1) //nolint
+				t.wg.Add(1)
 				t.unload(snapshotList)
 				t.wg.Wait()
 			}()
@@ -57,7 +57,7 @@ func (t *snapshotTask) run(timeout time.Duration) {
 		case <-t.timeout:
 			list := worker.takeSnapshot()
 			if len(list) > 0 {
-				t.wg.Add(1) //nolint
+				t.wg.Add(1)
 				go t.unload(list)
 			}
 			t.timeout = time.After(timeout)
@@ -78,7 +78,7 @@ func newSnapshotTask(timeout time.Duration) *snapshotTask {
 		timeout: make(chan time.Time),
 		close:   make(chan bool),
 	}
-	task.wg.Add(1) //nolint
+	task.wg.Add(1)
 	go task.run(timeout)
 	return task
 }

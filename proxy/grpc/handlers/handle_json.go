@@ -27,12 +27,7 @@ func (p handleJsonDesc) Complete(c *fasthttp.RequestCtx, method string, client *
 	ctx, cancel := context.WithTimeout(ctx, grpcSetting.GetSyncInvokeTimeout())
 	defer cancel()
 
-	cli, err := client.Conn()
-	if err != nil {
-		logHandlerError(log_code.TypeData.JsonContent, methodName, err)
-		utils.WriteError(c, errorMsgInternal, codes.Internal, nil)
-		return domain.Create().SetRequestBody(body).SetResponseBody(c.Response.Body()).SetError(err)
-	}
+	cli := client.Conn()
 
 	msg, invokerErr := cli.Request(
 		ctx,

@@ -110,10 +110,7 @@ func logHandlerError(typeData, method string, err error) {
 
 func openStream(headers *fasthttp.RequestHeader, method string, timeout time.Duration, client *backend.RxGrpcClient) (
 	isp.BackendService_RequestStreamClient, context.CancelFunc, error) {
-	cli, err := client.Conn()
-	if err != nil {
-		return nil, nil, err
-	}
+	cli := client.Conn()
 	md, _ := makeMetadata(headers, method)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 	ctx, cancel := context.WithTimeout(ctx, timeout)

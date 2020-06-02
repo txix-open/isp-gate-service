@@ -24,12 +24,16 @@ const (
 	readBufSize  = 4 << 10
 )
 
-var pool = &sync.Pool{New: func() interface{} {
-	buf := make([]byte, readBufSize)
-	return &buf
-}}
+var (
+	errNoAddresses = errors.New("no available address")
+	pool           = &sync.Pool{New: func() interface{} {
+		buf := make([]byte, readBufSize)
+		return &buf
+	}}
+)
 
 // used to filter client request headers
+//
 var forbiddenDuplicateHeaders = map[string]struct{}{
 	"Upgrade":                  {},
 	"Connection":               {},
@@ -69,13 +73,13 @@ func (p *websocketProxy) Consumer(addressList []structure.AddressConfiguration) 
 func (p *websocketProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.ProxyResponse {
 	addrs := p.addrs
 	if addrs == nil {
-		msg := "no available address"
+		msg := errNoAddresses
 		log.Error(log_code.ErrorWebsocketProxy, msg)
-		utils.WriteError(ctx, msg, codes.Internal, nil)
+		utils.WriteError(ctx, msg.Error(), codes.Internal, nil)
 		return domain.Create().
 			SetRequestBody(ctx.Request.Body()).
 			SetResponseBody(ctx.Response.Body()).
-			SetError(errors.New(msg))
+			SetError(errNoAddresses)
 	}
 
 	reqHeaders := fasthttp.RequestHeader{}
@@ -141,7 +145,6 @@ func (p *websocketProxy) SkipExistCheck() bool {
 	return p.skipExistCheck
 }
 
-// no-op
 func (p *websocketProxy) Close() {
 }
 
