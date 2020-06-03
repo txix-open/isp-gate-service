@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/integration-system/isp-lib/v2/backend"
 	"github.com/integration-system/isp-lib/v2/config"
-	isp "github.com/integration-system/isp-lib/v2/proto/stubs"
+	"github.com/integration-system/isp-lib/v2/isp"
 	s "github.com/integration-system/isp-lib/v2/streaming"
 	u "github.com/integration-system/isp-lib/v2/utils"
 	log "github.com/integration-system/isp-log"

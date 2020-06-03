@@ -1,3 +1,7 @@
+## 2.7.0
+* add support Redis Sentinel
+* update grpc client
+* code cleanup
 ## 2.6.3
 * fix search from locations
 * fix proxying URI in http and ws

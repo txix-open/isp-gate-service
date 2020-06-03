@@ -37,7 +37,8 @@ func main() {
 		DeclareMe(makeDeclaration).
 		SocketConfiguration(socketConfiguration).
 		RequireRoutes(handleRouteUpdate).
-		RequireModule("journal", invoker.Journal.ReceiveServiceAddressList, false)
+		RequireModule("journal", invoker.Journal.ReceiveServiceAddressList, false).
+		SubscribeBroadcastEvent(bootstrap.ListenRestartEvent())
 
 	requiredModules, err := proxy.InitProxies(cfg.Locations)
 	if err != nil {

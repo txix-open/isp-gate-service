@@ -11,7 +11,7 @@ import (
 	"github.com/integration-system/isp-lib/v2/backend"
 	"github.com/integration-system/isp-lib/v2/config"
 	http2 "github.com/integration-system/isp-lib/v2/http"
-	isp "github.com/integration-system/isp-lib/v2/proto/stubs"
+	"github.com/integration-system/isp-lib/v2/isp"
 	"github.com/integration-system/isp-lib/v2/structure"
 	"github.com/integration-system/isp-lib/v2/utils"
 	log "github.com/integration-system/isp-log"

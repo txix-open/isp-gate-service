@@ -3,7 +3,7 @@ package handlers
 import (
 	"github.com/integration-system/isp-lib/v2/backend"
 	"github.com/integration-system/isp-lib/v2/config"
-	isp "github.com/integration-system/isp-lib/v2/proto/stubs"
+	"github.com/integration-system/isp-lib/v2/isp"
 	s "github.com/integration-system/isp-lib/v2/streaming"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
