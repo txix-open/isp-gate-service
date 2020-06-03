@@ -14,7 +14,8 @@ func InitRoutes(configs structure.RoutingConfig) {
 	newAddressMap := make(map[string]bool)
 	newInnerAddressMap := make(map[string]bool)
 	newAuthUserAddressMap := make(map[string]bool)
-	for _, backend := range configs {
+	for i := range configs {
+		backend := &configs[i]
 		if backend.Address.IP == "" || backend.Address.Port == "" || len(backend.Endpoints) == 0 {
 			continue
 		}
