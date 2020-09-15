@@ -1,8 +1,8 @@
 configServiceAddress:
-  ip: 10.250.9.17
+  ip: 127.0.0.1
   port: 9001
 httpOuterAddress:
-  ip: http://
+  ip: 127.0.0.1
   port: 9003
 httpInnerAddress:
   ip: 0.0.0.0
