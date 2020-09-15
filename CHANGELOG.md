@@ -1,3 +1,5 @@
+## 2.7.1
+* fix default local config
 ## 2.7.0
 * add support Redis Sentinel
 * update grpc client
