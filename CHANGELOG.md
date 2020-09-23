@@ -1,3 +1,5 @@
+## 2.7.2
+* fix accounting
 ## 2.7.1
 * fix default local config
 ## 2.7.0

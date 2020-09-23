@@ -1,6 +1,9 @@
 package authenticate
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/integration-system/isp-lib/v2/utils"
 	log "github.com/integration-system/isp-log"
@@ -12,8 +15,6 @@ import (
 	"isp-gate-service/log_code"
 	"isp-gate-service/routing"
 	"isp-gate-service/service/veritification"
-	"strconv"
-	"time"
 )
 
 const (
@@ -134,6 +135,7 @@ func (v *verifiable) verifyAppToken() error {
 		return createError("unauthorized", codes.Unauthenticated, "received unexpected application identity")
 	}
 
+	v.appId = int32(applicationId)
 	v.headers = verifiableHeaders
 	return nil
 }
