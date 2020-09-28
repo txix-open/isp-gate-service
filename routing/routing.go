@@ -37,7 +37,7 @@ func InitRoutes(configs structure.RoutingConfig) {
 	AuthUserMethods = newAuthUserAddressMap
 }
 
-func addEndpointsToMaps(endpoints []structure.EndpointDescriptor, newAddressMap map[string]bool, newInnerAddressMap map[string]bool, newAuthUserAddressMap map[string]bool) {
+func addEndpointsToMaps(endpoints []structure.EndpointDescriptor, newAddressMap map[string]bool, newInnerAddressMap map[string]bool, newAuthUserAddressMap map[string]bool) { //nolint
 	for _, el := range endpoints {
 		newAddressMap[el.Path] = true
 		if el.Inner {

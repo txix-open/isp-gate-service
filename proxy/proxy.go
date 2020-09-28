@@ -73,7 +73,7 @@ func InitProxies(locations []conf.Location) (map[string]func([]structure.Address
 }
 
 func InitProxiesFromConfigs(configs structure.RoutingConfig) error {
-	for _, config := range configs {
+	for _, config := range configs { //nolint
 		ip := config.Address.IP
 
 		for protocol, info := range config.HandlersInfo {
@@ -98,7 +98,7 @@ func InitProxiesFromConfigs(configs structure.RoutingConfig) error {
 }
 
 func getPathsFromEndpoints(endpoints []structure.EndpointDescriptor) []string {
-	var paths []string
+	paths := make([]string, len(endpoints))
 	for _, endpoint := range endpoints {
 		paths = append(paths, endpoint.Path)
 	}
@@ -125,18 +125,17 @@ func makeProxy(protocol string, skipAuth, skipExistCheck bool) (Proxy, error) {
 
 func Find(path string) (Proxy, string) {
 	for _, item := range store {
-		if item.pathPrefix == "" {
-			for _, iPath := range item.paths {
-				if path == iPath {
-					return item.proxy, path
-				}
-				if path == "/"+iPath {
-					return item.proxy, path[1:]
-				}
-			}
-		} else {
+		if item.pathPrefix != "" {
 			if strings.HasPrefix(path, item.pathPrefix) {
 				return item.proxy, getPathWithoutPrefix(path, item.pathPrefix)
+			}
+		}
+		for _, iPath := range item.paths {
+			if path == iPath {
+				return item.proxy, path
+			}
+			if path == "/"+iPath {
+				return item.proxy, path[1:]
 			}
 		}
 	}
