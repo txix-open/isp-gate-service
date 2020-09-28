@@ -16,20 +16,35 @@ func InitRoutes(configs structure.RoutingConfig) {
 	newAuthUserAddressMap := make(map[string]bool)
 	for i := range configs {
 		backend := &configs[i]
-		if backend.Address.IP == "" || backend.Address.Port == "" || len(backend.Endpoints) == 0 {
+		if backend.Address.IP == "" {
 			continue
 		}
-		for _, v := range backend.Endpoints {
-			newAddressMap[v.Path] = true
-			if v.Inner {
-				newInnerAddressMap[v.Path] = true
+		if backend.HandlersInfo == nil {
+			if len(backend.Endpoints) == 0 || backend.Address.Port == "" {
+				continue
 			}
-			if v.UserAuthRequired {
-				newAuthUserAddressMap[v.Path] = true
+			addEndpointsToMaps(backend.Endpoints, newAddressMap, newInnerAddressMap, newAuthUserAddressMap)
+		} else {
+			for _, info := range backend.HandlersInfo {
+				if info.Port != "" {
+					addEndpointsToMaps(info.Endpoints, newAddressMap, newInnerAddressMap, newAuthUserAddressMap)
+				}
 			}
 		}
 	}
 	AllMethods = newAddressMap
 	InnerMethods = newInnerAddressMap
 	AuthUserMethods = newAuthUserAddressMap
+}
+
+func addEndpointsToMaps(endpoints []structure.EndpointDescriptor, newAddressMap map[string]bool, newInnerAddressMap map[string]bool, newAuthUserAddressMap map[string]bool) {
+	for _, el := range endpoints {
+		newAddressMap[el.Path] = true
+		if el.Inner {
+			newInnerAddressMap[el.Path] = true
+		}
+		if el.UserAuthRequired {
+			newAuthUserAddressMap[el.Path] = true
+		}
+	}
 }

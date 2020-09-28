@@ -1,13 +1,14 @@
 package proxy
 
 import (
-	"isp-gate-service/conf"
+	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/integration-system/isp-lib/v2/structure"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/proxy/grpc"
 	"isp-gate-service/proxy/health_check"
@@ -36,6 +37,7 @@ type (
 	}
 	storeItem struct {
 		pathPrefix string
+		paths      []string // if pathPrefix is empty
 		proxy      Proxy
 	}
 )
@@ -70,6 +72,39 @@ func InitProxies(locations []conf.Location) (map[string]func([]structure.Address
 	return requiredModules, nil
 }
 
+func InitProxiesFromConfigs(configs structure.RoutingConfig) error {
+	for _, config := range configs {
+		ip := config.Address.IP
+
+		for protocol, info := range config.HandlersInfo {
+			p, err := makeProxy(protocol, info.SkipAuth, info.SkipExistCheck)
+			if err != nil {
+				return fmt.Errorf("%v bad dynamic config in service %s with protocol %s", err, config.ModuleName, protocol)
+			}
+			addressConfig := []structure.AddressConfiguration{{
+				Port: info.Port,
+				IP:   ip,
+			}}
+			p.Consumer(addressConfig)
+			item := storeItem{
+				pathPrefix: "",
+				proxy:      p,
+				paths:      getPathsFromEndpoints(info.Endpoints),
+			}
+			store = append(store, item)
+		}
+	}
+	return nil
+}
+
+func getPathsFromEndpoints(endpoints []structure.EndpointDescriptor) []string {
+	var paths []string
+	for _, endpoint := range endpoints {
+		paths = append(paths, endpoint.Path)
+	}
+	return paths
+}
+
 func makeProxy(protocol string, skipAuth, skipExistCheck bool) (Proxy, error) {
 	var proxy Proxy
 	switch protocol {
@@ -90,8 +125,19 @@ func makeProxy(protocol string, skipAuth, skipExistCheck bool) (Proxy, error) {
 
 func Find(path string) (Proxy, string) {
 	for _, item := range store {
-		if strings.HasPrefix(path, item.pathPrefix) {
-			return item.proxy, getPathWithoutPrefix(path, item.pathPrefix)
+		if item.pathPrefix == "" {
+			for _, iPath := range item.paths {
+				if path == iPath {
+					return item.proxy, path
+				}
+				if path == "/"+iPath {
+					return item.proxy, path[1:]
+				}
+			}
+		} else {
+			if strings.HasPrefix(path, item.pathPrefix) {
+				return item.proxy, getPathWithoutPrefix(path, item.pathPrefix)
+			}
 		}
 	}
 	return nil, ""

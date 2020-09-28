@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"log"
+	"os"
+
 	"github.com/integration-system/isp-lib/v2/bootstrap"
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/integration-system/isp-lib/v2/config/schema"
@@ -19,8 +22,6 @@ import (
 	"isp-gate-service/server"
 	"isp-gate-service/service"
 	"isp-gate-service/service/matcher"
-	"log"
-	"os"
 )
 
 var (
@@ -98,6 +99,10 @@ func onShutdown(_ context.Context, _ os.Signal) {
 
 func handleRouteUpdate(configs structure.RoutingConfig) bool {
 	routing.InitRoutes(configs)
+	err := proxy.InitProxiesFromConfigs(configs)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return true
 }
 
