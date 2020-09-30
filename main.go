@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"github.com/integration-system/isp-lib/v2/bootstrap"
@@ -10,6 +9,7 @@ import (
 	"github.com/integration-system/isp-lib/v2/config/schema"
 	"github.com/integration-system/isp-lib/v2/metric"
 	"github.com/integration-system/isp-lib/v2/structure"
+	log "github.com/integration-system/isp-log"
 	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
@@ -101,7 +101,7 @@ func handleRouteUpdate(configs structure.RoutingConfig) bool {
 	routing.InitRoutes(configs)
 	err := proxy.InitProxiesFromConfigs(configs)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(400, err)
 	}
 	return true
 }

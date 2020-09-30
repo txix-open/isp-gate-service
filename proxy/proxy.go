@@ -79,7 +79,8 @@ func InitProxiesFromConfigs(configs structure.RoutingConfig) error {
 		for protocol, info := range config.HandlersInfo {
 			p, err := makeProxy(protocol, info.SkipAuth, info.SkipExistCheck)
 			if err != nil {
-				return fmt.Errorf("%v bad dynamic config in service %s with protocol %s", err, config.ModuleName, protocol)
+				errMsg := fmt.Sprintf("%v bad dynamic config in service %s with protocol %s", err, config.ModuleName, protocol)
+				return errors.New(errMsg)
 			}
 			addressConfig := []structure.AddressConfiguration{{
 				Port: info.Port,
