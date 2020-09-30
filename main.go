@@ -101,7 +101,7 @@ func handleRouteUpdate(configs structure.RoutingConfig) bool {
 	routing.InitRoutes(configs)
 	err := proxy.InitProxiesFromConfigs(configs)
 	if err != nil {
-		log.Error(400, err)
+		log.Error(stdcodes.ReceiveErrorFromConfig, err)
 	}
 	return true
 }
