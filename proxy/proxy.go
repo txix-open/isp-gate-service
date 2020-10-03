@@ -100,7 +100,7 @@ func InitProxiesFromConfigs(configs structure.RoutingConfig) error {
 
 func getPathsFromEndpoints(endpoints []structure.EndpointDescriptor) []string {
 	paths := make([]string, len(endpoints)-1)
-	for i, _ := range endpoints {
+	for i := range endpoints {
 		endpoint := endpoints[i]
 		paths = append(paths, endpoint.Path)
 	}
