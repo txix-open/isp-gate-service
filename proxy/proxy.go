@@ -16,7 +16,8 @@ import (
 )
 
 var (
-	store = make([]storeItem, 0)
+	store          = make([]storeItem, 0)
+	locationsStore = make([]storeItem, 0)
 )
 
 const (
@@ -67,11 +68,12 @@ func InitProxies(locations []conf.Location) (map[string]func([]structure.Address
 	sort.Slice(store, func(i, j int) bool {
 		return store[i].pathPrefix > store[j].pathPrefix
 	})
-
+	locationsStore = store
 	return requiredModules, nil
 }
 
 func InitProxiesFromConfigs(configs structure.RoutingConfig) error {
+	store = locationsStore
 	for _, config := range configs { //nolint
 		ip := config.Address.IP
 
@@ -97,8 +99,9 @@ func InitProxiesFromConfigs(configs structure.RoutingConfig) error {
 }
 
 func getPathsFromEndpoints(endpoints []structure.EndpointDescriptor) []string {
-	paths := make([]string, len(endpoints))
-	for _, endpoint := range endpoints {
+	paths := make([]string, len(endpoints)-1)
+	for i, _ := range endpoints {
+		endpoint := endpoints[i]
 		paths = append(paths, endpoint.Path)
 	}
 	return paths
