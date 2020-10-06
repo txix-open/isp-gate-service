@@ -48,4 +48,3 @@ func addEndpointsToMaps(endpoints []structure.EndpointDescriptor, newAddressMap 
 		}
 	}
 }
-
