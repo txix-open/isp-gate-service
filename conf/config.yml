@@ -8,10 +8,10 @@ httpInnerAddress:
   ip: 0.0.0.0
   port: 9003
 moduleName: isp-gate
-instanceUuid: 9d89354b-c728-4b48-b002-a7d3b229f151
+instanceUuid: bac77382-dfd1-440d-82b5-20fe4f5ac6d0
 locations:
   - pathPrefix: /api
-    protocol: grpc
+    protocol: http
     targetModule: router
   - pathPrefix: /mdm
     protocol: http
