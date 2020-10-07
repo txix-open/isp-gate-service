@@ -1,13 +1,13 @@
 package proxy
 
 import (
-	"isp-gate-service/conf"
 	"sort"
 	"strings"
 
 	"github.com/integration-system/isp-lib/v2/structure"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/proxy/grpc"
 	"isp-gate-service/proxy/health_check"

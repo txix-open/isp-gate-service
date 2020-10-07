@@ -23,11 +23,11 @@ func InitRoutes(configs structure.RoutingConfig) {
 			if len(backend.Endpoints) == 0 || backend.Address.Port == "" {
 				continue
 			}
-			addEndpointsToMaps(backend.Endpoints, newAddressMap, newInnerAddressMap, newAuthUserAddressMap)
+			addEndpointsToMaps(backend.Endpoints, "", newAddressMap, newInnerAddressMap, newAuthUserAddressMap)
 		} else {
 			for _, info := range backend.HandlersInfo {
 				if info.Port != "" {
-					addEndpointsToMaps(info.Endpoints, newAddressMap, newInnerAddressMap, newAuthUserAddressMap)
+					addEndpointsToMaps(info.Endpoints, info.PathPrefix, newAddressMap, newInnerAddressMap, newAuthUserAddressMap)
 				}
 			}
 		}
@@ -37,8 +37,11 @@ func InitRoutes(configs structure.RoutingConfig) {
 	AuthUserMethods = newAuthUserAddressMap
 }
 
-func addEndpointsToMaps(endpoints []structure.EndpointDescriptor, newAddressMap map[string]bool, newInnerAddressMap map[string]bool, newAuthUserAddressMap map[string]bool) { //nolint
+func addEndpointsToMaps(endpoints []structure.EndpointDescriptor, pathPrefix string, newAddressMap map[string]bool, newInnerAddressMap map[string]bool, newAuthUserAddressMap map[string]bool) { //nolint
 	for _, el := range endpoints {
+		if pathPrefix != "" {
+			el.Path = pathPrefix + "/" + el.Path
+		}
 		newAddressMap[el.Path] = true
 		if el.Inner {
 			newInnerAddressMap[el.Path] = true
