@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"os"
+
 	"github.com/integration-system/isp-lib/v2/bootstrap"
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/integration-system/isp-lib/v2/config/schema"
 	"github.com/integration-system/isp-lib/v2/metric"
 	"github.com/integration-system/isp-lib/v2/structure"
-	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
@@ -19,8 +20,6 @@ import (
 	"isp-gate-service/server"
 	"isp-gate-service/service"
 	"isp-gate-service/service/matcher"
-	"log"
-	"os"
 )
 
 var (
@@ -38,17 +37,11 @@ func main() {
 		SocketConfiguration(socketConfiguration).
 		RequireRoutes(handleRouteUpdate).
 		RequireModule("journal", invoker.Journal.ReceiveServiceAddressList, false).
-		SubscribeBroadcastEvent(bootstrap.ListenRestartEvent())
+		SubscribeBroadcastEvent(bootstrap.ListenRestartEvent()).OnShutdown(onShutdown)
 
-	requiredModules, err := proxy.InitProxies(cfg.Locations)
-	if err != nil {
-		log.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
-	}
-	for module, consumer := range requiredModules {
-		bs.RequireModule(module, consumer, false)
-	}
-	bs.RequireModule(cfg.ModuleName, accounting.NewConnectionConsumer, false).
-		OnShutdown(onShutdown).
+	proxy.ApiPathPrefix = cfg.RouterConfig.PathPrefix
+	proxyConsumer := proxy.InitRoutingProxy(cfg.RouterConfig.SkipAuth, cfg.RouterConfig.SkipExistCheck)
+	bs.RequireModule(cfg.RouterConfig.RouterModuleName, proxyConsumer, true).
 		OnRemoteConfigReceive(onRemoteConfigReceive).
 		Run()
 }

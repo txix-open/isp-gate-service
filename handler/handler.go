@@ -67,7 +67,8 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) (string, domain.ProxyResponse) {
 	initialPath := string(ctx.Path())
 
-	p, path := proxy.Find(initialPath)
+	p := proxy.RoutingProxy
+	path := proxy.GetPathWithoutApiPrefix(initialPath)
 	if p == nil {
 		msg := fmt.Sprintf("unknown proxy for '%s'", initialPath)
 		utils.WriteError(ctx, msg, codes.NotFound, nil)
@@ -96,7 +97,6 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) (stri
 			utils.WriteError(ctx, message, status, details)
 			return path, domain.Create().SetError(err)
 		}
-
 		if !accounting.AcceptRequest(applicationId, path) {
 			err := errAccounting
 			utils.WriteError(ctx, "too many requests", codes.ResourceExhausted, nil)

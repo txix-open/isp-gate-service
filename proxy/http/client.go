@@ -18,17 +18,17 @@ var (
 	errNotInitialized = errors.New("http proxy not initialized")
 )
 
-type httpProxy struct {
+type HttpProxy struct {
 	client         *fasthttp.HostClient
 	skipAuth       bool
 	skipExistCheck bool
 }
 
-func NewProxy(skipAuth, skipExistCheck bool) *httpProxy {
-	return &httpProxy{client: nil, skipAuth: skipAuth, skipExistCheck: skipExistCheck}
+func NewProxy(skipAuth, skipExistCheck bool) *HttpProxy {
+	return &HttpProxy{client: nil, skipAuth: skipAuth, skipExistCheck: skipExistCheck}
 }
 
-func (p *httpProxy) Consumer(addressList []structure.AddressConfiguration) bool {
+func (p *HttpProxy) Consumer(addressList []structure.AddressConfiguration) bool {
 	if len(addressList) == 0 {
 		p.client = nil
 		return true
@@ -44,7 +44,7 @@ func (p *httpProxy) Consumer(addressList []structure.AddressConfiguration) bool 
 	return true
 }
 
-func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.ProxyResponse {
+func (p *HttpProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.ProxyResponse {
 	client := p.client
 	if client == nil {
 		log.Error(log_code.ErrorClientHttp, errNotInitialized)
@@ -73,14 +73,14 @@ func (p *httpProxy) ProxyRequest(ctx *fasthttp.RequestCtx, path string) domain.P
 		SetError(err)
 }
 
-func (p *httpProxy) SkipAuth() bool {
+func (p *HttpProxy) SkipAuth() bool {
 	return p.skipAuth
 }
 
-func (p *httpProxy) SkipExistCheck() bool {
+func (p *HttpProxy) SkipExistCheck() bool {
 	return p.skipExistCheck
 }
 
-func (p *httpProxy) Close() {
+func (p *HttpProxy) Close() {
 	p.client = nil
 }

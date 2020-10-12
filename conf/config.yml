@@ -9,10 +9,8 @@ httpInnerAddress:
   port: 9003
 moduleName: isp-gate
 instanceUuid: 9d89354b-c728-4b48-b002-a7d3b229f151
-locations:
-  - pathPrefix: /api
-    protocol: http
-    targetModule: router
-  - pathPrefix: /mdm
-    protocol: http
-    targetModule: mdm-api
+routerConfig:
+  routerModuleName: router
+  pathPrefix: /api
+  skipAuth: false
+  skipExistCheck: false
