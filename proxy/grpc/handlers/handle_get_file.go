@@ -84,7 +84,6 @@ func (g getFileDesc) Complete(ctx *fasthttp.RequestCtx, method string, client *b
 	return domain.Create().SetError(err)
 }
 
-//nolint
 func (getFileDesc) write(ctx *fasthttp.RequestCtx, stream isp.BackendService_RequestStreamClient, method string) error {
 	for {
 		msg, err := stream.Recv()

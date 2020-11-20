@@ -1,4 +1,4 @@
-package proxy //nolint
+package proxy
 
 import (
 	"testing"
