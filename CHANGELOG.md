@@ -1,3 +1,6 @@
+### v2.7.3
+* updated isp-lib
+* updated isp-event-lib
 ## 2.7.2
 * fix accounting
 ## 2.7.1
