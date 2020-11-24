@@ -19,7 +19,7 @@ import (
 
 const (
 	// TODO move to isp-lib
-	AdminTokenHeader = "x-auth-admin" //nolint
+	AdminTokenHeader = "x-auth-admin"
 
 	awaitLengthVerifiableHeaders = 4
 )
