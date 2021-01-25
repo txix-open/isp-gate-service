@@ -1,3 +1,6 @@
+### v2.7.4
+* updated isp-lib
+* updated isp-lib-test
 ### v2.7.3
 * updated isp-lib
 * updated isp-event-lib
