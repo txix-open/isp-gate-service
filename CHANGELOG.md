@@ -1,3 +1,5 @@
+### v2.7.5
+* updated dependencies
 ### v2.7.4
 * updated isp-lib
 * updated isp-lib-test
