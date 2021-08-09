@@ -1,3 +1,6 @@
+### v2.7.6
+* updated dependencies
+* migrated to common local config
 ### v2.7.5
 * updated dependencies
 ### v2.7.4
