@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"log"
+	"os"
+
 	"github.com/integration-system/isp-lib/v2/bootstrap"
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/integration-system/isp-lib/v2/config/schema"
@@ -19,8 +22,6 @@ import (
 	"isp-gate-service/server"
 	"isp-gate-service/service"
 	"isp-gate-service/service/matcher"
-	"log"
-	"os"
 )
 
 var (
@@ -82,8 +83,7 @@ func socketConfiguration(cfg interface{}) structure.SocketConfiguration {
 		Port:   appConfig.ConfigServiceAddress.Port,
 		Secure: false,
 		UrlParams: map[string]string{
-			"module_name":   appConfig.ModuleName,
-			"instance_uuid": appConfig.InstanceUuid,
+			"module_name": appConfig.ModuleName,
 		},
 	}
 }

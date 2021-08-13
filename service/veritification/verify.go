@@ -4,8 +4,6 @@ import (
 	"time"
 )
 
-var Default = NewRuntimeVerify()
-
 type Verify interface {
 	ApplicationToken(string) (map[string]string, error)
 	Identity(map[string]string, string) (map[string]string, error)

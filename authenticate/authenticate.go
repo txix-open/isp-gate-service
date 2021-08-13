@@ -88,10 +88,6 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 		return 0, err
 	}
 
-	// TODO backward capability for isp-config-service 1.x.x
-	uuid := config.Get().(*conf.Configuration).InstanceUuid
-	ctx.Request.Header.Set(utils.InstanceIdHeader, uuid)
-
 	return verifiable.appId, nil
 }
 
