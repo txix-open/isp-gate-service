@@ -23,12 +23,24 @@ type userClaims struct {
 	UserId int64
 }
 
+type adminClaims struct {
+	*jwt.StandardClaims
+	Id int64
+}
+
 type token struct{}
 
-func (t token) Admin(token string) error {
+func (t token) Admin(token string) (int64, error) {
 	secret := config.GetRemote().(*conf.RemoteConfig).TokensSetting.AdminSecret
-	_, err := t.parse(token, secret, jwt.MapClaims{})
-	return err
+	parsed, err := t.parse(token, secret, &adminClaims{StandardClaims: &jwt.StandardClaims{}})
+	if err != nil {
+		return 0, err
+	}
+	claims, ok := parsed.Claims.(*adminClaims)
+	if !ok {
+		return 0, errInvalidToken
+	}
+	return claims.Id, nil
 }
 
 func (t token) Application(token string) (int32, error) {

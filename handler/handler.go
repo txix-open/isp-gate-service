@@ -41,7 +41,7 @@ func New(logger log.Logger) *Handler {
 func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
 	currentTime := time.Now()
 
-	method, resp := h.authenticateAccountingProxy(ctx)
+	_, _, method, resp := h.authenticateAccountingProxy(ctx)
 
 	executionTime := time.Since(currentTime) / execution
 
@@ -69,26 +69,31 @@ func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func (h Handler) authenticateAccountingProxy(ctx *fasthttp.RequestCtx) (string, domain.ProxyResponse) {
-	initialPath := string(ctx.Path())
+func (h Handler) authenticateAccountingProxy(ctx *fasthttp.RequestCtx) (int32, int64, string, domain.ProxyResponse) {
+	var (
+		appId       int32 = -1
+		adminId     int64 = -1
+		initialPath       = string(ctx.Path())
+	)
 
 	p, path := proxy.Find(initialPath)
 	if p == nil {
 		msg := fmt.Sprintf("unknown proxy for '%s'", initialPath)
 		utils.WriteError(ctx, msg, codes.NotFound, nil)
-		return initialPath, domain.Create().SetError(errors.New(msg))
+		return appId, adminId, initialPath, domain.Create().SetError(errors.New(msg))
 	}
 
 	if !p.SkipExistCheck() {
 		if _, ok := routing.AllMethods[path]; !ok {
 			msg := "not implemented"
 			utils.WriteError(ctx, msg, codes.Unimplemented, nil)
-			return path, domain.Create().SetError(errors.New(msg))
+			return appId, adminId, path, domain.Create().SetError(errors.New(msg))
 		}
 	}
 
 	if !p.SkipAuth() {
-		applicationId, err := authenticate.Do(ctx, path)
+		var err error
+		appId, adminId, err = authenticate.Do(ctx, path)
 		if err != nil {
 			message := "unknown error"
 			status := codes.Unknown
@@ -99,17 +104,17 @@ func (h Handler) authenticateAccountingProxy(ctx *fasthttp.RequestCtx) (string, 
 				details = e.Details()
 			}
 			utils.WriteError(ctx, message, status, details)
-			return path, domain.Create().SetError(err)
+			return appId, adminId, path, domain.Create().SetError(err)
 		}
 
-		if !accounting.AcceptRequest(applicationId, path) {
+		if !accounting.AcceptRequest(appId, path) {
 			err := errAccounting
 			utils.WriteError(ctx, "too many requests", codes.ResourceExhausted, nil)
-			return path, domain.Create().SetError(err)
+			return appId, adminId, path, domain.Create().SetError(err)
 		}
 	}
 
-	return path, p.ProxyRequest(ctx, path)
+	return appId, adminId, path, p.ProxyRequest(ctx, path)
 }
 
 func (Handler) setMetricStatus(statusCode int) string {
