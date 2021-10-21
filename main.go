@@ -17,7 +17,6 @@ import (
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
-	"isp-gate-service/invoker"
 	"isp-gate-service/log"
 	"isp-gate-service/proxy"
 	"isp-gate-service/redis"
@@ -44,7 +43,6 @@ func main() {
 		DeclareMe(makeDeclaration).
 		SocketConfiguration(socketConfiguration).
 		RequireRoutes(handleRouteUpdate).
-		RequireModule("journal", invoker.Journal.ReceiveServiceAddressList, false).
 		SubscribeBroadcastEvent(bootstrap.ListenRestartEvent())
 
 	requiredModules, err := proxy.InitProxies(cfg.Locations)
@@ -105,7 +103,6 @@ func onShutdown(_ context.Context, _ os.Signal) {
 	accounting.Close()
 	proxy.Close()
 	_ = redis.Client.Close()
-	_ = invoker.Journal.Close()
 	if logger != nil {
 		_ = logger.Close()
 	}
