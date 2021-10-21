@@ -2,9 +2,9 @@
 package conf
 
 import (
-	"github.com/integration-system/isp-journal/rx"
-	"github.com/integration-system/isp-lib/v2/structure"
 	"time"
+
+	"github.com/integration-system/isp-lib/v2/structure"
 )
 
 const (
@@ -38,8 +38,15 @@ type (
 	}
 
 	Journal struct {
-		Journal         rx.Config `schema:"Настройка конфигурации"`
-		MethodsPatterns []string  `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
+		Journal         JorunalConfig `schema:"Настройка конфигурации"`
+		MethodsPatterns []string      `schema:"Список методов для логирования,список строк вида: 'module/group/method'(* - для частичного совпадения). При обработке запроса, если вызываемый метод совпадает со строкой из списка, тела запроса и ответа записываются в лог"`
+	}
+
+	JorunalConfig struct {
+		Enable    bool   `schema:"Включение/отключение журналирования"`
+		Filename  string `schema:"Имя файла,путь до файла в который будут записываться логи"`
+		MaxSizeMb int    `schema:"Максимальный размер файла,ограничение по размеру файла после достижения которого логи будут записываться в новый файл"`
+		Compress  bool   `schema:"Сжатие логов,архивирует файлы в gzip"`
 	}
 
 	TokensSetting struct {

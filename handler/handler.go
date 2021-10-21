@@ -6,16 +6,15 @@ import (
 	"time"
 
 	"github.com/integration-system/isp-lib/v2/config"
-	log "github.com/integration-system/isp-log"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
-	"isp-gate-service/invoker"
-	"isp-gate-service/log_code"
+	"isp-gate-service/log"
 	"isp-gate-service/proxy"
 	"isp-gate-service/routing"
 	"isp-gate-service/service"
@@ -30,10 +29,13 @@ const (
 var errAccounting = errors.New("accounting error")
 
 type Handler struct {
+	logger log.Logger
 }
 
-func New() *Handler {
-	return &Handler{}
+func New(logger log.Logger) *Handler {
+	return &Handler{
+		logger: logger,
+	}
 }
 
 func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
@@ -50,17 +52,19 @@ func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
 	}
 
 	logEnable := config.GetRemote().(*conf.RemoteConfig).JournalSetting.Journal.Enable
-	//nolint
+	// nolintlint
 	if logEnable && matcher.JournalMethods.Match(method) {
 		requestBody, responseBody, err := resp.Get()
+		fields := []zap.Field{
+			zap.Any("request", requestBody),
+			zap.Any("response", responseBody),
+			zap.String("method", method),
+			zap.Error(err),
+		}
 		if err != nil {
-			if err := invoker.Journal.Error(method, requestBody, responseBody, err); err != nil {
-				log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
-			}
+			h.logger.Error(ctx, "unsuccessful request", fields...)
 		} else {
-			if err := invoker.Journal.Info(method, requestBody, responseBody); err != nil {
-				log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
-			}
+			h.logger.Info(ctx, "successful request", fields...)
 		}
 	}
 }
