@@ -18,7 +18,9 @@ require (
 	github.com/spf13/cast v1.4.0
 	github.com/stretchr/testify v1.7.0
 	github.com/valyala/fasthttp v1.28.0
+	go.uber.org/zap v1.17.0
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed
 	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.26.0
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
