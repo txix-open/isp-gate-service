@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -41,24 +42,30 @@ func New(logger log.Logger) *Handler {
 func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
 	currentTime := time.Now()
 
-	_, _, method, resp := h.authenticateAccountingProxy(ctx)
+	appId, adminId, path, resp := h.authenticateAccountingProxy(ctx)
 
 	executionTime := time.Since(currentTime) / execution
 
 	statusCode := ctx.Response.StatusCode()
 	service.Metrics.UpdateStatusCounter(h.setMetricStatus(statusCode))
 	if statusCode == http.StatusOK {
-		service.Metrics.UpdateMethodResponseTime(method, executionTime)
+		service.Metrics.UpdateMethodResponseTime(path, executionTime)
 	}
 
 	logEnable := config.GetRemote().(*conf.RemoteConfig).JournalSetting.Journal.Enable
 	// nolintlint
-	if logEnable && matcher.JournalMethods.Match(method) {
+	if logEnable && matcher.JournalMethods.Match(path) {
 		requestBody, responseBody, err := resp.Get()
 		fields := []zap.Field{
-			zap.Any("request", requestBody),
-			zap.Any("response", responseBody),
-			zap.String("method", method),
+			zap.ByteString("http_method", ctx.Method()),
+			zap.String("remote_addr", ctx.RemoteAddr().String()),
+			zap.ByteString("x_forwarded_for", ctx.Request.Header.Peek("X-Forwarded-For")),
+			zap.Int("status_code", ctx.Response.StatusCode()),
+			zap.String("path", path),
+			zap.Int32("application_id", appId),
+			zap.Int64("admin_id", adminId),
+			zap.Any("request", json.RawMessage(requestBody)),
+			zap.Any("response", json.RawMessage(responseBody)),
 			zap.Error(err),
 		}
 		if err != nil {
