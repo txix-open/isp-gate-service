@@ -5,7 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"isp-gate-service/conf"
 	"isp-gate-service/entity"
-	"isp-gate-service/model"
+	"isp-gate-service/repository"
 	"sync"
 	"testing"
 	"time"
@@ -65,7 +65,7 @@ var (
 func TestAccounting(t *testing.T) {
 	a := assert.New(t)
 	snapshotRep := newSnapshotRepository(false)
-	model.SnapshotRep = snapshotRep
+	repository.SnapshotRep = snapshotRep
 	worker = &accountingWorker{
 		accountingStorage: make(map[int32]Accounting),
 		requestsStoring:   make(map[int32]bool),
@@ -115,7 +115,7 @@ func TestAccounting(t *testing.T) {
 func TestWorker_recoveryAccounting(t *testing.T) {
 	a := assert.New(t)
 	snapshotRep := newSnapshotRepository(true)
-	model.SnapshotRep = snapshotRep
+	repository.SnapshotRep = snapshotRep
 
 	worker = &accountingWorker{
 		accountingStorage: make(map[int32]Accounting),
@@ -138,7 +138,7 @@ func TestWorker_recoveryAccounting(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 300)
 	a.True(snapshotRep.Wait())
-	snapshot, err := model.SnapshotRep.GetByApplication(appId)
+	snapshot, err := repository.SnapshotRep.GetByApplication(appId)
 	a.NoError(err)
 	a.NotNil(snapshot)
 	a.Equal(len(request), int(snapshot.Version))

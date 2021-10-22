@@ -8,7 +8,7 @@ import (
 	"isp-gate-service/conf"
 	"isp-gate-service/entity"
 	"isp-gate-service/log_code"
-	"isp-gate-service/model"
+	"isp-gate-service/repository"
 	"isp-gate-service/service/matcher"
 	"sync"
 	"time"
@@ -110,7 +110,7 @@ func (w *accountingWorker) recoveryAccounting(appId int32, limitStates map[strin
 		importNotComplete = true
 	)
 
-	dbSnapshot, err := model.SnapshotRep.GetByApplication(appId)
+	dbSnapshot, err := repository.SnapshotRep.GetByApplication(appId)
 	if err != nil {
 		log.Warn(log_code.ErrorSnapshotAccounting, err)
 	}

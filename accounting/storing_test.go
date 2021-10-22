@@ -1,13 +1,14 @@
 package accounting
 
 import (
-	"github.com/stretchr/testify/assert"
-	"isp-gate-service/conf"
-	"isp-gate-service/entity"
-	"isp-gate-service/model"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"isp-gate-service/conf"
+	"isp-gate-service/entity"
+	"isp-gate-service/repository"
 )
 
 var (
@@ -28,10 +29,10 @@ var (
 )
 
 func initStoring(setting conf.StoringSetting) *requestsRepository {
-	repository := &requestsRepository{cache: make([]entity.Request, 0), wg: &sync.WaitGroup{}}
-	model.RequestsRep = repository
+	rep := &requestsRepository{cache: make([]entity.Request, 0), wg: &sync.WaitGroup{}}
+	repository.RequestsRep = rep
 	InitStoringTask(setting)
-	return repository
+	return rep
 }
 
 func wait(wg *sync.WaitGroup) bool {

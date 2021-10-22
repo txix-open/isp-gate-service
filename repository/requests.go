@@ -1,4 +1,4 @@
-package model
+package repository
 
 import (
 	"github.com/go-pg/pg/v9/orm"

@@ -15,9 +15,9 @@ import (
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
 	"isp-gate-service/invoker"
-	"isp-gate-service/model"
 	"isp-gate-service/proxy"
 	"isp-gate-service/redis"
+	"isp-gate-service/repository"
 	"isp-gate-service/routing"
 	"isp-gate-service/server"
 	"isp-gate-service/service"
@@ -61,7 +61,7 @@ func onLocalConfigLoad(_ *conf.Configuration) {
 func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	localCfg := config.Get().(*conf.Configuration)
 
-	model.DbClient.ReceiveConfiguration(remoteConfig.Database)
+	repository.DbClient.ReceiveConfiguration(remoteConfig.Database)
 	invoker.Journal.ReceiveConfiguration(remoteConfig.JournalSetting.Journal, localCfg.ModuleName)
 	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalSetting.MethodsPatterns)
 
