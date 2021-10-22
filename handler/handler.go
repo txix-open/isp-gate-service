@@ -27,23 +27,24 @@ const (
 	execution = 1e6
 )
 
-var (
-	errAccounting = errors.New("accounting error")
+var errAccounting = errors.New("accounting error")
 
-	helper handlerHelper
-)
+type Handler struct {
+}
 
-type handlerHelper struct{}
+func New() *Handler {
+	return &Handler{}
+}
 
-func CompleteRequest(ctx *fasthttp.RequestCtx) {
+func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
 	currentTime := time.Now()
 
-	method, resp := helper.AuthenticateAccountingProxy(ctx)
+	method, resp := h.authenticateAccountingProxy(ctx)
 
 	executionTime := time.Since(currentTime) / execution
 
 	statusCode := ctx.Response.StatusCode()
-	service.Metrics.UpdateStatusCounter(helper.SetMetricStatus(statusCode))
+	service.Metrics.UpdateStatusCounter(h.setMetricStatus(statusCode))
 	if statusCode == http.StatusOK {
 		service.Metrics.UpdateMethodResponseTime(method, executionTime)
 	}
@@ -64,7 +65,7 @@ func CompleteRequest(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) (string, domain.ProxyResponse) {
+func (h Handler) authenticateAccountingProxy(ctx *fasthttp.RequestCtx) (string, domain.ProxyResponse) {
 	initialPath := string(ctx.Path())
 
 	p, path := proxy.Find(initialPath)
@@ -107,7 +108,7 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) (stri
 	return path, p.ProxyRequest(ctx, path)
 }
 
-func (handlerHelper) SetMetricStatus(statusCode int) string {
+func (Handler) setMetricStatus(statusCode int) string {
 	metricStatus := "5xx"
 	switch {
 	case statusCode >= 100 && statusCode < 200:

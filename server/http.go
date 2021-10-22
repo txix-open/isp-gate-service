@@ -43,7 +43,7 @@ func (s *httpSrv) run(maxRequestBodySize int64) {
 	localConfig := config.Get().(*conf.Configuration)
 	restAddress := localConfig.HttpInnerAddress.GetAddress()
 	s.srv = &fasthttp.Server{
-		Handler:            handler.CompleteRequest,
+		Handler:            handler.New().CompleteRequest,
 		WriteTimeout:       defaultTimeout,
 		ReadTimeout:        defaultTimeout,
 		MaxRequestBodySize: int(maxRequestBodySize),
