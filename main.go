@@ -2,22 +2,25 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 
+	"github.com/integration-system/go-cmp/cmp"
 	"github.com/integration-system/isp-lib/v2/bootstrap"
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/integration-system/isp-lib/v2/config/schema"
 	"github.com/integration-system/isp-lib/v2/metric"
 	"github.com/integration-system/isp-lib/v2/structure"
+	"github.com/integration-system/isp-lib/v2/utils"
+	logrus "github.com/integration-system/isp-log"
 	"github.com/integration-system/isp-log/stdcodes"
+	"github.com/pkg/errors"
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
-	"isp-gate-service/invoker"
-	"isp-gate-service/model"
+	"isp-gate-service/log"
 	"isp-gate-service/proxy"
 	"isp-gate-service/redis"
+	"isp-gate-service/repository"
 	"isp-gate-service/routing"
 	"isp-gate-service/server"
 	"isp-gate-service/service"
@@ -26,6 +29,8 @@ import (
 
 var (
 	version = "0.1.0"
+
+	logger *log.Adapter
 )
 
 func main() {
@@ -38,12 +43,11 @@ func main() {
 		DeclareMe(makeDeclaration).
 		SocketConfiguration(socketConfiguration).
 		RequireRoutes(handleRouteUpdate).
-		RequireModule("journal", invoker.Journal.ReceiveServiceAddressList, false).
 		SubscribeBroadcastEvent(bootstrap.ListenRestartEvent())
 
 	requiredModules, err := proxy.InitProxies(cfg.Locations)
 	if err != nil {
-		log.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
+		logrus.Fatal(stdcodes.ModuleInvalidLocalConfig, err)
 	}
 	for module, consumer := range requiredModules {
 		bs.RequireModule(module, consumer, false)
@@ -59,10 +63,7 @@ func onLocalConfigLoad(_ *conf.Configuration) {
 }
 
 func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
-	localCfg := config.Get().(*conf.Configuration)
-
-	model.DbClient.ReceiveConfiguration(remoteConfig.Database)
-	invoker.Journal.ReceiveConfiguration(remoteConfig.JournalSetting.Journal, localCfg.ModuleName)
+	repository.DbClient.ReceiveConfiguration(remoteConfig.Database)
 	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalSetting.MethodsPatterns)
 
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
@@ -73,7 +74,16 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	metric.InitHttpServer(remoteConfig.Metrics)
 	service.Metrics.Init()
 
-	server.Http.Init(remoteConfig.HttpSetting, oldRemoteConfig.HttpSetting)
+	oldLogger := setLogger(remoteConfig.JournalSetting.Journal, oldRemoteConfig.JournalSetting.Journal)
+	defer func() {
+		if oldLogger != nil {
+			_ = oldLogger.Close()
+		}
+	}()
+
+	isDifferentSettingForHttpServ :=
+		!cmp.Equal(remoteConfig.HttpSetting, oldRemoteConfig.HttpSetting) || oldLogger != nil
+	server.Http.Init(isDifferentSettingForHttpServ, remoteConfig.HttpSetting.GetMaxRequestBodySize(), logger)
 }
 
 func socketConfiguration(cfg interface{}) structure.SocketConfiguration {
@@ -93,7 +103,9 @@ func onShutdown(_ context.Context, _ os.Signal) {
 	accounting.Close()
 	proxy.Close()
 	_ = redis.Client.Close()
-	_ = invoker.Journal.Close()
+	if logger != nil {
+		_ = logger.Close()
+	}
 }
 
 func handleRouteUpdate(configs structure.RoutingConfig) bool {
@@ -109,4 +121,27 @@ func makeDeclaration(localConfig interface{}) bootstrap.ModuleInfo {
 		GrpcOuterAddress: cfg.HttpOuterAddress,
 		Endpoints:        []structure.EndpointDescriptor{},
 	}
+}
+
+func setLogger(loggerCfg, oldLoggerCfg conf.JorunalConfig) *log.Adapter {
+	if cmp.Equal(loggerCfg, oldLoggerCfg) {
+		return nil
+	}
+
+	var err error
+	oldLogger := logger
+	if utils.DEV {
+		logger, err = log.New()
+	} else {
+		logger, err = log.New(log.WithFileRotation(log.Rotation{
+			File:      loggerCfg.Filename,
+			MaxSizeMb: loggerCfg.MaxSizeMb,
+			Compress:  loggerCfg.Compress,
+		}))
+	}
+	if err != nil {
+		logrus.Fatal(stdcodes.ModuleRunFatalError, errors.WithMessage(err, "set logger"))
+	}
+
+	return oldLogger
 }

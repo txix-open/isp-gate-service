@@ -1,3 +1,7 @@
+### v2.8.0
+* add new logger
+* remove journal
+* add identities to requests log
 ### v2.7.6
 * updated dependencies
 * migrated to common local config

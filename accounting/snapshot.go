@@ -5,7 +5,7 @@ import (
 	"github.com/integration-system/isp-log/stdcodes"
 	"isp-gate-service/entity"
 	"isp-gate-service/log_code"
-	"isp-gate-service/model"
+	"isp-gate-service/repository"
 	"sync"
 	"time"
 )
@@ -66,7 +66,7 @@ func (t *snapshotTask) run(timeout time.Duration) {
 }
 
 func (t *snapshotTask) unload(list []entity.Snapshot) {
-	if err := model.SnapshotRep.Update(list); err != nil {
+	if err := repository.SnapshotRep.Update(list); err != nil {
 		log.Error(log_code.ErrorSnapshotAccounting, err)
 	}
 	t.wg.Done()

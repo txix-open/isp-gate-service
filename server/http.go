@@ -1,15 +1,16 @@
 package server
 
 import (
-	"github.com/integration-system/go-cmp/cmp"
+	"sync"
+	"time"
+
 	"github.com/integration-system/isp-lib/v2/config"
-	log "github.com/integration-system/isp-log"
+	logrus "github.com/integration-system/isp-log"
 	"github.com/valyala/fasthttp"
 	"isp-gate-service/conf"
 	"isp-gate-service/handler"
+	"isp-gate-service/log"
 	"isp-gate-service/log_code"
-	"sync"
-	"time"
 )
 
 const defaultTimeout = 60 * time.Second
@@ -20,15 +21,17 @@ type httpSrv struct {
 	working bool
 	srv     *fasthttp.Server
 	mx      sync.Mutex
+	logger  log.Logger
 }
 
-func (s *httpSrv) Init(new, old conf.HttpSetting) {
+func (s *httpSrv) Init(isDifferentSetting bool, bodySize int64, logger log.Logger) {
+	s.logger = logger
 	if s.working {
-		if !cmp.Equal(new, old) {
-			s.run(new.GetMaxRequestBodySize())
+		if isDifferentSetting {
+			s.run(bodySize)
 		}
 	} else {
-		s.run(new.GetMaxRequestBodySize())
+		s.run(bodySize)
 	}
 }
 
@@ -37,20 +40,20 @@ func (s *httpSrv) run(maxRequestBodySize int64) {
 	s.working = true
 	if s.srv != nil {
 		if err := s.srv.Shutdown(); err != nil {
-			log.Warn(log_code.WarnHttpServerShutdown, err)
+			logrus.Warn(log_code.WarnHttpServerShutdown, err)
 		}
 	}
 	localConfig := config.Get().(*conf.Configuration)
 	restAddress := localConfig.HttpInnerAddress.GetAddress()
 	s.srv = &fasthttp.Server{
-		Handler:            handler.CompleteRequest,
+		Handler:            handler.New(s.logger).CompleteRequest,
 		WriteTimeout:       defaultTimeout,
 		ReadTimeout:        defaultTimeout,
 		MaxRequestBodySize: int(maxRequestBodySize),
 	}
 	go func() {
 		if err := s.srv.ListenAndServe(restAddress); err != nil {
-			log.Error(log_code.ErrorHttpServerListen, err)
+			logrus.Error(log_code.ErrorHttpServerListen, err)
 		}
 	}()
 	s.mx.Unlock()
@@ -60,7 +63,7 @@ func (s *httpSrv) Close() {
 	if s.srv != nil {
 		s.working = false
 		if err := s.srv.Shutdown(); err != nil {
-			log.Warn(log_code.WarnHttpServerShutdown, err)
+			logrus.Warn(log_code.WarnHttpServerShutdown, err)
 		}
 	}
 }

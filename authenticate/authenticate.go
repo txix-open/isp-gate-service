@@ -42,6 +42,7 @@ type (
 
 	verifiable struct {
 		appId   int32
+		adminId int64
 		ctx     *fasthttp.RequestCtx
 		path    string
 		headers map[string]string
@@ -60,7 +61,7 @@ func ReceiveConfiguration(conf conf.Cache) {
 	}
 }
 
-func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
+func Do(ctx *fasthttp.RequestCtx, path string) (int32, int64, error) {
 	for _, notExpectedHeader := range notExpectedHeaders {
 		ctx.Request.Header.Del(notExpectedHeader)
 	}
@@ -68,27 +69,27 @@ func Do(ctx *fasthttp.RequestCtx, path string) (int32, error) {
 	verifiable := newVerifiable(ctx, path)
 	err := verifiable.verifyAppToken()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	err = verifiable.verifyUserToken()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	verifiable.setHeaders()
 
 	err = verifiable.checkInnerMethods()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	err = verifiable.checkUserMethods()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
-	return verifiable.appId, nil
+	return verifiable.appId, verifiable.adminId, nil
 }
 
 func newVerifiable(ctx *fasthttp.RequestCtx, path string) *verifiable {
@@ -96,6 +97,7 @@ func newVerifiable(ctx *fasthttp.RequestCtx, path string) *verifiable {
 		ctx:     ctx,
 		path:    path,
 		appId:   -1,
+		adminId: -1,
 		headers: make(map[string]string),
 	}
 }
@@ -179,9 +181,11 @@ func (v *verifiable) checkInnerMethods() error {
 		if adminToken == "" {
 			return createError("unauthorized", codes.Unauthenticated, "admin token required")
 		}
-		if verifyToken.Admin(adminToken) != nil {
+		adminId, err := verifyToken.Admin(adminToken)
+		if err != nil {
 			return createError("unauthorized", codes.Unauthenticated, "received invalid admin token")
 		}
+		v.adminId = adminId
 	}
 	return nil
 }

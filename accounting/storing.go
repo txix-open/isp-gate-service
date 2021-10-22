@@ -6,7 +6,7 @@ import (
 	"isp-gate-service/conf"
 	"isp-gate-service/entity"
 	"isp-gate-service/log_code"
-	"isp-gate-service/model"
+	"isp-gate-service/repository"
 	"sync"
 	"time"
 )
@@ -100,7 +100,7 @@ func (t *storingTask) run(timeout time.Duration) {
 }
 
 func (t *storingTask) unload(cache []entity.Request) {
-	if err := model.RequestsRep.Insert(cache); err != nil {
+	if err := repository.RequestsRep.Insert(cache); err != nil {
 		log.Error(log_code.ErrorUnloadAccounting, err)
 	}
 	t.wg.Done()

@@ -1,21 +1,21 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/integration-system/isp-lib/v2/config"
-	log "github.com/integration-system/isp-log"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
-	"isp-gate-service/invoker"
-	"isp-gate-service/log_code"
+	"isp-gate-service/log"
 	"isp-gate-service/proxy"
 	"isp-gate-service/routing"
 	"isp-gate-service/service"
@@ -27,63 +27,80 @@ const (
 	execution = 1e6
 )
 
-var (
-	errAccounting = errors.New("accounting error")
+var errAccounting = errors.New("accounting error")
 
-	helper handlerHelper
-)
+type Handler struct {
+	logger log.Logger
+}
 
-type handlerHelper struct{}
+func New(logger log.Logger) *Handler {
+	return &Handler{
+		logger: logger,
+	}
+}
 
-func CompleteRequest(ctx *fasthttp.RequestCtx) {
+func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
 	currentTime := time.Now()
 
-	method, resp := helper.AuthenticateAccountingProxy(ctx)
+	appId, adminId, path, resp := h.authenticateAccountingProxy(ctx)
 
 	executionTime := time.Since(currentTime) / execution
 
 	statusCode := ctx.Response.StatusCode()
-	service.Metrics.UpdateStatusCounter(helper.SetMetricStatus(statusCode))
+	service.Metrics.UpdateStatusCounter(h.setMetricStatus(statusCode))
 	if statusCode == http.StatusOK {
-		service.Metrics.UpdateMethodResponseTime(method, executionTime)
+		service.Metrics.UpdateMethodResponseTime(path, executionTime)
 	}
 
 	logEnable := config.GetRemote().(*conf.RemoteConfig).JournalSetting.Journal.Enable
-	//nolint
-	if logEnable && matcher.JournalMethods.Match(method) {
+	// nolintlint
+	if logEnable && matcher.JournalMethods.Match(path) {
 		requestBody, responseBody, err := resp.Get()
+		fields := []zap.Field{
+			zap.ByteString("http_method", ctx.Method()),
+			zap.String("remote_addr", ctx.RemoteAddr().String()),
+			zap.ByteString("x_forwarded_for", ctx.Request.Header.Peek("X-Forwarded-For")),
+			zap.Int("status_code", ctx.Response.StatusCode()),
+			zap.String("path", path),
+			zap.Int32("application_id", appId),
+			zap.Int64("admin_id", adminId),
+			zap.Any("request", json.RawMessage(requestBody)),
+			zap.Any("response", json.RawMessage(responseBody)),
+			zap.Error(err),
+		}
 		if err != nil {
-			if err := invoker.Journal.Error(method, requestBody, responseBody, err); err != nil {
-				log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
-			}
+			h.logger.Error(ctx, "unsuccessful request", fields...)
 		} else {
-			if err := invoker.Journal.Info(method, requestBody, responseBody); err != nil {
-				log.Warnf(log_code.WarnJournalCouldNotWriteToFile, "could not write to file journal: %v", err)
-			}
+			h.logger.Info(ctx, "successful request", fields...)
 		}
 	}
 }
 
-func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) (string, domain.ProxyResponse) {
-	initialPath := string(ctx.Path())
+func (h Handler) authenticateAccountingProxy(ctx *fasthttp.RequestCtx) (int32, int64, string, domain.ProxyResponse) {
+	var (
+		appId       int32 = -1
+		adminId     int64 = -1
+		initialPath       = string(ctx.Path())
+	)
 
 	p, path := proxy.Find(initialPath)
 	if p == nil {
 		msg := fmt.Sprintf("unknown proxy for '%s'", initialPath)
 		utils.WriteError(ctx, msg, codes.NotFound, nil)
-		return initialPath, domain.Create().SetError(errors.New(msg))
+		return appId, adminId, initialPath, domain.Create().SetError(errors.New(msg))
 	}
 
 	if !p.SkipExistCheck() {
 		if _, ok := routing.AllMethods[path]; !ok {
 			msg := "not implemented"
 			utils.WriteError(ctx, msg, codes.Unimplemented, nil)
-			return path, domain.Create().SetError(errors.New(msg))
+			return appId, adminId, path, domain.Create().SetError(errors.New(msg))
 		}
 	}
 
 	if !p.SkipAuth() {
-		applicationId, err := authenticate.Do(ctx, path)
+		var err error
+		appId, adminId, err = authenticate.Do(ctx, path)
 		if err != nil {
 			message := "unknown error"
 			status := codes.Unknown
@@ -94,20 +111,20 @@ func (handlerHelper) AuthenticateAccountingProxy(ctx *fasthttp.RequestCtx) (stri
 				details = e.Details()
 			}
 			utils.WriteError(ctx, message, status, details)
-			return path, domain.Create().SetError(err)
+			return appId, adminId, path, domain.Create().SetError(err)
 		}
 
-		if !accounting.AcceptRequest(applicationId, path) {
+		if !accounting.AcceptRequest(appId, path) {
 			err := errAccounting
 			utils.WriteError(ctx, "too many requests", codes.ResourceExhausted, nil)
-			return path, domain.Create().SetError(err)
+			return appId, adminId, path, domain.Create().SetError(err)
 		}
 	}
 
-	return path, p.ProxyRequest(ctx, path)
+	return appId, adminId, path, p.ProxyRequest(ctx, path)
 }
 
-func (handlerHelper) SetMetricStatus(statusCode int) string {
+func (Handler) setMetricStatus(statusCode int) string {
 	metricStatus := "5xx"
 	switch {
 	case statusCode >= 100 && statusCode < 200:
