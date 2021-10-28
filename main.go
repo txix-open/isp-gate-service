@@ -128,15 +128,19 @@ func setLogger(loggerCfg, oldLoggerCfg conf.JorunalConfig) *log.Adapter {
 		return nil
 	}
 
+	// temporary for file rotation. Selected based on max size 512 mb
+	maxBackups := 2
+
 	var err error
 	oldLogger := logger
 	if utils.DEV {
 		logger, err = log.New()
 	} else {
 		logger, err = log.New(log.WithFileRotation(log.Rotation{
-			File:      loggerCfg.Filename,
-			MaxSizeMb: loggerCfg.MaxSizeMb,
-			Compress:  loggerCfg.Compress,
+			File:       loggerCfg.Filename,
+			MaxSizeMb:  loggerCfg.MaxSizeMb,
+			MaxBackups: maxBackups,
+			Compress:   loggerCfg.Compress,
 		}))
 	}
 	if err != nil {
