@@ -1,3 +1,5 @@
+### v2.8.1
+* add xml format support for new logger
 ### v2.8.0
 * add new logger
 * remove journal

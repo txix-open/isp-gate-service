@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -43,7 +44,6 @@ func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
 	currentTime := time.Now()
 
 	appId, adminId, path, resp := h.authenticateAccountingProxy(ctx)
-
 	executionTime := time.Since(currentTime) / execution
 
 	statusCode := ctx.Response.StatusCode()
@@ -52,6 +52,8 @@ func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
 		service.Metrics.UpdateMethodResponseTime(path, executionTime)
 	}
 
+	reqContentType := ctx.Request.Header.ContentType()
+	resContentType := ctx.Response.Header.ContentType()
 	logEnable := config.GetRemote().(*conf.RemoteConfig).JournalSetting.Journal.Enable
 	// nolintlint
 	if logEnable && matcher.JournalMethods.Match(path) {
@@ -64,8 +66,8 @@ func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
 			zap.String("path", path),
 			zap.Int32("application_id", appId),
 			zap.Int64("admin_id", adminId),
-			zap.Any("request", json.RawMessage(requestBody)),
-			zap.Any("response", json.RawMessage(responseBody)),
+			zap.Any("request", castData(requestBody, reqContentType)),
+			zap.Any("response", castData(responseBody, resContentType)),
 			zap.Error(err),
 		}
 		if err != nil {
@@ -73,6 +75,17 @@ func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
 		} else {
 			h.logger.Info(ctx, "successful request", fields...)
 		}
+	}
+}
+
+var jsonContentType = []byte("application/json")
+
+func castData(data []byte, contentType []byte) interface{} {
+	switch {
+	case bytes.Contains(contentType, jsonContentType):
+		return json.RawMessage(data)
+	default:
+		return fmt.Sprintf("%s", data)
 	}
 }
 
