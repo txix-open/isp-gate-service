@@ -17,8 +17,8 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0
 	github.com/spf13/cast v1.4.0
 	github.com/stretchr/testify v1.7.0
-	github.com/valyala/fasthttp v1.28.0
-	golang.org/x/net v0.0.0-20210510120150-4163338589ed
+	github.com/valyala/fasthttp v1.34.0
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.26.0
 )
