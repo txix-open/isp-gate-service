@@ -1,22 +1,19 @@
 package handler
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/integration-system/isp-kit/log"
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
-	"isp-gate-service/log"
 	"isp-gate-service/proxy"
 	"isp-gate-service/routing"
 	"isp-gate-service/service"
@@ -52,40 +49,27 @@ func (h Handler) CompleteRequest(ctx *fasthttp.RequestCtx) {
 		service.Metrics.UpdateMethodResponseTime(path, executionTime)
 	}
 
-	reqContentType := ctx.Request.Header.ContentType()
-	resContentType := ctx.Response.Header.ContentType()
 	logEnable := config.GetRemote().(*conf.RemoteConfig).JournalSetting.Journal.Enable
 	// nolintlint
 	if logEnable && matcher.JournalMethods.Match(path) {
 		requestBody, responseBody, err := resp.Get()
-		fields := []zap.Field{
-			zap.ByteString("http_method", ctx.Method()),
-			zap.String("remote_addr", ctx.RemoteAddr().String()),
-			zap.ByteString("x_forwarded_for", ctx.Request.Header.Peek("X-Forwarded-For")),
-			zap.Int("status_code", ctx.Response.StatusCode()),
-			zap.String("path", path),
-			zap.Int32("application_id", appId),
-			zap.Int64("admin_id", adminId),
-			zap.Any("request", castData(requestBody, reqContentType)),
-			zap.Any("response", castData(responseBody, resContentType)),
-			zap.Error(err),
+		fields := []log.Field{
+			log.ByteString("http_method", ctx.Method()),
+			log.String("remote_addr", ctx.RemoteAddr().String()),
+			log.ByteString("x_forwarded_for", ctx.Request.Header.Peek("X-Forwarded-For")),
+			log.Int("status_code", ctx.Response.StatusCode()),
+			log.String("path", path),
+			log.Int32("application_id", appId),
+			log.Int64("admin_id", adminId),
+			log.ByteString("request", requestBody),
+			log.ByteString("response", responseBody),
 		}
 		if err != nil {
+			fields = append(fields, log.Any("error", err))
 			h.logger.Error(ctx, "unsuccessful request", fields...)
 		} else {
 			h.logger.Info(ctx, "successful request", fields...)
 		}
-	}
-}
-
-var jsonContentType = []byte("application/json")
-
-func castData(data []byte, contentType []byte) interface{} {
-	switch {
-	case bytes.Contains(contentType, jsonContentType):
-		return json.RawMessage(data)
-	default:
-		return fmt.Sprintf("%s", data)
 	}
 }
 

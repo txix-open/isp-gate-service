@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/integration-system/go-cmp/cmp"
+	"github.com/integration-system/isp-kit/log"
 	"github.com/integration-system/isp-lib/v2/bootstrap"
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/integration-system/isp-lib/v2/config/schema"
@@ -17,7 +18,6 @@ import (
 	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
-	"isp-gate-service/log"
 	"isp-gate-service/proxy"
 	"isp-gate-service/redis"
 	"isp-gate-service/repository"
@@ -133,16 +133,23 @@ func setLogger(loggerCfg, oldLoggerCfg conf.JorunalConfig) *log.Adapter {
 
 	var err error
 	oldLogger := logger
-	if utils.DEV {
-		logger, err = log.New()
-	} else {
-		logger, err = log.New(log.WithFileRotation(log.Rotation{
-			File:       loggerCfg.Filename,
-			MaxSizeMb:  loggerCfg.MaxSizeMb,
-			MaxBackups: maxBackups,
-			Compress:   loggerCfg.Compress,
-		}))
+	loggerOpts := []log.Option{log.WithDevelopmentMode(), log.WithLevel(log.DebugLevel)}
+	isDev := utils.DEV
+	if !isDev {
+		loggerOpts = []log.Option{log.WithLevel(log.InfoLevel)}
+		logFilePath := loggerCfg.Filename
+		if logFilePath != "" {
+			rotation := log.Rotation{
+				File:       logFilePath,
+				MaxSizeMb:  loggerCfg.MaxSizeMb,
+				MaxDays:    0,
+				MaxBackups: maxBackups,
+				Compress:   loggerCfg.Compress,
+			}
+			loggerOpts = append(loggerOpts, log.WithFileRotation(rotation))
+		}
 	}
+	logger, err = log.New(loggerOpts...)
 	if err != nil {
 		logrus.Fatal(stdcodes.ModuleRunFatalError, errors.WithMessage(err, "set logger"))
 	}
