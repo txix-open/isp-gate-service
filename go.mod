@@ -9,17 +9,18 @@ require (
 	github.com/go-redis/redis/v8 v8.8.2
 	github.com/golang/protobuf v1.5.2
 	github.com/integration-system/go-cmp v0.0.0-20190131081942-ac5582987a2f
+	github.com/integration-system/isp-kit v1.6.0
 	github.com/integration-system/isp-lib/v2 v2.8.7
 	github.com/integration-system/isp-log v1.1.8
-	github.com/json-iterator/go v1.1.11
+	github.com/json-iterator/go v1.1.12
 	github.com/pkg/errors v0.9.1
 	github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0
-	github.com/spf13/cast v1.4.0
-	github.com/stretchr/testify v1.7.0
+	github.com/spf13/cast v1.4.1
+	github.com/stretchr/testify v1.7.1
 	github.com/valyala/fasthttp v1.28.0
-	go.uber.org/zap v1.17.0
-	golang.org/x/net v0.0.0-20210510120150-4163338589ed
-	google.golang.org/grpc v1.38.0
-	google.golang.org/protobuf v1.26.0
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861
+	google.golang.org/grpc v1.46.0
+	google.golang.org/protobuf v1.28.0
 )
+
+replace google.golang.org/grpc v1.46.0 => google.golang.org/grpc v1.38.0
