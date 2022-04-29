@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const identitiesCount = 4
+
 type (
 	cacheablesVerify struct {
 		cache   map[string]cacheInfo
@@ -52,7 +54,7 @@ func (cv *cacheablesVerify) Identity(identity map[string]string, uri string) (ma
 }
 
 func (cv *cacheablesVerify) copyCache(cache map[string]string) map[string]string {
-	resp := make(map[string]string, 4)
+	resp := make(map[string]string, identitiesCount)
 	for key, value := range cache {
 		resp[key] = value
 	}

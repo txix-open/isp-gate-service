@@ -123,7 +123,7 @@ func (v *verifiable) verifyAppToken() error {
 		return createError("unauthorized", codes.Unauthenticated, "received unexpected identities")
 	}
 
-	applicationId, err := strconv.ParseInt(verifiableHeaders[utils.ApplicationIdHeader], 10, 32)
+	applicationId, err := strconv.ParseInt(verifiableHeaders[utils.ApplicationIdHeader], 10, 32) //nolint
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, errors.WithMessagef(err, "parse appId from redis"))
 		return createError("internal Server error", codes.Internal)
