@@ -1,3 +1,7 @@
+### v2.8.3
+* use isp-kit logger instead local logger
+* use log string instead log any (common log type)
+* add replace grpc (isp-lib and isp-kit conflict)
 ### v2.8.2
 * add file rotation
 ### v2.8.1
