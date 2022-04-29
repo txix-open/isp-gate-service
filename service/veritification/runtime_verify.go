@@ -2,6 +2,7 @@ package veritification
 
 import (
 	"context"
+
 	rd "github.com/go-redis/redis/v8"
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/integration-system/isp-lib/v2/redis"
@@ -13,6 +14,11 @@ import (
 
 const (
 	permittedToCallInfo = "0"
+
+	appIdArrayKey       = 1
+	userTokenArrayKey   = 3
+	userIdArrayKey      = 5
+	deviceTokenArrayKey = 7
 )
 
 var (
@@ -99,7 +105,7 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 		return t, err
 	}
 	// ===== NOT PERMITTED BY APPLICATION ID =====
-	msg, err := v.findStringCmd(resp, 1)
+	msg, err := v.findStringCmd(resp, appIdArrayKey)
 	if err != nil {
 		return t, err
 	}
@@ -107,7 +113,7 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 		return t, ErrorPermittedToCallApplication
 	}
 	// ===== CHECK USER TOKEN =====
-	msg, err = v.findStringCmd(resp, 3)
+	msg, err = v.findStringCmd(resp, userTokenArrayKey)
 	if err != nil {
 		return t, err
 	}
@@ -116,7 +122,7 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 		return t, ErrorInvalidUserId
 	}
 	// ===== NOT PERMITTED BY USER ID =====
-	msg, err = v.findStringCmd(resp, 5)
+	msg, err = v.findStringCmd(resp, userIdArrayKey)
 	if err != nil {
 		return t, err
 	}
@@ -124,7 +130,7 @@ func (v *runtimeVerify) Identity(t map[string]string, uri string) (map[string]st
 		return t, ErrorPermittedToCallUser
 	}
 	// ===== CHECK DEVICE TOKEN =====
-	msg, err = v.findStringCmd(resp, 7)
+	msg, err = v.findStringCmd(resp, deviceTokenArrayKey)
 	if err != nil {
 		return t, err
 	}
