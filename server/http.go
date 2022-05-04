@@ -4,12 +4,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/integration-system/isp-kit/log"
 	"github.com/integration-system/isp-lib/v2/config"
 	logrus "github.com/integration-system/isp-log"
 	"github.com/valyala/fasthttp"
 	"isp-gate-service/conf"
 	"isp-gate-service/handler"
-	"isp-gate-service/log"
 	"isp-gate-service/log_code"
 )
 

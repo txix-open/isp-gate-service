@@ -35,6 +35,8 @@ const (
 
 	errorMsgInternal   = "Internal server error"
 	errorMsgInvalidArg = "Not able to read request body"
+
+	metadataSize = 5
 )
 
 var json = jsoniter.ConfigFastest
@@ -122,7 +124,7 @@ func openStream(headers *fasthttp.RequestHeader, method string, timeout time.Dur
 }
 
 func makeMetadata(r *fasthttp.RequestHeader, method string) (metadata.MD, string) {
-	md := make(metadata.MD, 5)
+	md := make(metadata.MD, metadataSize)
 	md[utils.ProxyMethodNameHeader] = []string{method}
 	r.VisitAll(func(key, v []byte) {
 		lowerHeader := bytes.ToLower(key)
