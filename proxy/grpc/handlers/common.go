@@ -2,9 +2,7 @@ package handlers
 
 import (
 	"bytes"
-	"io"
 	"net/http"
-	"time"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/integration-system/isp-lib/v2/backend"
@@ -16,27 +14,16 @@ import (
 	log "github.com/integration-system/isp-log"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/valyala/fasthttp"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"isp-gate-service/conf"
-	"isp-gate-service/domain"
 	"isp-gate-service/log_code"
-	utils2 "isp-gate-service/utils"
 )
 
 const (
-	headerKeyContentDisposition = "Content-Disposition"
-	headerKeyContentType        = "Content-Type"
-	headerKeyContentLength      = "Content-Length"
-	headerKeyTransferEncoding   = "Transfer-Encoding"
-
-	errorMsgInternal   = "Internal server error"
-	errorMsgInvalidArg = "Not able to read request body"
-
-	metadataSize = 5
+	errorMsgInternal = "Internal server error"
+	metadataSize     = 5
 )
 
 var json = jsoniter.ConfigFastest
@@ -110,19 +97,6 @@ func logHandlerError(typeData, method string, err error) {
 	}).Warn(log_code.WarnProxyGrpcHandler, err)
 }
 
-func openStream(headers *fasthttp.RequestHeader, method string, timeout time.Duration, client *backend.RxGrpcClient) (
-	isp.BackendService_RequestStreamClient, context.CancelFunc, error) {
-	cli := client.Conn()
-	md, _ := makeMetadata(headers, method)
-	ctx := metadata.NewOutgoingContext(context.Background(), md)
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	stream, err := cli.RequestStream(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	return stream, cancel, nil
-}
-
 func makeMetadata(r *fasthttp.RequestHeader, method string) (metadata.MD, string) {
 	md := make(metadata.MD, metadataSize)
 	md[utils.ProxyMethodNameHeader] = []string{method}
@@ -133,33 +107,4 @@ func makeMetadata(r *fasthttp.RequestHeader, method string) (metadata.MD, string
 		}
 	})
 	return md, method
-}
-
-func checkError(err error, ctx *fasthttp.RequestCtx, method string) (bool, bool, domain.ProxyResponse) {
-	var (
-		ok                    = true
-		eof                   = false
-		resp                  = domain.ProxyResponse{}
-		msg                   = errorMsgInternal
-		code                  = codes.Internal
-		details []interface{} = nil
-	)
-
-	if err != nil {
-		if err != io.EOF {
-			s, itStatus := status.FromError(err)
-			if itStatus {
-				msg = s.Message()
-				code = s.Code()
-				details = s.Details()
-			}
-			logHandlerError(log_code.TypeData.GetFile, method, err)
-			utils2.WriteError(ctx, msg, code, details)
-			resp = domain.Create().SetError(err)
-			ok, eof = false, false
-		} else {
-			ok, eof = true, true
-		}
-	}
-	return ok, eof, resp
 }
