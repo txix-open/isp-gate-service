@@ -2,12 +2,10 @@ package authenticate
 
 import (
 	"strconv"
-	"time"
 
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/integration-system/isp-lib/v2/utils"
 	log "github.com/integration-system/isp-log"
-	"github.com/integration-system/isp-log/stdcodes"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
@@ -33,32 +31,14 @@ var notExpectedHeaders = []string{
 	utils.DeviceIdHeader,
 }
 
-var auth = authenticate{}
+var verify = veritification.NewRuntimeVerify()
 
-type (
-	authenticate struct {
-		verify veritification.Verify
-	}
-
-	verifiable struct {
-		appId   int32
-		adminId int64
-		ctx     *fasthttp.RequestCtx
-		path    string
-		headers map[string]string
-	}
-)
-
-func ReceiveConfiguration(conf conf.Cache) {
-	if conf.EnableCache {
-		if timeout, err := time.ParseDuration(conf.EvictTimeout); err != nil {
-			log.Fatalf(stdcodes.ModuleInvalidRemoteConfig, "invalid timeout '%s'", timeout)
-		} else {
-			auth.verify = veritification.NewCacheablesVerify(timeout)
-		}
-	} else {
-		auth.verify = veritification.NewRuntimeVerify()
-	}
+type verifiable struct {
+	appId   int32
+	adminId int64
+	ctx     *fasthttp.RequestCtx
+	path    string
+	headers map[string]string
 }
 
 func Do(ctx *fasthttp.RequestCtx, path string) (int32, int64, error) {
@@ -114,7 +94,7 @@ func (v *verifiable) verifyAppToken() error {
 		}
 	}
 
-	verifiableHeaders, err := auth.verify.ApplicationToken(string(appToken))
+	verifiableHeaders, err := verify.ApplicationToken(string(appToken))
 	if err != nil {
 		log.Error(log_code.ErrorAuthenticate, err)
 		return createError("internal Server error", codes.Internal)
@@ -152,7 +132,7 @@ func (v *verifiable) verifyUserToken() error {
 	v.headers[utils.DeviceTokenHeader] = string(v.getParam(utils.DeviceTokenHeader))
 
 	var err error
-	v.headers, err = auth.verify.Identity(v.headers, v.path)
+	v.headers, err = verify.Identity(v.headers, v.path)
 	if err != nil {
 		switch err {
 		case veritification.ErrorInvalidUserId:

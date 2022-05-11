@@ -28,12 +28,6 @@ type (
 		JournalSetting    Journal                       `schema:"Настройка журалирования"`
 		Redis             structure.RedisConfiguration  `schema:"Настройка Redis" valid:"required~Required"`
 		AccountingSetting Accounting                    `schema:"Настройка учета запросов"`
-		AuthCacheSetting  Cache                         `schema:"Настройка кеширования данных аутентификации приложений" valid:"required~Required"`
-	}
-
-	Cache struct {
-		EnableCache  bool   `schema:"Кеширование,включает кеширования для токена приложения"`
-		EvictTimeout string `schema:"Время жизни записи в кеше"`
 	}
 
 	Journal struct {

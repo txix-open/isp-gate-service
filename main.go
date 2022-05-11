@@ -16,7 +16,6 @@ import (
 	"github.com/integration-system/isp-log/stdcodes"
 	"github.com/pkg/errors"
 	"isp-gate-service/accounting"
-	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
 	"isp-gate-service/proxy"
 	"isp-gate-service/redis"
@@ -67,7 +66,6 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalSetting.MethodsPatterns)
 
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
-	authenticate.ReceiveConfiguration(remoteConfig.AuthCacheSetting)
 	accounting.ReceiveConfiguration(remoteConfig.AccountingSetting)
 
 	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
