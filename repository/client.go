@@ -14,7 +14,4 @@ var (
 		database.WithInitializingErrorHandler(func(err *database.ErrorEvent) {
 			log.Error(log_code.ErrorClientDatabase, err)
 		}))
-
-	SnapshotRep SnapshotRepository = snapshotRepository{rxClient: DbClient}
-	RequestsRep RequestsRepository = requestsRepository{rxClient: DbClient}
 )

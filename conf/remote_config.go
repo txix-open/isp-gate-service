@@ -20,14 +20,12 @@ const (
 
 type (
 	RemoteConfig struct {
-		Database          structure.DBConfiguration     `schema:"Настройка подключения к базе данных"`
-		TokensSetting     TokensSetting                 `schema:"Настройка секретов"`
-		HttpSetting       HttpSetting                   `schema:"Настройка сервера"`
-		GrpcSetting       GrpcSetting                   `schema:"Настройка grpc соединения"`
-		Metrics           structure.MetricConfiguration `schema:"Настройка метрик"`
-		JournalSetting    Journal                       `schema:"Настройка журалирования"`
-		Redis             structure.RedisConfiguration  `schema:"Настройка Redis" valid:"required~Required"`
-		AccountingSetting Accounting                    `schema:"Настройка учета запросов"`
+		TokensSetting  TokensSetting                 `schema:"Настройка секретов"`
+		HttpSetting    HttpSetting                   `schema:"Настройка сервера"`
+		GrpcSetting    GrpcSetting                   `schema:"Настройка grpc соединения"`
+		Metrics        structure.MetricConfiguration `schema:"Настройка метрик"`
+		JournalSetting Journal                       `schema:"Настройка журалирования"`
+		Redis          structure.RedisConfiguration  `schema:"Настройка Redis" valid:"required~Required"`
 	}
 
 	Journal struct {
@@ -47,30 +45,6 @@ type (
 		ApplicationSecret string `schema:"Секрет для проверки токена приложений"`
 		ApplicationVerify bool   `schema:"Проверка подписи токена приложений"`
 		UserSecret        string `schema:"Секрет для проверки токена пользователя"`
-	}
-
-	Accounting struct {
-		Enable          bool                `schema:"Учет запросов,включает/отключает учет запросов"`
-		SnapshotTimeout string              `schema:"Частота выгрузки ограничений для приложений" valid:"required~Required"`
-		Setting         []AccountingSetting `schema:"Настройка учета для приложений"`
-		Storing         StoringSetting      `schema:"Настройка хранения всех запросов"`
-	}
-
-	AccountingSetting struct {
-		ApplicationId int32          `valid:"required~Required" schema:"Идентификатор приложения"`
-		EnableStoring bool           `schema:"Хранение запросов,если включено, каждый факт обработки запроса будет фиксироваться в БД"`
-		Limits        []LimitSetting `schema:"Настройка ограничений на запросы"`
-	}
-
-	LimitSetting struct {
-		Pattern  string `valid:"required~Required" schema:"Шаблон пути,указывается путь для которого будут применяется ограничения; поддерживается '/*' для неполного совпадения"`
-		MaxCount int    `schema:"Количество запросов"`
-		Timeout  string `schema:"Время жизни одного запроса"`
-	}
-
-	StoringSetting struct {
-		Size    int    `schema:"Размер буфера,размер буфера,при достижении которого данные сбрасываются в БД" valid:"required,range(1|1000000)"`
-		Timeout string `schema:"Частота выгрузки всех учтенных запросов,периодичность сброса данных в БД" valid:"required~Required"`
 	}
 
 	HttpSetting struct {

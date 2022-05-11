@@ -15,7 +15,6 @@ import (
 	logrus "github.com/integration-system/isp-log"
 	"github.com/integration-system/isp-log/stdcodes"
 	"github.com/pkg/errors"
-	"isp-gate-service/accounting"
 	"isp-gate-service/conf"
 	"isp-gate-service/proxy"
 	"isp-gate-service/redis"
@@ -51,7 +50,7 @@ func main() {
 	for module, consumer := range requiredModules {
 		bs.RequireModule(module, consumer, false)
 	}
-	bs.RequireModule(cfg.ModuleName, accounting.NewConnectionConsumer, false).
+	bs.
 		OnShutdown(onShutdown).
 		OnRemoteConfigReceive(onRemoteConfigReceive).
 		Run()
@@ -66,7 +65,6 @@ func onRemoteConfigReceive(remoteConfig, oldRemoteConfig *conf.RemoteConfig) {
 	matcher.JournalMethods = matcher.NewAtLeastOneMatcher(remoteConfig.JournalSetting.MethodsPatterns)
 
 	redis.Client.ReceiveConfiguration(remoteConfig.Redis)
-	accounting.ReceiveConfiguration(remoteConfig.AccountingSetting)
 
 	metric.InitCollectors(remoteConfig.Metrics, oldRemoteConfig.Metrics)
 	metric.InitHttpServer(remoteConfig.Metrics)
@@ -98,7 +96,6 @@ func socketConfiguration(cfg interface{}) structure.SocketConfiguration {
 
 func onShutdown(_ context.Context, _ os.Signal) {
 	server.Http.Close()
-	accounting.Close()
 	proxy.Close()
 	_ = redis.Client.Close()
 	if logger != nil {

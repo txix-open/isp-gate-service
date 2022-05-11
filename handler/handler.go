@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"google.golang.org/grpc/codes"
-	"isp-gate-service/accounting"
 	"isp-gate-service/authenticate"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
@@ -24,8 +23,6 @@ import (
 const (
 	execution = 1e6
 )
-
-var errAccounting = errors.New("accounting error")
 
 type Handler struct {
 	logger log.Logger
@@ -108,12 +105,6 @@ func (h Handler) authenticateAccountingProxy(ctx *fasthttp.RequestCtx) (int32, i
 				details = e.Details()
 			}
 			utils.WriteError(ctx, message, status, details)
-			return appId, adminId, path, domain.Create().SetError(err)
-		}
-
-		if !accounting.AcceptRequest(appId, path) {
-			err := errAccounting
-			utils.WriteError(ctx, "too many requests", codes.ResourceExhausted, nil)
 			return appId, adminId, path, domain.Create().SetError(err)
 		}
 	}

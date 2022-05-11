@@ -16,7 +16,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0
 	github.com/spf13/cast v1.4.1
-	github.com/stretchr/testify v1.7.1
 	github.com/valyala/fasthttp v1.28.0
 	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861
 	google.golang.org/grpc v1.46.0
