@@ -1,62 +1,6 @@
 {
-  "database": {
-    "address": "{{ msp_pgsql_address }}",
-    "port": "{{ msp_pgsql_port }}",
-    "schema": "gate_service",
-    "database": "{{ msp_pgsql_name }}",
-    "username": "{{ msp_pgsql_user }}",
-    "password": "{{ msp_pgsql_password }}",
-    "createSchema": true
-  },
-  "grpcSetting": {
-    "proxyGrpcErrorDetails": true,
-    "enableOriginalProtoErrors": false
-  },
-  "httpSetting": {
-    "maxRequestBodySizeBytes": 0
-  },
-  "accountingSetting": {
-    "enable": false,
-    "snapshotTimeout": "15m",
-    "setting": [
-    ],
-    "storing": {
-      "size": 10000,
-      "timeout": "10m"
-    }
-  },
-  "journalSetting": {
-    "journal": {
-      "filename": "/var/log/isp-gate-service/runtime.log",
-      "maxSizeMb": 512,
-      "enable": false,
-      "compress": true
-    }
-  },
-  "redis": {
-    "password": "{{ msp_redis_password }}",
-    "defaultDB": 0,
-    "address": {
-      "ip": "{{ msp_redis_address }}",
-      "port": "{{ msp_redis_port }}"
-    }
-  },
-  "metrics": {
-    "gc": true,
-    "memory": true,
-    "address": {
-      "path": "/metrics",
-      "port": "9553",
-      "ip": "0.0.0.0"
-    }
-  },
+  "logLevel": "debug",
   "tokensSetting": {
-    "applicationSecret": "{{ msp_app_secret }}",
-    "applicationVerify": false,
     "adminSecret": "{{ msp_admin_secret }}"
-  },
-  "authCacheSetting": {
-    "enableCache": false,
-    "evictTimeout": "1m"
   }
 }

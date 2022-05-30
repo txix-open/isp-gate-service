@@ -1,14 +1,13 @@
 configServiceAddress:
   ip: 127.0.0.1
   port: 9001
-httpOuterAddress:
+grpcOuterAddress:
   #ip: 127.0.0.1
   port: 9003
-httpInnerAddress:
+grpcInnerAddress:
   ip: 0.0.0.0
   port: 9003
 moduleName: isp-gate
-instanceUuid: 9d89354b-c728-4b48-b002-a7d3b229f151
 locations:
   - pathPrefix: /api
     protocol: grpc
