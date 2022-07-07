@@ -29,9 +29,6 @@
     "journal": {
       "filename": "/var/log/isp-gate-service/runtime.log",
       "maxSizeMb": 512,
-      "bufferSize": 4096,
-      "rotateTimeoutMs": 86400000,
-      "enableRemoteTransfer": true,
       "enable": false,
       "compress": true
     }
