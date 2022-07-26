@@ -1,25 +1,27 @@
 package proxy
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/integration-system/isp-kit/grpc"
 	"github.com/integration-system/isp-kit/grpc/client"
 	"github.com/integration-system/isp-kit/grpc/isp"
 	"github.com/integration-system/isp-kit/json"
+	"github.com/integration-system/isp-kit/requestid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/structpb"
-	"isp-gate-service/domain"
-	"isp-gate-service/middleware"
+	"isp-gate-service/httperrors"
+	"isp-gate-service/request"
 )
 
 const (
-	adminIdHeader = "x-auth-admin"
+	adminAuthHeader = "x-auth-admin"
 )
 
 func init() {
@@ -48,106 +50,106 @@ var (
 )
 
 type Grpc struct {
-	cli *client.Client
+	cli      *client.Client
+	skipAuth bool
+	timeout  time.Duration
 }
 
-func NewGrpc(cli *client.Client) Grpc {
+func NewGrpc(cli *client.Client, skipAuth bool, timeout time.Duration) Grpc {
 	return Grpc{
-		cli: cli,
+		cli:      cli,
+		skipAuth: skipAuth,
+		timeout:  timeout,
 	}
 }
 
-func (p Grpc) Handle(ctx *middleware.Context) error {
-	body, err := ioutil.ReadAll(ctx.Request.Body)
+func (p Grpc) Handle(ctx *request.Context) error {
+	body, err := ioutil.ReadAll(ctx.Request().Body)
 	if err != nil {
-		return errors.WithMessage(err, "read body")
+		return errors.WithMessage(err, "grpc: read body")
 	}
 
-	md := make(metadata.MD)
-	md[grpc.ProxyMethodNameHeader] = []string{ctx.Path}
-	md[grpc.ApplicationIdHeader] = []string{strconv.Itoa(ctx.AppId)}
-	md[adminIdHeader] = []string{strconv.Itoa(ctx.AdminId)}
-	requestContext := metadata.NewOutgoingContext(ctx.Request.Context(), md)
+	md := metadata.MD{
+		grpc.ProxyMethodNameHeader: {ctx.Endpoint()},
+		grpc.RequestIdHeader:       {requestid.FromContext(ctx.Context())},
+	}
+	if !p.skipAuth {
+		authData, err := ctx.GetAuthData()
+		if err != nil {
+			return errors.WithMessage(err, "get auth data")
+		}
+		md[grpc.SystemIdHeader] = []string{strconv.Itoa(authData.SystemId)}
+		md[grpc.DomainIdHeader] = []string{strconv.Itoa(authData.DomainId)}
+		md[grpc.ServiceIdHeader] = []string{strconv.Itoa(authData.ServiceId)}
+		md[grpc.ApplicationIdHeader] = []string{strconv.Itoa(authData.ApplicationId)}
+		if ctx.IsAdminAuthenticated() {
+			md[adminAuthHeader] = []string{ctx.AdminToken()}
+		}
+	}
+	requestContext := metadata.NewOutgoingContext(ctx.Context(), md)
 
-	cli := p.cli.BackendClient()
-
-	var resultBody []byte
-	var resultStatus int
-	result, err := cli.Request(requestContext, &isp.Message{
+	requestContext, cancel := context.WithTimeout(requestContext, p.timeout)
+	defer cancel()
+	result, err := p.cli.BackendClient().Request(requestContext, &isp.Message{
 		Body: &isp.Message_BytesBody{BytesBody: body},
 	})
 	if err != nil {
-		resultBody, resultStatus = p.convertRequestErrorToBodyWithStatus(err)
-	} else {
-		resultBody = result.GetBytesBody()
-		resultStatus = http.StatusOK
+		return p.handleError(err, ctx.ResponseWriter())
 	}
 
-	ctx.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
-	ctx.ResponseWriter.WriteHeader(resultStatus)
-	_, err = ctx.ResponseWriter.Write(resultBody)
+	return p.writeResponse(http.StatusOK, result.GetBytesBody(), ctx.ResponseWriter())
+}
+
+func (p Grpc) handleError(err error, w http.ResponseWriter) error {
+	status, ok := status.FromError(err)
+	if !ok {
+		return httperrors.New(
+			http.StatusServiceUnavailable,
+			"upstream is not available",
+			errors.WithMessage(err, "grpc proxy"),
+		)
+	}
+
+	statusCode := p.codeToHttpStatus(status.Code())
+	for _, detail := range status.Details() {
+		switch typeOfDetail := detail.(type) {
+		case *isp.Message:
+			switch {
+			case typeOfDetail.GetBytesBody() != nil:
+				return p.writeResponse(statusCode, typeOfDetail.GetBytesBody(), w)
+			case typeOfDetail.GetListBody() != nil:
+				return p.writeProto(statusCode, typeOfDetail.GetListBody(), w)
+			case typeOfDetail.GetStructBody() != nil:
+				return p.writeProto(statusCode, typeOfDetail.GetStructBody(), w)
+			}
+		default:
+			return p.writeProto(statusCode, typeOfDetail, w)
+		}
+	}
+
+	return httperrors.New(
+		statusCode,
+		status.Message(),
+		status.Err(),
+	)
+}
+
+func (p Grpc) writeProto(statusCode int, proto interface{}, w http.ResponseWriter) error {
+	data, err := json.Marshal(proto)
+	if err != nil {
+		return errors.WithMessage(err, "marshal grpc details to json")
+	}
+	return p.writeResponse(statusCode, data, w)
+}
+
+func (p Grpc) writeResponse(statusCode int, data []byte, w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	_, err := w.Write(data)
 	if err != nil {
 		return errors.WithMessage(err, "response write")
 	}
-
 	return nil
-}
-
-func (p Grpc) convertRequestErrorToBodyWithStatus(err error) ([]byte, int) {
-	s, ok := status.FromError(err)
-	if !ok {
-		return []byte(domain.ServiceIsNotAvailableErrorMessage), http.StatusServiceUnavailable
-	}
-
-	details := s.Details()
-	response := make([]byte, 0)
-	for _, detail := range details {
-		switch typeOfDetail := detail.(type) {
-		case *structpb.Struct:
-			result, err := typeOfDetail.MarshalJSON()
-			if err != nil {
-				return []byte(domain.ServiceIsNotAvailableErrorMessage), http.StatusServiceUnavailable
-			}
-			response = result
-		case *isp.Message:
-			listBody := typeOfDetail.GetListBody()
-			if listBody != nil {
-				result, err := listBody.MarshalJSON()
-				if err != nil {
-					return []byte(domain.ServiceIsNotAvailableErrorMessage), http.StatusServiceUnavailable
-				}
-				response = result
-
-				break
-			}
-
-			result := typeOfDetail.GetBytesBody()
-			response = result
-		default:
-			result, err := json.Marshal(typeOfDetail)
-			if err != nil {
-				return []byte(domain.ServiceIsNotAvailableErrorMessage), http.StatusServiceUnavailable
-			}
-			response = result
-		}
-
-		break
-	}
-
-	if len(response) == 0 {
-		detail := domain.Error{
-			ErrorMessage: s.Message(),
-			ErrorCode:    s.Code().String(),
-		}
-
-		result, err := json.Marshal(detail)
-		if err != nil {
-			return []byte(domain.ServiceIsNotAvailableErrorMessage), http.StatusServiceUnavailable
-		}
-		response = result
-	}
-
-	return response, p.codeToHttpStatus(s.Code())
 }
 
 func (p Grpc) codeToHttpStatus(code codes.Code) int {
