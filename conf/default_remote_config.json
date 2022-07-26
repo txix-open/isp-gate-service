@@ -1,6 +1,18 @@
 {
-  "logLevel": "debug",
-  "tokensSetting": {
-    "adminSecret": "{{ msp_admin_secret }}"
+  "secrets": {
+    "adminTokenSecret": "{{ msp_admin_secret }}"
+  },
+  "logging": {
+    "logLevel": "debug",
+    "requestLogEnable": true,
+    "bodyLogEnable": false
+  },
+  "caching": {
+    "authenticationDataInSec": 60,
+    "authorizationDataInSec": 60
+  },
+  "http": {
+    "maxRequestBodySizeInMb": 64,
+    "proxyTimeoutInSec": 60
   }
 }
