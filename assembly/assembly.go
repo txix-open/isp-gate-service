@@ -3,6 +3,7 @@ package assembly
 import (
 	"context"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/integration-system/isp-kit/app"
 	"github.com/integration-system/isp-kit/bootstrap"
 	"github.com/integration-system/isp-kit/cluster"
@@ -15,13 +16,13 @@ import (
 	"isp-gate-service/routes"
 )
 
-const defaultHost = "127.0.0.1"
-
 type Assembly struct {
-	boot   *bootstrap.Bootstrap
-	server *http.Server
-	logger *log.Adapter
-	routes *routes.Routes
+	boot      *bootstrap.Bootstrap
+	server    *http.Server
+	logger    *log.Adapter
+	routes    *routes.Routes
+	redisCli  redis.UniversalClient
+	systemCli *client.Client
 
 	locations                   []conf.Location
 	grpcClientByModuleName      map[string]*client.Client
@@ -48,12 +49,16 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 			}
 			grpcClientByModuleName[location.TargetModule] = cli
 		case conf.HttpProtocol:
-			rb := lb.NewRoundRobin([]string{defaultHost})
+			rb := lb.NewRoundRobin(nil)
 			httpHostManagerByModuleName[location.TargetModule] = rb
-		case conf.WebsocketProtocol:
 		default:
 			return nil, errors.Errorf("unexpected location protocol: %s", location.Protocol)
 		}
+	}
+
+	systemCli, err := client.Default()
+	if err != nil {
+		return nil, errors.WithMessage(err, "create system cli")
 	}
 
 	return &Assembly{
@@ -64,6 +69,7 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 		locations:                   localConfig.Locations,
 		grpcClientByModuleName:      grpcClientByModuleName,
 		httpHostManagerByModuleName: httpHostManagerByModuleName,
+		systemCli:                   systemCli,
 	}, nil
 }
 
@@ -76,17 +82,31 @@ func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) error
 	if err != nil {
 		a.logger.Fatal(ctx, errors.WithMessage(err, "upgrade remote config"))
 	}
+	err = newCfg.Validate()
+	if err != nil {
+		a.logger.Fatal(ctx, errors.WithMessage(err, "invalid remote config"))
+	}
 
-	a.logger.SetLevel(newCfg.LogLevel)
+	a.logger.SetLevel(newCfg.Logging.LogLevel)
 
-	locator := NewLocator(a.logger, a.grpcClientByModuleName, a.httpHostManagerByModuleName, a.routes)
+	var newRedisCli redis.UniversalClient
+	if newCfg.Redis != nil {
+		newRedisCli = a.redisClient(*newCfg.Redis)
+	}
 
-	handler, err := locator.Handler(newCfg, a.locations)
+	locator := NewLocator(a.logger, a.grpcClientByModuleName, a.httpHostManagerByModuleName, a.routes, a.systemCli)
+
+	handler, err := locator.Handler(newCfg, a.locations, newRedisCli)
 	if err != nil {
 		return errors.WithMessage(err, "locator handler")
 	}
 
 	a.server.Upgrade(handler)
+
+	if a.redisCli != nil {
+		_ = a.redisCli.Close()
+		a.redisCli = newRedisCli
+	}
 
 	return nil
 }
@@ -103,6 +123,8 @@ func (a *Assembly) Runners() []app.Runner {
 		eventHandler.RequireModule(moduleName, upgrader)
 	}
 
+	eventHandler.RequireModule("isp-system-service", a.systemCli)
+
 	return []app.Runner{
 		app.RunnerFunc(func(ctx context.Context) error {
 			return a.server.ListenAndServe(a.boot.BindingAddress)
@@ -117,12 +139,36 @@ func (a *Assembly) Closers() []app.Closer {
 	closers := []app.Closer{
 		a.boot.ClusterCli,
 		app.CloserFunc(func() error {
-			return a.server.Shutdown(a.boot.App.Context())
+			return a.server.Shutdown(context.Background())
 		}),
 	}
 	for _, cliCloser := range a.grpcClientByModuleName {
 		closers = append(closers, cliCloser)
 	}
+	closers = append(closers, a.systemCli, app.CloserFunc(func() error {
+		if a.redisCli != nil {
+			return a.redisCli.Close()
+		}
+		return nil
+	}))
 
 	return closers
+}
+
+func (a *Assembly) redisClient(config conf.Redis) redis.UniversalClient {
+	if config.Sentinel != nil {
+		return redis.NewFailoverClient(&redis.FailoverOptions{
+			MasterName:       config.Sentinel.MasterName,
+			SentinelAddrs:    config.Sentinel.Addresses,
+			SentinelUsername: config.Sentinel.Username,
+			SentinelPassword: config.Sentinel.Password,
+			Username:         config.Username,
+			Password:         config.Password,
+		})
+	}
+	return redis.NewClient(&redis.Options{
+		Addr:     config.Address,
+		Username: config.Username,
+		Password: config.Password,
+	})
 }
