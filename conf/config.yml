@@ -15,7 +15,3 @@ locations:
   - pathPrefix: /mdm
     protocol: http
     targetModule: mdm-api
-  - pathPrefix: /ws
-    protocol: websocket
-    skipAuth: true
-    targetModule: admin
