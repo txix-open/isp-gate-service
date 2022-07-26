@@ -3,45 +3,61 @@ package assembly
 import (
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/integration-system/isp-kit/grpc/client"
-	"github.com/integration-system/isp-kit/http/endpoint"
-	"github.com/integration-system/isp-kit/json"
 	"github.com/integration-system/isp-kit/lb"
 	"github.com/integration-system/isp-kit/log"
-	"github.com/integration-system/isp-kit/requestid"
 	"github.com/pkg/errors"
 	"isp-gate-service/conf"
-	"isp-gate-service/domain"
 	"isp-gate-service/middleware"
 	"isp-gate-service/proxy"
+	"isp-gate-service/repository"
 	"isp-gate-service/routes"
 	"isp-gate-service/service"
 )
 
 type Locator struct {
-	logger                      endpoint.Logger
+	logger                      log.Logger
 	grpcClientByModuleName      map[string]*client.Client
 	httpHostManagerByModuleName map[string]*lb.RoundRobin
 	routes                      *routes.Routes
+	systemCli                   *client.Client
 }
 
 func NewLocator(
-	logger endpoint.Logger,
+	logger log.Logger,
 	grpcClientByModuleName map[string]*client.Client,
 	httpHostManagerByModuleName map[string]*lb.RoundRobin,
 	routes *routes.Routes,
+	systemCli *client.Client,
 ) Locator {
 	return Locator{
 		logger:                      logger,
 		grpcClientByModuleName:      grpcClientByModuleName,
 		httpHostManagerByModuleName: httpHostManagerByModuleName,
 		routes:                      routes,
+		systemCli:                   systemCli,
 	}
 }
 
-func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Handler, error) {
-	adminService := service.NewAdmin(config.TokensSetting.AdminSecret, l.routes)
+func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli redis.UniversalClient) (http.Handler, error) {
+	systemRepo := repository.NewSystem(l.systemCli)
+
+	authenticationCache := repository.NewAuthenticationCache(time.Duration(config.Caching.AuthenticationDataInSec) * time.Second)
+	authentication := service.NewAuthentication(authenticationCache, systemRepo)
+
+	adminService := service.NewAdmin(config.Secrets.AdminTokenSecret)
+
+	authorizationCache := repository.NewAuthorizationCache(time.Duration(config.Caching.AuthorizationDataInSec) * time.Second)
+	authorization := service.NewAuthorization(authorizationCache, systemRepo)
+
+	dailyLimitRepo := repository.NewDailyLimit(redisCli)
+	dailyLimitService := service.NewDailyLimit(dailyLimitRepo, config.DailyLimits)
+
+	throttlingRepo := repository.NewThrottling(redisCli)
+	throttlingService := service.NewThrottling(throttlingRepo, config.Throttling)
 
 	mux := http.NewServeMux()
 	for _, location := range locations {
@@ -49,92 +65,43 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 		switch location.Protocol {
 		case conf.GrpcProtocol:
 			cli := l.grpcClientByModuleName[location.TargetModule]
-			proxyFunc = proxy.NewGrpc(cli)
+			proxyFunc = proxy.NewGrpc(cli, location.SkipAuth, time.Duration(config.Http.ProxyTimeoutInSec)*time.Second)
 		case conf.HttpProtocol:
 			hostManager := l.httpHostManagerByModuleName[location.TargetModule]
-			proxyFunc = proxy.NewHttp(hostManager)
-		case conf.WebsocketProtocol:
-
+			proxyFunc = proxy.NewHttp(hostManager, location.SkipAuth, time.Duration(config.Http.ProxyTimeoutInSec)*time.Second)
 		default:
-			return nil, errors.New("")
+			return nil, errors.Errorf("not supported protocol %s", location.Protocol)
 		}
 
-		middlewares := []middleware.Middleware{
-			middleware.Path(location.PathPrefix),
-			middleware.Authenticate(adminService),
-			middleware.Authorize(adminService),
-		}
-		for i := len(middlewares) - 1; i >= 0; i-- {
-			proxyFunc = middlewares[i](proxyFunc)
+		handler := middleware.Chain(
+			proxyFunc,
+			middleware.RequestId(),
+			middleware.Logger(l.logger, config.Logging.RequestLogEnable, config.Logging.BodyLogEnable),
+			middleware.ErrorHandler(l.logger),
+			middleware.Authenticate(authentication),
+			middleware.AdminAuthenticate(adminService),
+			middleware.Authorize(authorization, l.logger),
+			middleware.AdminAuthorize(l.routes),
+			middleware.Throttling(throttlingService),
+			middleware.DailyLimit(dailyLimitService),
+		)
+		if location.SkipAuth {
+			handler = middleware.Chain(
+				proxyFunc,
+				middleware.RequestId(),
+				middleware.Logger(l.logger, config.Logging.RequestLogEnable, config.Logging.BodyLogEnable),
+				middleware.ErrorHandler(l.logger),
+			)
 		}
 
-		var adapter = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			ctx := &middleware.Context{
-				Id:             requestid.Next(),
-				Request:        request,
-				ResponseWriter: writer,
-			}
-			err := proxyFunc.Handle(ctx)
-			if err != nil {
-				l.handleError(ctx, err)
-			} else {
-				l.logger.Info(request.Context(), "successful request",
-					log.String("id", ctx.Id),
-					log.String("path", ctx.Path),
-					log.Int("application_id", ctx.AppId),
-					log.Int("admin_id", ctx.AdminId),
-				)
-			}
-		})
-		mux.HandleFunc(fmt.Sprintf("%s/", location.PathPrefix), adapter)
+		entrypoint := middleware.Entrypoint(
+			config.Http.MaxRequestBodySizeInMb*1024*1024, //nolint:gomnd
+			handler,
+			location.PathPrefix,
+			l.logger,
+		)
+		mux.Handle(fmt.Sprintf("%s/", location.PathPrefix), entrypoint)
 	}
 
 	return mux, nil
-}
-
-func (l Locator) handleError(ctx *middleware.Context, err error) {
-	l.logger.Error(ctx.Request.Context(), "unsuccessful request",
-		log.String("id", ctx.Id),
-		log.Any("error", err),
-	)
-
-	status := 0
-	details := make(map[string]string)
-	switch {
-	case errors.Is(err, domain.ErrAuthorize):
-		status = http.StatusUnauthorized
-		details["message"] = domain.ErrAuthorize.Error()
-	case errors.Is(err, domain.ErrAuthenticate):
-		status = http.StatusUnauthorized
-		details["message"] = domain.ErrAuthenticate.Error()
-	default:
-		status = http.StatusInternalServerError
-	}
-	details["id"] = ctx.Id
-
-	result := domain.Error{
-		ErrorMessage: http.StatusText(status),
-		ErrorCode:    http.StatusText(status),
-		Details:      []interface{}{details},
-	}
-
-	body, err := json.Marshal(result)
-	if err != nil {
-		l.logger.Error(ctx.Request.Context(), "json error marshal",
-			log.String("id", ctx.Id),
-			log.Any("error", err),
-		)
-		return
-	}
-
-	ctx.ResponseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
-	ctx.ResponseWriter.WriteHeader(status)
-	_, err = ctx.ResponseWriter.Write(body)
-	if err != nil {
-		l.logger.Error(ctx.Request.Context(), "write error response",
-			log.String("id", ctx.Id),
-			log.Any("error", err),
-		)
-		return
-	}
 }
