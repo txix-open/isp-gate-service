@@ -1,50 +1,27 @@
 package service
 
 import (
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
 )
 
-type AdminMethodStore interface {
-	IsInnerMethod(path string) bool
-}
-
 type adminClaims struct {
-	*jwt.StandardClaims
+	*jwt.RegisteredClaims
 	Id int64
 }
 
 type Admin struct {
-	methodStore AdminMethodStore
-	secret      string
+	secret string
 }
 
-func NewAdmin(secret string, methodStore AdminMethodStore) Admin {
+func NewAdmin(secret string) Admin {
 	return Admin{
-		methodStore: methodStore,
-		secret:      secret,
+		secret: secret,
 	}
-}
-
-func (s Admin) Authorize(id int, path string) error {
-	innerMethod := s.methodStore.IsInnerMethod(path)
-	if !innerMethod {
-		return nil
-	}
-
-	if id > 0 {
-		return nil
-	}
-
-	return errors.New("not authorized method")
 }
 
 func (s Admin) Authenticate(token string) (int, error) {
-	if token == "" {
-		return -1, nil
-	}
-
-	parsed, err := s.parseToken(token, &adminClaims{StandardClaims: &jwt.StandardClaims{}})
+	parsed, err := s.parseToken(token, &adminClaims{RegisteredClaims: &jwt.RegisteredClaims{}})
 	if err != nil {
 		return 0, errors.WithMessage(err, "parse token")
 	}
