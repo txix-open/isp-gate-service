@@ -6,11 +6,14 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/integration-system/isp-kit/grpc"
+	"github.com/integration-system/isp-kit/requestid"
 	"github.com/pkg/errors"
-	"isp-gate-service/domain"
-	"isp-gate-service/middleware"
+	"golang.org/x/net/context"
+	"isp-gate-service/httperrors"
+	"isp-gate-service/request"
 )
 
 type HttpHostManager interface {
@@ -19,41 +22,61 @@ type HttpHostManager interface {
 
 type Http struct {
 	hostManager HttpHostManager
+	skipAuth    bool
+	timeout     time.Duration
 }
 
-func NewHttp(hostManager HttpHostManager) Http {
+func NewHttp(hostManager HttpHostManager, skipAuth bool, timeout time.Duration) Http {
 	return Http{
 		hostManager: hostManager,
+		skipAuth:    skipAuth,
+		timeout:     timeout,
 	}
 }
 
-func (p Http) Handle(ctx *middleware.Context) error {
+func (p Http) Handle(ctx *request.Context) error {
 	host, err := p.hostManager.Next()
 	if err != nil {
-		return errors.WithMessage(err, "next host")
+		return errors.WithMessage(err, "http: next host")
 	}
 
 	rawUrl := fmt.Sprintf("http://%s", host) // secure HTTP links are reset connection
 	target, err := url.Parse(rawUrl)
 	if err != nil {
-		return errors.WithMessage(err, "parse url")
+		return errors.WithMessage(err, "http: parse url")
 	}
 
-	ctx.Request.URL.Path = ctx.Path
-	ctx.Request.Header.Set(grpc.ApplicationIdHeader, strconv.Itoa(ctx.AppId))
-	ctx.Request.Header.Set(adminIdHeader, strconv.Itoa(ctx.AdminId))
-	reverseProxy := httputil.NewSingleHostReverseProxy(target)
-
-	var resultError error
-	reverseProxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, err error) {
-		resultError = errors.WithMessage(err, "serve http")
-
-		ctx.ResponseWriter.WriteHeader(http.StatusServiceUnavailable)
-		_, err = ctx.ResponseWriter.Write([]byte(domain.ServiceIsNotAvailableErrorMessage))
+	request := ctx.Request()
+	request.URL.Path = ctx.Endpoint()
+	request.Header.Set(grpc.RequestIdHeader, requestid.FromContext(ctx.Context()))
+	if !p.skipAuth {
+		authData, err := ctx.GetAuthData()
 		if err != nil {
-			resultError = errors.WithMessagef(resultError, "write error: %v", err)
+			return errors.WithMessage(err, "http: get auth data")
+		}
+		request.Header.Set(grpc.SystemIdHeader, strconv.Itoa(authData.SystemId))
+		request.Header.Set(grpc.DomainIdHeader, strconv.Itoa(authData.DomainId))
+		request.Header.Set(grpc.ServiceIdHeader, strconv.Itoa(authData.ServiceId))
+		request.Header.Set(grpc.ApplicationIdHeader, strconv.Itoa(authData.ApplicationId))
+		if ctx.IsAdminAuthenticated() {
+			request.Header.Set(adminAuthHeader, ctx.AdminToken())
 		}
 	}
-	reverseProxy.ServeHTTP(ctx.ResponseWriter, ctx.Request)
+
+	reverseProxy := httputil.NewSingleHostReverseProxy(target)
+	var resultError error
+	reverseProxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, err error) {
+		resultError = httperrors.New(
+			http.StatusServiceUnavailable,
+			"upstream is not available",
+			errors.WithMessagef(err, "http proxy to %s", host),
+		)
+	}
+
+	context, cancel := context.WithTimeout(request.Context(), p.timeout)
+	defer cancel()
+	request = request.WithContext(context)
+	reverseProxy.ServeHTTP(ctx.ResponseWriter(), request)
+
 	return resultError
 }
