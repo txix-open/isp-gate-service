@@ -1,13 +1,5 @@
 ### v3.0.0
-* update localConfig
-  * remove instanceUuid
-  * rename httpAddress to grpcAddress
-* remove deprecated fields from remoteConfig
-* migrate from fasthttp to http
-* remove unused grpc proxy to send file
-* remove redis authenticate
-* remove deprecated accounting
-* remove health_check proxy
+* реализация новой схемы аутентификации/авторизации
 ### v2.8.3
 * use isp-kit logger instead local logger
 * use log string instead log any (common log type)
