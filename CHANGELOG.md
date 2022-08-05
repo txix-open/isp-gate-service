@@ -1,3 +1,5 @@
+### v3.0.0
+* реализация новой схемы аутентификации/авторизации
 ### v2.8.3
 * use isp-kit logger instead local logger
 * use log string instead log any (common log type)
