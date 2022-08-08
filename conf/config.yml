@@ -11,6 +11,13 @@ moduleName: isp-gate-service
 
 infraServerPort: 9553
 
+logfile:
+  path: /var/log/isp-gate-service/runtime.log
+  maxSizeMb: 512
+  maxBackups: 4
+  compress: true
+
+
 locations:
   - pathPrefix: /api
     protocol: grpc
