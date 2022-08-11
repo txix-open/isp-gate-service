@@ -64,7 +64,8 @@ func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool
 				ctx.SetResponseWriter(writer)
 			}
 
-			originalPath := r.URL.Path //can be changed in http proxy
+			originalPath := r.URL.Path //
+			// can be changed in http proxy
 			err := next.Handle(ctx)
 
 			authData, _ := ctx.GetAuthData()
