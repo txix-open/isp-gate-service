@@ -15,7 +15,7 @@ func Entrypoint(maxReqBodySize int64, next Handler, pathPrefix string, logger lo
 		req.Body = http.MaxBytesReader(writer, req.Body, maxReqBodySize)
 
 		prefix := fmt.Sprintf("%s/", pathPrefix)
-		endpoint := strings.TrimPrefix(req.URL.String(), prefix)
+		endpoint := strings.TrimPrefix(req.URL.Path, prefix)
 		ctx := request.NewContext(req, writer, endpoint)
 
 		err := next.Handle(ctx)
