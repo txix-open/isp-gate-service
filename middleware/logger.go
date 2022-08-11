@@ -64,6 +64,7 @@ func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool
 				ctx.SetResponseWriter(writer)
 			}
 
+			originalPath := r.URL.Path //can be changed in http proxy
 			err := next.Handle(ctx)
 
 			authData, _ := ctx.GetAuthData()
@@ -72,7 +73,7 @@ func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool
 				log.String("remote_addr", r.RemoteAddr),
 				log.String("x_forwarded_for", r.Header.Get("X-Forwarded-For")),
 				log.Int("status_code", scSrc.StatusCode()),
-				log.String("path", r.URL.Path),
+				log.String("path", originalPath),
 				log.String("endpoint", ctx.Endpoint()),
 				log.Int("application_id", authData.ApplicationId),
 				log.Int("admin_id", ctx.AdminId()),
