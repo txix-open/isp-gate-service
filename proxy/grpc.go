@@ -143,7 +143,7 @@ func (p Grpc) writeProto(statusCode int, proto interface{}, w http.ResponseWrite
 }
 
 func (p Grpc) writeResponse(statusCode int, data []byte, w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(statusCode)
 	_, err := w.Write(data)
 	if err != nil {
