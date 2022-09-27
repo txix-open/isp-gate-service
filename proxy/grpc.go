@@ -2,7 +2,7 @@ package proxy
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -65,7 +65,7 @@ func NewGrpc(cli *client.Client, skipAuth bool, timeout time.Duration) Grpc {
 }
 
 func (p Grpc) Handle(ctx *request.Context) error {
-	body, err := ioutil.ReadAll(ctx.Request().Body)
+	body, err := io.ReadAll(ctx.Request().Body)
 	if err != nil {
 		return errors.WithMessage(err, "grpc: read body")
 	}
