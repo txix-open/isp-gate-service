@@ -13,6 +13,7 @@ import (
 	"github.com/integration-system/isp-kit/json"
 	"github.com/integration-system/isp-kit/requestid"
 	"github.com/pkg/errors"
+	_ "google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
