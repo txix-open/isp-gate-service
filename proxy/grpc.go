@@ -2,7 +2,7 @@ package proxy
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,6 +13,7 @@ import (
 	"github.com/integration-system/isp-kit/json"
 	"github.com/integration-system/isp-kit/requestid"
 	"github.com/pkg/errors"
+	_ "google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -64,7 +65,7 @@ func NewGrpc(cli *client.Client, skipAuth bool, timeout time.Duration) Grpc {
 }
 
 func (p Grpc) Handle(ctx *request.Context) error {
-	body, err := ioutil.ReadAll(ctx.Request().Body)
+	body, err := io.ReadAll(ctx.Request().Body)
 	if err != nil {
 		return errors.WithMessage(err, "grpc: read body")
 	}

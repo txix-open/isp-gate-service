@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/integration-system/isp-kit/http/endpoint/buffer"
@@ -54,7 +54,7 @@ func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool
 				if err != nil {
 					return errors.WithMessage(err, "logger: close request reader")
 				}
-				r.Body = ioutil.NopCloser(bytes.NewBuffer(buf.RequestBody()))
+				r.Body = io.NopCloser(bytes.NewBuffer(buf.RequestBody()))
 
 				scSrc = buf
 				ctx.SetResponseWriter(buf)
