@@ -8,6 +8,11 @@ import (
 	"strconv"
 	"testing"
 
+	"isp-gate-service/assembly"
+	"isp-gate-service/conf"
+	"isp-gate-service/domain"
+	"isp-gate-service/routes"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
@@ -20,10 +25,7 @@ import (
 	"github.com/integration-system/isp-kit/test/grpct"
 	"github.com/integration-system/isp-kit/test/httpt"
 	"github.com/stretchr/testify/suite"
-	"isp-gate-service/assembly"
-	"isp-gate-service/conf"
-	"isp-gate-service/domain"
-	"isp-gate-service/routes"
+	"google.golang.org/grpc/metadata"
 )
 
 type request struct {
@@ -40,7 +42,7 @@ type HappyPathTestSuite struct {
 
 func (s *HappyPathTestSuite) TestGrpcProxy() {
 	test, require := test.New(s.T())
-	config, redisCli, systemCli := s.commonDependencies(test)
+	config, redisCli, systemCli, adminCli := s.commonDependencies(test)
 
 	requestId := requestid.Next()
 	targetService, targetCli := grpct.NewMock(test)
@@ -58,12 +60,18 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 		require.EqualValues(2, domainId)
 		require.EqualValues(3, serviceId)
 		require.EqualValues(4, applicationId)
+
+		adminId, err := grpc.StringFromMd("x-admin-id", metadata.MD(authData))
+		require.NoError(err)
+		require.EqualValues("1", adminId)
+
 		return response{Id: req.Id} //nolint:gosimple
 	})
 	targetClients := map[string]*client.Client{"target": targetCli}
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
 	require.NoError(err)
-	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(), systemCli)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(), systemCli, adminCli)
+
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/api",
@@ -80,6 +88,7 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 	_, err = cli.R().
 		SetHeader("x-application-token", "token").
 		SetHeader("x-request-id", requestId).
+		SetHeader("x-auth-admin", "mock-token").
 		SetBody(req).
 		SetResult(&resp).
 		Post("/api/endpoint")
@@ -89,7 +98,7 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 
 func (s *HappyPathTestSuite) TestHttpProxy() {
 	test, require := test.New(s.T())
-	config, redisCli, systemCli := s.commonDependencies(test)
+	config, redisCli, systemCli, adminCli := s.commonDependencies(test)
 
 	requestId := requestid.Next()
 	targetService := httpt.NewMock(test)
@@ -107,13 +116,18 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 		require.EqualValues(2, domainId)
 		require.EqualValues(3, serviceId)
 		require.EqualValues(4, applicationId)
+
+		adminId, err := strconv.Atoi(httpReq.Header.Get("x-admin-id"))
+		require.NoError(err)
+		require.EqualValues(1, adminId)
+
 		return response{Id: req.Id} //nolint:gosimple
 	})
 	targetUrl, err := url.Parse(targetService.BaseURL())
 	require.NoError(err)
 	rr := lb.NewRoundRobin([]string{targetUrl.Host})
 	targetClients := map[string]*lb.RoundRobin{"target": rr}
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes.NewRoutes(), systemCli)
+	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes.NewRoutes(), systemCli, adminCli)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/api",
@@ -130,6 +144,7 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 	_, err = cli.R().
 		SetHeader("x-application-token", "token").
 		SetHeader("x-request-id", requestId).
+		SetHeader("x-auth-admin", "mock-token").
 		SetBody(req).
 		SetResult(&resp).
 		Post("/api/endpoint")
@@ -137,10 +152,11 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 	require.EqualValues(req.Id, resp.Id)
 }
 
-func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, redis.UniversalClient, *client.Client) {
+func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, redis.UniversalClient, *client.Client, *client.Client) {
 	require := test.Assert()
 	redisCli := NewRedis(test)
 	ctx := context.Background()
+
 	s.T().Cleanup(func() {
 		_, err := redisCli.Pipelined(ctx, func(p redis.Pipeliner) error {
 			p.Select(ctx, 0)
@@ -153,15 +169,16 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, r
 		})
 		require.NoError(err)
 	})
+
 	config := conf.Remote{
 		Redis:       &conf.Redis{Address: redisCli.address},
-		Secrets:     conf.Secrets{AdminTokenSecret: "secret"},
 		Http:        conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
 		Logging:     conf.Logging{LogLevel: log.DebugLevel, RequestLogEnable: true, BodyLogEnable: true},
 		Caching:     conf.Caching{AuthorizationDataInSec: 1, AuthenticationDataInSec: 1},
 		DailyLimits: []conf.DailyLimit{{ApplicationId: 1, RequestsPerDay: 100}},
 		Throttling:  []conf.Throttling{{ApplicationId: 1, RequestsPerSeconds: 100}},
 	}
+
 	systemService, systemCli := grpct.NewMock(test)
 	systemService.Mock("system/secure/authenticate", func() domain.AuthenticateResponse {
 		return domain.AuthenticateResponse{
@@ -177,7 +194,17 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, r
 	}).Mock("system/secure/authorize", func() domain.AuthorizeResponse {
 		return domain.AuthorizeResponse{Authorized: true}
 	})
-	return config, redisCli, systemCli
+
+	adminService, adminCli := grpct.NewMock(test)
+	adminService.Mock("admin/secure/authenticate", func() domain.AdminAuthenticateResponse {
+		return domain.AdminAuthenticateResponse{
+			Authenticated: true,
+			ErrorReason:   "",
+			AdminId:       1,
+		}
+	})
+
+	return config, redisCli, systemCli, adminCli
 }
 
 func TestHappyPathTestSuite(t *testing.T) {
