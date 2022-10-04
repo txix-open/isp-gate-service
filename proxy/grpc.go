@@ -7,6 +7,9 @@ import (
 	"strconv"
 	"time"
 
+	"isp-gate-service/httperrors"
+	"isp-gate-service/request"
+
 	"github.com/integration-system/isp-kit/grpc"
 	"github.com/integration-system/isp-kit/grpc/client"
 	"github.com/integration-system/isp-kit/grpc/isp"
@@ -17,12 +20,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"isp-gate-service/httperrors"
-	"isp-gate-service/request"
-)
-
-const (
-	adminAuthHeader = "x-auth-admin"
 )
 
 func init() {
@@ -84,7 +81,7 @@ func (p Grpc) Handle(ctx *request.Context) error {
 		md[grpc.ServiceIdHeader] = []string{strconv.Itoa(authData.ServiceId)}
 		md[grpc.ApplicationIdHeader] = []string{strconv.Itoa(authData.ApplicationId)}
 		if ctx.IsAdminAuthenticated() {
-			md[adminAuthHeader] = []string{ctx.AdminToken()}
+			md[xAdminIdHeader] = []string{strconv.Itoa(ctx.AdminId())}
 		}
 	}
 	requestContext := metadata.NewOutgoingContext(ctx.Context(), md)
