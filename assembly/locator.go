@@ -5,17 +5,18 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/integration-system/isp-kit/grpc/client"
-	"github.com/integration-system/isp-kit/lb"
-	"github.com/integration-system/isp-kit/log"
-	"github.com/pkg/errors"
 	"isp-gate-service/conf"
 	"isp-gate-service/middleware"
 	"isp-gate-service/proxy"
 	"isp-gate-service/repository"
 	"isp-gate-service/routes"
 	"isp-gate-service/service"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/integration-system/isp-kit/grpc/client"
+	"github.com/integration-system/isp-kit/lb"
+	"github.com/integration-system/isp-kit/log"
+	"github.com/pkg/errors"
 )
 
 type Locator struct {
@@ -24,6 +25,7 @@ type Locator struct {
 	httpHostManagerByModuleName map[string]*lb.RoundRobin
 	routes                      *routes.Routes
 	systemCli                   *client.Client
+	adminCli                    *client.Client
 }
 
 func NewLocator(
@@ -32,6 +34,7 @@ func NewLocator(
 	httpHostManagerByModuleName map[string]*lb.RoundRobin,
 	routes *routes.Routes,
 	systemCli *client.Client,
+	adminCli *client.Client,
 ) Locator {
 	return Locator{
 		logger:                      logger,
@@ -39,16 +42,18 @@ func NewLocator(
 		httpHostManagerByModuleName: httpHostManagerByModuleName,
 		routes:                      routes,
 		systemCli:                   systemCli,
+		adminCli:                    adminCli,
 	}
 }
 
 func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli redis.UniversalClient) (http.Handler, error) {
 	systemRepo := repository.NewSystem(l.systemCli)
+	adminRepo := repository.NewAdmin(l.adminCli)
 
 	authenticationCache := repository.NewAuthenticationCache(time.Duration(config.Caching.AuthenticationDataInSec) * time.Second)
 	authentication := service.NewAuthentication(authenticationCache, systemRepo)
 
-	adminService := service.NewAdmin(config.Secrets.AdminTokenSecret)
+	adminService := service.NewAdmin(adminRepo)
 
 	authorizationCache := repository.NewAuthorizationCache(time.Duration(config.Caching.AuthorizationDataInSec) * time.Second)
 	authorization := service.NewAuthorization(authorizationCache, systemRepo)
