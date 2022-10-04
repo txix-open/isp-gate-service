@@ -6,9 +6,8 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redis_rate/v9 v9.1.2
 	github.com/go-resty/resty/v2 v2.7.0
-	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/uuid v1.1.2
-	github.com/integration-system/isp-kit v1.11.0
+	github.com/integration-system/isp-kit v1.12.0
 	github.com/integration-system/jsonschema v1.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.0
@@ -56,7 +55,6 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
-	golang.org/x/sync v0.0.0-20220923202941-7f9b1623fab7 // indirect
 	golang.org/x/sys v0.0.0-20220926163933-8cfa568d3c25 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
