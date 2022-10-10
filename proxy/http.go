@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"time"
 
+	"isp-gate-service/httperrors"
+	"isp-gate-service/request"
+
 	"github.com/integration-system/isp-kit/grpc"
 	"github.com/integration-system/isp-kit/requestid"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
-	"isp-gate-service/httperrors"
-	"isp-gate-service/request"
 )
 
 type HttpHostManager interface {
@@ -59,7 +60,9 @@ func (p Http) Handle(ctx *request.Context) error {
 		request.Header.Set(grpc.ServiceIdHeader, strconv.Itoa(authData.ServiceId))
 		request.Header.Set(grpc.ApplicationIdHeader, strconv.Itoa(authData.ApplicationId))
 		if ctx.IsAdminAuthenticated() {
-			request.Header.Set(adminAuthHeader, ctx.AdminToken())
+			request.Header.Set(xAdminIdHeader, strconv.Itoa(ctx.AdminId()))
+		} else {
+			request.Header.Del(xAdminIdHeader)
 		}
 	}
 

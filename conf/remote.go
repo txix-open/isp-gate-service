@@ -18,16 +18,11 @@ func init() {
 
 type Remote struct {
 	Redis       *Redis       `schema:"Настройки Redis,обязательно, если используется механизм суточных ограничений или ограничений пропускной способности"`
-	Secrets     Secrets      `schema:"Настройки секретов"`
 	Http        Http         `schema:"Настройки HTTP"`
 	Logging     Logging      `schema:"Настройки логирования"`
 	Caching     Caching      `schema:"Настройки кеширования"`
 	DailyLimits []DailyLimit `schema:"Настройки суточных ограничений,сбрасываются раз в сутки в 00:00"`
 	Throttling  []Throttling `schema:"Настройки пропускной способности"`
-}
-
-type Secrets struct {
-	AdminTokenSecret string `valid:"required" schema:"Секрет токена администратора"`
 }
 
 type Http struct {

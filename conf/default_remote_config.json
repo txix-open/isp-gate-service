@@ -1,7 +1,4 @@
 {
-  "secrets": {
-    "adminTokenSecret": "{{ msp_admin_secret }}"
-  },
   "logging": {
     "logLevel": "debug",
     "requestLogEnable": true,

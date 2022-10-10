@@ -5,16 +5,17 @@ import (
 	"net"
 	"net/http"
 
+	"isp-gate-service/assembly"
+	"isp-gate-service/conf"
+	"isp-gate-service/domain"
+	"isp-gate-service/routes"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/integration-system/isp-kit/grpc"
 	"github.com/integration-system/isp-kit/grpc/client"
 	endpoint2 "github.com/integration-system/isp-kit/grpc/endpoint"
 	"github.com/integration-system/isp-kit/grpc/isp"
 	"github.com/integration-system/isp-kit/log"
-	"isp-gate-service/assembly"
-	"isp-gate-service/conf"
-	"isp-gate-service/domain"
-	"isp-gate-service/routes"
 )
 
 type request struct {
@@ -46,14 +47,14 @@ func main() {
 	}()
 	config := conf.Remote{
 		Redis:       &conf.Redis{Address: "localhost:6379"},
-		Secrets:     conf.Secrets{AdminTokenSecret: "secret"},
 		Http:        conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
 		Logging:     conf.Logging{LogLevel: log.DebugLevel, RequestLogEnable: true, BodyLogEnable: true},
 		Caching:     conf.Caching{AuthorizationDataInSec: 15, AuthenticationDataInSec: 15},
 		DailyLimits: []conf.DailyLimit{{ApplicationId: 1, RequestsPerDay: 100000000}},
 		Throttling:  []conf.Throttling{{ApplicationId: 1, RequestsPerSeconds: 5000}},
 	}
-	systemService, systemCli := NewMock(logger)
+
+	systemService, systemCli, _ := NewMock(logger)
 	systemService.Mock("system/secure/authenticate", func() domain.AuthenticateResponse {
 		return domain.AuthenticateResponse{
 			Authenticated: true,
@@ -69,13 +70,22 @@ func main() {
 		return domain.AuthorizeResponse{Authorized: true}
 	})
 
-	targetService, targetCli := NewMock(logger)
+	adminService, _, adminCli := NewMock(logger)
+	adminService.Mock("admin/secure/authenticate", func() domain.AdminAuthenticateResponse {
+		return domain.AdminAuthenticateResponse{
+			Authenticated: true,
+			ErrorReason:   "",
+			AdminId:       1,
+		}
+	})
+
+	targetService, targetCli, _ := NewMock(logger)
 	targetService.Mock("endpoint", func(req request) response {
 		return response{Id: req.Id}
 	})
 	targetClients := map[string]*client.Client{"target": targetCli}
 	logger, _ = log.New(log.WithLevel(log.DebugLevel))
-	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(), systemCli)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(), systemCli, adminCli)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/api",
@@ -91,17 +101,19 @@ func main() {
 	srv.ListenAndServe()
 }
 
-func TestServer(service isp.BackendServiceServer) (*grpc.Server, *client.Client) {
+func TestServer(service isp.BackendServiceServer) (*grpc.Server, *client.Client, *client.Client) {
 	listener, _ := net.Listen("tcp", "127.0.0.1:")
 	srv := grpc.NewServer()
-	cli, _ := client.Default()
+	sysCli, _ := client.Default()
+	adminCli, _ := client.Default()
 	srv.Upgrade(service)
 	go func() {
 		_ = srv.Serve(listener)
 	}()
 
-	cli.Upgrade([]string{listener.Addr().String()})
-	return srv, cli
+	sysCli.Upgrade([]string{listener.Addr().String()})
+	adminCli.Upgrade([]string{listener.Addr().String()})
+	return srv, sysCli, adminCli
 }
 
 type MockServer struct {
@@ -110,13 +122,13 @@ type MockServer struct {
 	mockEndpoints map[string]interface{}
 }
 
-func NewMock(logger log.Logger) (*MockServer, *client.Client) {
-	srv, cli := TestServer(grpc.NewMux())
+func NewMock(logger log.Logger) (*MockServer, *client.Client, *client.Client) {
+	srv, syscli, admincli := TestServer(grpc.NewMux())
 	return &MockServer{
 		srv:           srv,
 		logger:        logger,
 		mockEndpoints: make(map[string]interface{}),
-	}, cli
+	}, syscli, admincli
 }
 
 func (m *MockServer) Mock(endpoint string, handler interface{}) *MockServer {

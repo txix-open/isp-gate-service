@@ -1,12 +1,15 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
-	"github.com/pkg/errors"
+	"isp-gate-service/domain"
 	"isp-gate-service/httperrors"
 	"isp-gate-service/request"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -14,7 +17,7 @@ const (
 )
 
 type AdminAuthenticator interface {
-	Authenticate(token string) (int, error)
+	AdminAuthenticate(ctx context.Context, token string) (*domain.AdminAuthenticateResponse, error)
 }
 
 func AdminAuthenticate(auth AdminAuthenticator) Middleware {
@@ -24,7 +27,7 @@ func AdminAuthenticate(auth AdminAuthenticator) Middleware {
 			if adminToken == "" {
 				return next.Handle(ctx)
 			}
-			adminId, err := auth.Authenticate(adminToken)
+			resp, err := auth.AdminAuthenticate(ctx.Context(), adminToken)
 			if err != nil {
 				return httperrors.New(
 					http.StatusUnauthorized,
@@ -32,7 +35,14 @@ func AdminAuthenticate(auth AdminAuthenticator) Middleware {
 					errors.WithMessage(err, "admin authenticate: authenticate"),
 				)
 			}
-			ctx.AuthenticateAdmin(adminId, adminToken)
+			if !resp.Authenticated {
+				return httperrors.New(
+					http.StatusUnauthorized,
+					"invalid admin token",
+					errors.WithMessage(errors.New(resp.ErrorReason), "admin authenticate: authenticate"),
+				)
+			}
+			ctx.AuthenticateAdmin(resp.AdminId, adminToken)
 			return next.Handle(ctx)
 		})
 	}

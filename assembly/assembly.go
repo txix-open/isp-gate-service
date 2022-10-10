@@ -3,6 +3,9 @@ package assembly
 import (
 	"context"
 
+	"isp-gate-service/conf"
+	"isp-gate-service/routes"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/integration-system/isp-kit/app"
 	"github.com/integration-system/isp-kit/bootstrap"
@@ -12,8 +15,6 @@ import (
 	"github.com/integration-system/isp-kit/lb"
 	"github.com/integration-system/isp-kit/log"
 	"github.com/pkg/errors"
-	"isp-gate-service/conf"
-	"isp-gate-service/routes"
 )
 
 type Assembly struct {
@@ -23,6 +24,7 @@ type Assembly struct {
 	routes    *routes.Routes
 	redisCli  redis.UniversalClient
 	systemCli *client.Client
+	adminCli  *client.Client
 
 	locations                   []conf.Location
 	grpcClientByModuleName      map[string]*client.Client
@@ -61,6 +63,11 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 		return nil, errors.WithMessage(err, "create system cli")
 	}
 
+	adminCli, err := client.Default()
+	if err != nil {
+		return nil, errors.WithMessage(err, "create admin cli")
+	}
+
 	return &Assembly{
 		boot:                        boot,
 		server:                      server,
@@ -70,6 +77,7 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 		grpcClientByModuleName:      grpcClientByModuleName,
 		httpHostManagerByModuleName: httpHostManagerByModuleName,
 		systemCli:                   systemCli,
+		adminCli:                    adminCli,
 	}, nil
 }
 
@@ -94,7 +102,7 @@ func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) error
 		newRedisCli = a.redisClient(*newCfg.Redis)
 	}
 
-	locator := NewLocator(a.logger, a.grpcClientByModuleName, a.httpHostManagerByModuleName, a.routes, a.systemCli)
+	locator := NewLocator(a.logger, a.grpcClientByModuleName, a.httpHostManagerByModuleName, a.routes, a.systemCli, a.adminCli)
 
 	handler, err := locator.Handler(newCfg, a.locations, newRedisCli)
 	if err != nil {
@@ -124,6 +132,7 @@ func (a *Assembly) Runners() []app.Runner {
 	}
 
 	eventHandler.RequireModule("isp-system-service", a.systemCli)
+	eventHandler.RequireModule("msp-admin-service", a.adminCli)
 
 	return []app.Runner{
 		app.RunnerFunc(func(ctx context.Context) error {
@@ -145,7 +154,7 @@ func (a *Assembly) Closers() []app.Closer {
 	for _, cliCloser := range a.grpcClientByModuleName {
 		closers = append(closers, cliCloser)
 	}
-	closers = append(closers, a.systemCli, app.CloserFunc(func() error {
+	closers = append(closers, a.systemCli, a.adminCli, app.CloserFunc(func() error {
 		if a.redisCli != nil {
 			return a.redisCli.Close()
 		}
