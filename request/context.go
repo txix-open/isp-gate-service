@@ -3,6 +3,7 @@ package request
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -30,6 +31,8 @@ type Context struct {
 	adminAuthenticated bool
 	adminId            int
 	adminToken         string
+
+	queryParams map[string]string
 }
 
 func NewContext(request *http.Request, response http.ResponseWriter, endpoint string) *Context {
@@ -92,4 +95,25 @@ func (c *Context) Context() context.Context {
 
 func (c *Context) SetContext(ctx context.Context) {
 	c.request = c.request.WithContext(ctx)
+}
+
+func (c *Context) Param(name string) string {
+	value := c.request.Header.Get(name)
+	if value != "" {
+		return value
+	}
+
+	if c.queryParams == nil {
+		query := c.request.URL.Query()
+		c.queryParams = map[string]string{}
+		for key, values := range query {
+			if len(values) == 0 {
+				continue
+			}
+			c.queryParams[strings.ToLower(key)] = values[0]
+		}
+	}
+	value = c.queryParams[strings.ToLower(name)]
+
+	return value
 }
