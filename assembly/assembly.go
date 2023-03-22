@@ -3,10 +3,10 @@ package assembly
 import (
 	"context"
 
+	"github.com/redis/go-redis/v9"
 	"isp-gate-service/conf"
 	"isp-gate-service/routes"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/integration-system/isp-kit/app"
 	"github.com/integration-system/isp-kit/bootstrap"
 	"github.com/integration-system/isp-kit/cluster"

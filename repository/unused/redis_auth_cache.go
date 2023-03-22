@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/integration-system/isp-kit/json"
 	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
 	"isp-gate-service/domain"
 )
 
@@ -59,7 +59,7 @@ func (r RedisAuthCache) Set(ctx context.Context, token string, data domain.AuthD
 
 	results, err := r.cli.Pipelined(ctx, func(p redis.Pipeliner) error {
 		p.Select(ctx, r.db)
-		p.SetEX(ctx, token, string(value), r.duration)
+		p.SetEx(ctx, token, string(value), r.duration)
 		return nil
 	})
 	if err != nil {

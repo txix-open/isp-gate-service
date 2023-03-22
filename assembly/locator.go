@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"isp-gate-service/conf"
 	"isp-gate-service/middleware"
 	"isp-gate-service/proxy"
@@ -12,7 +13,6 @@ import (
 	"isp-gate-service/routes"
 	"isp-gate-service/service"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/integration-system/isp-kit/grpc/client"
 	"github.com/integration-system/isp-kit/lb"
 	"github.com/integration-system/isp-kit/log"
