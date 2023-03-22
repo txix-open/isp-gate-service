@@ -50,7 +50,7 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 				return nil, errors.WithMessage(err, "new grpc client")
 			}
 			grpcClientByModuleName[location.TargetModule] = cli
-		case conf.HttpProtocol:
+		case conf.HttpProtocol, conf.WsProtocol:
 			rb := lb.NewRoundRobin(nil)
 			httpHostManagerByModuleName[location.TargetModule] = rb
 		default:
