@@ -1,10 +1,10 @@
 package assembly
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
+	mux2 "github.com/gorilla/mux"
 	"github.com/redis/go-redis/v9"
 	"isp-gate-service/conf"
 	"isp-gate-service/middleware"
@@ -66,7 +66,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 
 	enableBodyLog := config.Logging.BodyLogEnable
 
-	mux := http.NewServeMux()
+	mux := mux2.NewRouter()
 	for _, location := range locations {
 		var proxyFunc middleware.Handler
 		switch location.Protocol {
@@ -111,7 +111,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 			location.PathPrefix,
 			l.logger,
 		)
-		mux.Handle(fmt.Sprintf("%s/", location.PathPrefix), entrypoint)
+		mux.PathPrefix(location.PathPrefix).Handler(entrypoint)
 	}
 
 	return mux, nil
