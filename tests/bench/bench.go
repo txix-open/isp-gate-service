@@ -5,12 +5,12 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/redis/go-redis/v9"
 	"isp-gate-service/assembly"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/routes"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/integration-system/isp-kit/grpc"
 	"github.com/integration-system/isp-kit/grpc/client"
 	endpoint2 "github.com/integration-system/isp-kit/grpc/endpoint"
@@ -26,7 +26,7 @@ type response struct {
 	Id string
 }
 
-//nolint
+// nolint
 func main() {
 	redisCli := redis.NewClient(&redis.Options{})
 	ctx := context.Background()

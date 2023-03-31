@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/go-redis/redis_rate/v9"
+	"github.com/go-redis/redis_rate/v10"
 	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
 	"isp-gate-service/domain"
 )
 
