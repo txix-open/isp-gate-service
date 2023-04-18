@@ -64,11 +64,11 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 	throttlingRepo := repository.NewThrottling(redisCli)
 	throttlingService := service.NewThrottling(throttlingRepo, config.Throttling)
 
-	enableBodyLog := config.Logging.BodyLogEnable
-
 	mux := mux2.NewRouter()
 	for _, location := range locations {
 		var proxyFunc middleware.Handler
+		enableBodyLog := config.Logging.BodyLogEnable
+
 		switch location.Protocol {
 		case conf.GrpcProtocol:
 			cli := l.grpcClientByModuleName[location.TargetModule]
