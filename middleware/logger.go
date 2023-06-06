@@ -1,8 +1,10 @@
 package middleware
 
 import (
+	"bufio"
 	"bytes"
 	"io"
+	"net"
 	"net/http"
 
 	"github.com/integration-system/isp-kit/http/endpoint/buffer"
@@ -18,6 +20,14 @@ type scSource interface {
 type writerWrapper struct {
 	http.ResponseWriter
 	statusCode int
+}
+
+func (w *writerWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	upstream, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("writerWrapper: upstream writer doesn't implement Hijack")
+	}
+	return upstream.Hijack()
 }
 
 func (w *writerWrapper) StatusCode() int {

@@ -49,23 +49,10 @@ func (p Http) Handle(ctx *request.Context) error {
 
 	request := ctx.Request()
 	request.URL.Path = ctx.Endpoint()
-	request.Header.Set(grpc.RequestIdHeader, requestid.FromContext(ctx.Context()))
-	if !p.skipAuth {
-		authData, err := ctx.GetAuthData()
-		if err != nil {
-			return errors.WithMessage(err, "http: get auth data")
-		}
-		request.Header.Set(grpc.SystemIdHeader, strconv.Itoa(authData.SystemId))
-		request.Header.Set(grpc.DomainIdHeader, strconv.Itoa(authData.DomainId))
-		request.Header.Set(grpc.ServiceIdHeader, strconv.Itoa(authData.ServiceId))
-		request.Header.Set(grpc.ApplicationIdHeader, strconv.Itoa(authData.ApplicationId))
-		if ctx.IsAdminAuthenticated() {
-			request.Header.Set(xAdminIdHeader, strconv.Itoa(ctx.AdminId()))
-		} else {
-			request.Header.Del(xAdminIdHeader)
-		}
+	err = setHttpHeaders(ctx, request.Header, p.skipAuth)
+	if err != nil {
+		return err
 	}
-
 	reverseProxy := httputil.NewSingleHostReverseProxy(target)
 	var resultError error
 	reverseProxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, err error) {
@@ -82,4 +69,24 @@ func (p Http) Handle(ctx *request.Context) error {
 	reverseProxy.ServeHTTP(ctx.ResponseWriter(), request)
 
 	return resultError
+}
+
+func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) error {
+	header.Set(grpc.RequestIdHeader, requestid.FromContext(ctx.Context()))
+	if !skipAuth {
+		authData, err := ctx.GetAuthData()
+		if err != nil {
+			return errors.WithMessage(err, "http: get auth data")
+		}
+		header.Set(grpc.SystemIdHeader, strconv.Itoa(authData.SystemId))
+		header.Set(grpc.DomainIdHeader, strconv.Itoa(authData.DomainId))
+		header.Set(grpc.ServiceIdHeader, strconv.Itoa(authData.ServiceId))
+		header.Set(grpc.ApplicationIdHeader, strconv.Itoa(authData.ApplicationId))
+		if ctx.IsAdminAuthenticated() {
+			header.Set(xAdminIdHeader, strconv.Itoa(ctx.AdminId()))
+		} else {
+			header.Del(xAdminIdHeader)
+		}
+	}
+	return nil
 }

@@ -23,7 +23,7 @@ type AdminAuthenticator interface {
 func AdminAuthenticate(auth AdminAuthenticator) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
-			adminToken := strings.TrimSpace(ctx.Request().Header.Get(adminAuthHeader))
+			adminToken := strings.TrimSpace(ctx.Param(adminAuthHeader))
 			if adminToken == "" {
 				return next.Handle(ctx)
 			}

@@ -1,10 +1,11 @@
 package assembly
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
+	mux2 "github.com/gorilla/mux"
+	"github.com/redis/go-redis/v9"
 	"isp-gate-service/conf"
 	"isp-gate-service/middleware"
 	"isp-gate-service/proxy"
@@ -12,7 +13,6 @@ import (
 	"isp-gate-service/routes"
 	"isp-gate-service/service"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/integration-system/isp-kit/grpc/client"
 	"github.com/integration-system/isp-kit/lb"
 	"github.com/integration-system/isp-kit/log"
@@ -64,9 +64,11 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 	throttlingRepo := repository.NewThrottling(redisCli)
 	throttlingService := service.NewThrottling(throttlingRepo, config.Throttling)
 
-	mux := http.NewServeMux()
+	mux := mux2.NewRouter()
 	for _, location := range locations {
 		var proxyFunc middleware.Handler
+		enableBodyLog := config.Logging.BodyLogEnable
+
 		switch location.Protocol {
 		case conf.GrpcProtocol:
 			cli := l.grpcClientByModuleName[location.TargetModule]
@@ -74,6 +76,10 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 		case conf.HttpProtocol:
 			hostManager := l.httpHostManagerByModuleName[location.TargetModule]
 			proxyFunc = proxy.NewHttp(hostManager, location.SkipAuth, time.Duration(config.Http.ProxyTimeoutInSec)*time.Second)
+		case conf.WsProtocol:
+			hostManager := l.httpHostManagerByModuleName[location.TargetModule]
+			proxyFunc = proxy.NewWs(hostManager, location.SkipAuth)
+			enableBodyLog = false
 		default:
 			return nil, errors.Errorf("not supported protocol %s", location.Protocol)
 		}
@@ -81,7 +87,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 		handler := middleware.Chain(
 			proxyFunc,
 			middleware.RequestId(),
-			middleware.Logger(l.logger, config.Logging.RequestLogEnable, config.Logging.BodyLogEnable),
+			middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog),
 			middleware.ErrorHandler(l.logger),
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
@@ -94,7 +100,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 			handler = middleware.Chain(
 				proxyFunc,
 				middleware.RequestId(),
-				middleware.Logger(l.logger, config.Logging.RequestLogEnable, config.Logging.BodyLogEnable),
+				middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog),
 				middleware.ErrorHandler(l.logger),
 			)
 		}
@@ -105,7 +111,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 			location.PathPrefix,
 			l.logger,
 		)
-		mux.Handle(fmt.Sprintf("%s/", location.PathPrefix), entrypoint)
+		mux.PathPrefix(location.PathPrefix).Handler(entrypoint)
 	}
 
 	return mux, nil

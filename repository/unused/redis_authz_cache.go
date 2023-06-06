@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
 )
 
 type RedisAuthzCache struct {
@@ -46,7 +46,7 @@ func (r RedisAuthzCache) Get(ctx context.Context, applicationId int, endpoint st
 func (r RedisAuthzCache) SetAuthorized(ctx context.Context, applicationId int, endpoint string) error {
 	result, err := r.cli.Pipelined(ctx, func(p redis.Pipeliner) error {
 		p.Select(ctx, r.db)
-		p.SetEX(ctx, r.key(applicationId, endpoint), "authorized", r.duration)
+		p.SetEx(ctx, r.key(applicationId, endpoint), "authorized", r.duration)
 		return nil
 	})
 	if err != nil {
