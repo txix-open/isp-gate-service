@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"regexp"
 
 	"github.com/integration-system/isp-kit/http/endpoint/buffer"
 	"github.com/integration-system/isp-kit/log"
@@ -42,7 +43,7 @@ func (w *writerWrapper) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
-func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool) Middleware {
+func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool, skip []*regexp.Regexp) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
 			if !enableRequestLogging {
@@ -50,6 +51,13 @@ func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool
 			}
 
 			r := ctx.Request()
+
+			for _, re := range skip {
+				if re.MatchString(r.URL.Path) {
+					return next.Handle(ctx)
+				}
+			}
+
 			var scSrc scSource
 			var buf *buffer.Buffer
 			if enableBodyLogging {

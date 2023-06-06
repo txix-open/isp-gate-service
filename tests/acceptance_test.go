@@ -214,9 +214,10 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, r
 	})
 
 	config := conf.Remote{
-		Redis:       &conf.Redis{Address: redisCli.address},
-		Http:        conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
-		Logging:     conf.Logging{LogLevel: log.DebugLevel, RequestLogEnable: true, BodyLogEnable: true},
+		Redis: &conf.Redis{Address: redisCli.address},
+		Http:  conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
+		Logging: conf.Logging{LogLevel: log.DebugLevel, RequestLogEnable: true, BodyLogEnable: true,
+			Skip: []string{"endpoint", "ws.service"}},
 		Caching:     conf.Caching{AuthorizationDataInSec: 1, AuthenticationDataInSec: 1},
 		DailyLimits: []conf.DailyLimit{{ApplicationId: 1, RequestsPerDay: 100}},
 		Throttling:  []conf.Throttling{{ApplicationId: 1, RequestsPerSeconds: 100}},

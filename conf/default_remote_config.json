@@ -1,15 +1,19 @@
 {
-  "logging": {
-    "logLevel": "debug",
-    "requestLogEnable": true,
-    "bodyLogEnable": false
-  },
-  "caching": {
-    "authenticationDataInSec": 60,
-    "authorizationDataInSec": 60
-  },
-  "http": {
-    "maxRequestBodySizeInMb": 64,
-    "proxyTimeoutInSec": 60
-  }
+    "logging": {
+        "logLevel": "debug",
+        "requestLogEnable": true,
+        "bodyLogEnable": false,
+        "skip": [
+            "endpoint_one",
+            "endpoint_two"
+        ]
+    },
+    "caching": {
+        "authenticationDataInSec": 60,
+        "authorizationDataInSec": 60
+    },
+    "http": {
+        "maxRequestBodySizeInMb": 64,
+        "proxyTimeoutInSec": 60
+    }
 }
