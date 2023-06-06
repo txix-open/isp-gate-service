@@ -2,11 +2,14 @@ package tests
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	etp "github.com/integration-system/isp-etp-go/v2"
 	etpcli "github.com/integration-system/isp-etp-go/v2/client"
@@ -138,9 +141,17 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 	require.EqualValues(req.Id, resp.Id)
 }
 
-func (s *HappyPathTestSuite) TestWsProxy() {
+func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	test, require := test.New(s.T())
 	config, redisCli, systemCli, adminCli := s.commonDependencies(test)
+	fName := "/tmp/TestWsProxy" + strconv.FormatInt(time.Now().Unix(), 10) + ".log"
+	logger, _ := log.New(log.WithLevel(log.DebugLevel), log.WithFileRotation(log.Rotation{
+		File:       fName,
+		MaxSizeMb:  1,
+		MaxDays:    1,
+		MaxBackups: 1,
+		Compress:   false,
+	}))
 
 	requestId := requestid.Next()
 	wsServer := etp.NewServer(context.Background(), etp.ServerConfig{
@@ -158,12 +169,15 @@ func (s *HappyPathTestSuite) TestWsProxy() {
 	wsMux.Handle("/service", http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
 		wsServer.ServeHttp(writer, r)
 	}))
+	wsMux.Handle("/sevrice", http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
+		wsServer.ServeHttp(writer, r)
+	}))
 	targetService := httptest.NewServer(wsMux)
 	targetUrl, err := url.Parse(targetService.URL)
 	require.NoError(err)
 	rr := lb.NewRoundRobin([]string{targetUrl.Host})
 	targetClients := map[string]*lb.RoundRobin{"target": rr}
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes.NewRoutes(), systemCli, adminCli)
+	locator := assembly.NewLocator(logger, nil, targetClients, routes.NewRoutes(), systemCli, adminCli)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/ws",
@@ -179,6 +193,7 @@ func (s *HappyPathTestSuite) TestWsProxy() {
 			"x-request-id": {requestId},
 		},
 	})
+
 	requestUrl, err := url.Parse(srv.URL)
 	require.NoError(err)
 	requestUrl.Path = "ws/service"
@@ -193,6 +208,30 @@ func (s *HappyPathTestSuite) TestWsProxy() {
 	require.EqualValues("world", string(resp))
 	err = cli.Close()
 	require.NoError(err)
+
+	requestUrl, err = url.Parse(srv.URL)
+	require.NoError(err)
+	requestUrl.Path = "ws/sevrice"
+	requestUrl.RawQuery = url.Values{
+		"x-application-token": []string{"token"},
+		"x-auth-admin":        []string{"mock-token"},
+	}.Encode()
+	err = cli.Dial(context.Background(), requestUrl.String())
+	require.NoError(err)
+	resp, err = cli.EmitWithAck(context.Background(), "hello", []byte("data"))
+	require.NoError(err)
+	require.EqualValues("world", string(resp))
+	err = cli.Close()
+	require.NoError(err)
+
+	time.Sleep(time.Second)
+
+	f, err := os.Open(fName)
+	require.NoError(err)
+	logBody, err := io.ReadAll(f)
+	require.NoError(err)
+	require.Contains(string(logBody), "ws/sevrice")
+	require.NotContains(string(logBody), "ws/service")
 }
 
 func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, redis.UniversalClient, *client.Client, *client.Client) {

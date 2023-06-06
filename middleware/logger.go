@@ -57,7 +57,6 @@ func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool
 					return next.Handle(ctx)
 				}
 			}
-
 			var scSrc scSource
 			var buf *buffer.Buffer
 			if enableBodyLogging {
