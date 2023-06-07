@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/integration-system/isp-kit/http/endpoint/buffer"
 	"github.com/integration-system/isp-kit/log"
@@ -42,7 +43,7 @@ func (w *writerWrapper) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
-func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool) Middleware {
+func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool, skip []string) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
 			if !enableRequestLogging {
@@ -50,6 +51,7 @@ func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool
 			}
 
 			r := ctx.Request()
+
 			var scSrc scSource
 			var buf *buffer.Buffer
 			if enableBodyLogging {
@@ -89,6 +91,16 @@ func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool
 				log.Int("application_id", authData.ApplicationId),
 				log.Int("admin_id", ctx.AdminId()),
 			}
+
+			if enableBodyLogging {
+				for _, sskip := range skip {
+					if strings.HasPrefix(ctx.Endpoint(), sskip) {
+						enableBodyLogging = false
+						break
+					}
+				}
+			}
+
 			if enableBodyLogging {
 				fields = append(fields,
 					log.ByteString("request", buf.RequestBody()),

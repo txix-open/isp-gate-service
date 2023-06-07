@@ -87,7 +87,8 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 		handler := middleware.Chain(
 			proxyFunc,
 			middleware.RequestId(),
-			middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog),
+			middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog,
+				config.Logging.SkipBodyLoggingEndpointPrefixes),
 			middleware.ErrorHandler(l.logger),
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
@@ -100,7 +101,8 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 			handler = middleware.Chain(
 				proxyFunc,
 				middleware.RequestId(),
-				middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog),
+				middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog,
+					config.Logging.SkipBodyLoggingEndpointPrefixes),
 				middleware.ErrorHandler(l.logger),
 			)
 		}

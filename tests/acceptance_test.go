@@ -138,7 +138,7 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 	require.EqualValues(req.Id, resp.Id)
 }
 
-func (s *HappyPathTestSuite) TestWsProxy() {
+func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	test, require := test.New(s.T())
 	config, redisCli, systemCli, adminCli := s.commonDependencies(test)
 
@@ -179,6 +179,7 @@ func (s *HappyPathTestSuite) TestWsProxy() {
 			"x-request-id": {requestId},
 		},
 	})
+
 	requestUrl, err := url.Parse(srv.URL)
 	require.NoError(err)
 	requestUrl.Path = "ws/service"
@@ -214,9 +215,10 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, r
 	})
 
 	config := conf.Remote{
-		Redis:       &conf.Redis{Address: redisCli.address},
-		Http:        conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
-		Logging:     conf.Logging{LogLevel: log.DebugLevel, RequestLogEnable: true, BodyLogEnable: true},
+		Redis: &conf.Redis{Address: redisCli.address},
+		Http:  conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
+		Logging: conf.Logging{LogLevel: log.DebugLevel, RequestLogEnable: true, BodyLogEnable: true,
+			SkipBodyLoggingEndpointPrefixes: []string{"endpoint"}},
 		Caching:     conf.Caching{AuthorizationDataInSec: 1, AuthenticationDataInSec: 1},
 		DailyLimits: []conf.DailyLimit{{ApplicationId: 1, RequestsPerDay: 100}},
 		Throttling:  []conf.Throttling{{ApplicationId: 1, RequestsPerSeconds: 100}},
