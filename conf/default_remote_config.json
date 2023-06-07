@@ -3,7 +3,7 @@
         "logLevel": "debug",
         "requestLogEnable": true,
         "bodyLogEnable": false,
-        "skip": []
+        "skipBodyLoggingEndpointPrefixes": []
     },
     "caching": {
         "authenticationDataInSec": 60,

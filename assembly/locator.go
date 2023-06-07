@@ -2,7 +2,6 @@ package assembly
 
 import (
 	"net/http"
-	"regexp"
 	"time"
 
 	mux2 "github.com/gorilla/mux"
@@ -65,11 +64,6 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 	throttlingRepo := repository.NewThrottling(redisCli)
 	throttlingService := service.NewThrottling(throttlingRepo, config.Throttling)
 
-	skipRegexps, err := makeSkipRegExps(config.Logging.Skip)
-	if err != nil {
-		return nil, errors.WithMessage(err, "compile regexp")
-	}
-
 	mux := mux2.NewRouter()
 	for _, location := range locations {
 		var proxyFunc middleware.Handler
@@ -93,7 +87,8 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 		handler := middleware.Chain(
 			proxyFunc,
 			middleware.RequestId(),
-			middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog, skipRegexps),
+			middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog,
+				config.Logging.SkipBodyLoggingEndpointPrefixes),
 			middleware.ErrorHandler(l.logger),
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
@@ -106,7 +101,8 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 			handler = middleware.Chain(
 				proxyFunc,
 				middleware.RequestId(),
-				middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog, skipRegexps),
+				middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog,
+					config.Logging.SkipBodyLoggingEndpointPrefixes),
 				middleware.ErrorHandler(l.logger),
 			)
 		}
@@ -121,18 +117,4 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 	}
 
 	return mux, nil
-}
-
-func makeSkipRegExps(skip []string) ([]*regexp.Regexp, error) {
-	ret := make([]*regexp.Regexp, 0)
-
-	for _, s := range skip {
-		re, err := regexp.Compile(s)
-		if err != nil {
-			return nil, errors.WithMessagef(err, "re=[%s]", s)
-		}
-		ret = append(ret, re)
-	}
-
-	return ret, nil
 }
