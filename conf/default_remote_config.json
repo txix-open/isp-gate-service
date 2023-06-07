@@ -3,10 +3,7 @@
         "logLevel": "debug",
         "requestLogEnable": true,
         "bodyLogEnable": false,
-        "skip": [
-            "endpoint_one",
-            "endpoint_two"
-        ]
+        "skip": []
     },
     "caching": {
         "authenticationDataInSec": 60,
