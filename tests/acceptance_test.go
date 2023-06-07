@@ -158,9 +158,6 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	wsMux.Handle("/service", http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
 		wsServer.ServeHttp(writer, r)
 	}))
-	wsMux.Handle("/sevrice", http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
-		wsServer.ServeHttp(writer, r)
-	}))
 	targetService := httptest.NewServer(wsMux)
 	targetUrl, err := url.Parse(targetService.URL)
 	require.NoError(err)
