@@ -43,7 +43,12 @@ func (w *writerWrapper) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
-func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool, skip []string) Middleware {
+func Logger(
+	logger log.Logger,
+	enableRequestLogging bool,
+	enableBodyLogging bool,
+	skipBodyLoggingEndpointPrefixes []string,
+) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
 			if !enableRequestLogging {
@@ -52,9 +57,19 @@ func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool
 
 			r := ctx.Request()
 
+			logBodyFromCurrenRequest := enableBodyLogging
+			if logBodyFromCurrenRequest {
+				for _, prefix := range skipBodyLoggingEndpointPrefixes {
+					if strings.HasPrefix(ctx.Endpoint(), prefix) {
+						logBodyFromCurrenRequest = false
+						break
+					}
+				}
+			}
+
 			var scSrc scSource
 			var buf *buffer.Buffer
-			if enableBodyLogging {
+			if logBodyFromCurrenRequest {
 				buf = buffer.Acquire(ctx.ResponseWriter())
 				defer buffer.Release(buf)
 
@@ -92,16 +107,7 @@ func Logger(logger log.Logger, enableRequestLogging bool, enableBodyLogging bool
 				log.Int("admin_id", ctx.AdminId()),
 			}
 
-			if enableBodyLogging {
-				for _, sskip := range skip {
-					if strings.HasPrefix(ctx.Endpoint(), sskip) {
-						enableBodyLogging = false
-						break
-					}
-				}
-			}
-
-			if enableBodyLogging {
+			if logBodyFromCurrenRequest {
 				fields = append(fields,
 					log.ByteString("request", buf.RequestBody()),
 					log.ByteString("response", buf.ResponseBody()),

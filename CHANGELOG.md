@@ -1,3 +1,5 @@
+### v4.2.1
+* исправлено поведение `skipBodyLoggingEndpointPrefixes`
 ### v4.2.0
 * новый параметр в remote_config: `skipBodyLoggingEndpointPrefixes`. Массив re. Если они есть в пути, то запрос не будет логироваться
 ### v4.1.2
