@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"isp-gate-service/domain"
 
 	"github.com/integration-system/isp-kit/grpc/client"
@@ -24,7 +25,7 @@ func (r Admin) Authenticate(ctx context.Context, token string) (*domain.AdminAut
 	resp := domain.AdminAuthenticateResponse{}
 	err := r.cli.Invoke(adminAuthenticate).
 		JsonRequestBody(domain.AuthenticateRequest{Token: token}).
-		ReadJsonResponse(&resp).
+		JsonResponseBody(&resp).
 		Do(ctx)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "grpc client invoke %s", adminAuthenticate)

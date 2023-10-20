@@ -27,7 +27,7 @@ func (r System) Authenticate(ctx context.Context, token string) (*domain.Authent
 	resp := domain.AuthenticateResponse{}
 	err := r.cli.Invoke(authenticate).
 		JsonRequestBody(domain.AuthenticateRequest{Token: token}).
-		ReadJsonResponse(&resp).
+		JsonResponseBody(&resp).
 		Do(ctx)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "grpc client invoke: %s", authenticate)
@@ -39,7 +39,7 @@ func (r System) Authorize(ctx context.Context, applicationId int, endpoint strin
 	resp := domain.AuthorizeResponse{}
 	err := r.cli.Invoke(authorize).
 		JsonRequestBody(domain.AuthorizeRequest{ApplicationId: applicationId, Endpoint: endpoint}).
-		ReadJsonResponse(&resp).
+		JsonResponseBody(&resp).
 		Do(ctx)
 	if err != nil {
 		return false, errors.WithMessagef(err, "grpc client invoke: %s", authorize)

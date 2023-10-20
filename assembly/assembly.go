@@ -32,7 +32,7 @@ type Assembly struct {
 }
 
 func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
-	server := http.NewServer()
+	server := http.NewServer(boot.App.Logger())
 
 	localConfig := conf.Local{}
 	err := boot.App.Config().Read(&localConfig)
