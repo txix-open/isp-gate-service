@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -15,6 +16,23 @@ import (
 	"github.com/integration-system/isp-kit/requestid"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
+)
+
+// nolint:gomnd
+var (
+	httpTransport = &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: defaultTransportDialContext(&net.Dialer{
+			Timeout:   3 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}),
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          512,
+		MaxIdleConnsPerHost:   32,
+		IdleConnTimeout:       60 * time.Second,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
 )
 
 type HttpHostManager interface {
@@ -54,6 +72,7 @@ func (p Http) Handle(ctx *request.Context) error {
 		return err
 	}
 	reverseProxy := httputil.NewSingleHostReverseProxy(target)
+	reverseProxy.Transport = httpTransport
 	var resultError error
 	reverseProxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, err error) {
 		resultError = httperrors.New(
@@ -89,4 +108,8 @@ func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) err
 		}
 	}
 	return nil
+}
+
+func defaultTransportDialContext(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
+	return dialer.DialContext
 }
