@@ -11,6 +11,7 @@ import (
 
 const (
 	adminAuthenticate = "admin/secure/authenticate"
+	adminAuthorize    = "admin/secure/authorize"
 )
 
 type Admin struct {
@@ -31,4 +32,16 @@ func (r Admin) Authenticate(ctx context.Context, token string) (*domain.AdminAut
 		return nil, errors.WithMessagef(err, "grpc client invoke %s", adminAuthenticate)
 	}
 	return &resp, nil
+}
+
+func (r Admin) Authorize(ctx context.Context, adminId int, permission string) (bool, error) {
+	resp := domain.AdminAuthorizeResponse{}
+	err := r.cli.Invoke(adminAuthorize).
+		JsonRequestBody(domain.AdminAuthorizeRequest{AdminId: adminId, Permission: permission}).
+		JsonResponseBody(&resp).
+		Do(ctx)
+	if err != nil {
+		return false, errors.WithMessagef(err, "grpc client invoke: %s", adminAuthorize)
+	}
+	return resp.Authorized, nil
 }
