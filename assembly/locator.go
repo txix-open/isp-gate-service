@@ -53,10 +53,15 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 	authenticationCache := repository.NewAuthenticationCache(time.Duration(config.Caching.AuthenticationDataInSec) * time.Second)
 	authentication := service.NewAuthentication(authenticationCache, systemRepo)
 
-	adminService := service.NewAdmin(adminRepo)
+	adminService := service.NewAdmin(
+		repository.NewAuthorizationCache(time.Duration(config.Caching.AuthorizationDataInSec)*time.Second),
+		adminRepo,
+	)
 
-	authorizationCache := repository.NewAuthorizationCache(time.Duration(config.Caching.AuthorizationDataInSec) * time.Second)
-	authorization := service.NewAuthorization(authorizationCache, systemRepo)
+	authorization := service.NewAuthorization(
+		repository.NewAuthorizationCache(time.Duration(config.Caching.AuthorizationDataInSec)*time.Second),
+		systemRepo,
+	)
 
 	dailyLimitRepo := repository.NewDailyLimit(redisCli)
 	dailyLimitService := service.NewDailyLimit(dailyLimitRepo, config.DailyLimits)
@@ -93,7 +98,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
 			middleware.Authorize(authorization, l.logger),
-			middleware.AdminAuthorize(l.routes),
+			middleware.AdminAuthorize(l.routes, adminService),
 			middleware.Throttling(throttlingService),
 			middleware.DailyLimit(dailyLimitService),
 		)

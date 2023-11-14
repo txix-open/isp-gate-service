@@ -100,7 +100,7 @@ func (c *Context) SetContext(ctx context.Context) {
 func (c *Context) Param(name string) string {
 	value := c.request.Header.Get(name)
 	if value != "" {
-		return value
+		return strings.TrimSpace(value)
 	}
 
 	if c.queryParams == nil {
@@ -115,5 +115,5 @@ func (c *Context) Param(name string) string {
 	}
 	value = c.queryParams[strings.ToLower(name)]
 
-	return value
+	return strings.TrimSpace(value)
 }

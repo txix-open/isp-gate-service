@@ -7,30 +7,43 @@ import (
 )
 
 type Routes struct {
-	innerMethods map[string]bool
+	innerEndpoints      map[string]bool
+	requiredPermissions map[string]string
 }
 
 func NewRoutes() *Routes {
 	return &Routes{
-		innerMethods: make(map[string]bool),
+		innerEndpoints:      make(map[string]bool),
+		requiredPermissions: make(map[string]string),
 	}
 }
 
 func (s *Routes) ReceiveRoutes(ctx context.Context, routes cluster.RoutingConfig) error {
 	newInnerMethods := make(map[string]bool)
+	newRequiredPermissions := make(map[string]string)
 	for _, backend := range routes {
 		for _, v := range backend.Endpoints {
 			if v.Inner {
 				newInnerMethods[v.Path] = true
 			}
+			perm, ok := cluster.GetRequiredAdminPermission(v)
+			if ok {
+				newRequiredPermissions[v.Path] = perm
+			}
 		}
 	}
 
-	s.innerMethods = newInnerMethods
+	s.innerEndpoints = newInnerMethods
+	s.requiredPermissions = newRequiredPermissions
 
 	return nil
 }
 
-func (s *Routes) IsInnerMethod(path string) bool {
-	return s.innerMethods[path]
+func (s *Routes) IsInnerEndpoint(path string) bool {
+	return s.innerEndpoints[path]
+}
+
+func (s *Routes) RequiredAdminPermission(path string) (string, bool) {
+	perm, ok := s.requiredPermissions[path]
+	return perm, ok
 }
