@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"isp-gate-service/domain"
 	"isp-gate-service/httperrors"
@@ -23,7 +22,7 @@ type AdminAuthenticator interface {
 func AdminAuthenticate(auth AdminAuthenticator) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
-			adminToken := strings.TrimSpace(ctx.Param(adminAuthHeader))
+			adminToken := ctx.Param(adminAuthHeader)
 			if adminToken == "" {
 				return next.Handle(ctx)
 			}

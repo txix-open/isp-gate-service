@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"github.com/pkg/errors"
 	"isp-gate-service/domain"
@@ -22,7 +21,7 @@ type Authenticator interface {
 func Authenticate(authenticator Authenticator) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
-			token := strings.TrimSpace(ctx.Param(applicationTokenHeader))
+			token := ctx.Param(applicationTokenHeader)
 			if token == "" {
 				return httperrors.New(
 					http.StatusUnauthorized,
