@@ -10,6 +10,7 @@ import (
 
 	etp "github.com/integration-system/isp-etp-go/v2"
 	etpcli "github.com/integration-system/isp-etp-go/v2/client"
+	"github.com/integration-system/isp-kit/cluster"
 	"github.com/integration-system/isp-kit/http/httpcli"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
@@ -94,6 +95,7 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 		Header("x-auth-admin", "mock-token").
 		JsonRequestBody(req).
 		JsonResponseBody(&resp).
+		StatusCodeToError().
 		Do(context.Background())
 	require.NoError(err)
 	require.EqualValues(req.Id, resp.Id)
@@ -133,6 +135,7 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 		Header("x-auth-admin", "mock-token").
 		JsonRequestBody(req).
 		JsonResponseBody(&resp).
+		StatusCodeToError().
 		Do(context.Background())
 	require.NoError(err)
 	require.EqualValues(req.Id, resp.Id)
@@ -196,6 +199,69 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	require.NoError(err)
 }
 
+func (s *HappyPathTestSuite) TestAdminAuthorization() {
+	test, require := test.New(s.T())
+	config, redisCli, systemCli, adminCli := s.commonDependencies(test)
+
+	targetService, targetCli := grpct.NewMock(test)
+	targetService.Mock("endpoint", func(ctx context.Context, authData grpc.AuthData, req request) response {
+		return response{Id: req.Id} //nolint:gosimple
+	})
+	targetClients := map[string]*client.Client{"target": targetCli}
+	logger, err := log.New(log.WithLevel(log.DebugLevel))
+	require.NoError(err)
+	routes := routes.NewRoutes()
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli)
+
+	locations := []conf.Location{{
+		SkipAuth:     false,
+		PathPrefix:   "/api",
+		Protocol:     "grpc",
+		TargetModule: "target",
+	}}
+	handler, err := locator.Handler(config, locations, redisCli)
+	require.NoError(err)
+
+	err = routes.ReceiveRoutes(context.Background(), cluster.RoutingConfig{{
+		ModuleName: "target",
+		Endpoints: []cluster.EndpointDescriptor{{
+			Path:  "endpoint",
+			Inner: true,
+			Extra: cluster.RequireAdminPermission("ok_permission"),
+		}, {
+			Path:  "failed_endpoint",
+			Inner: true,
+			Extra: cluster.RequireAdminPermission("failed_permission"),
+		}},
+	}})
+	require.NoError(err)
+
+	srv := httptest.NewServer(handler)
+	cli := httpcli.New()
+	req := request{Id: uuid.New().String()}
+	resp := response{}
+	_, err = cli.Post(srv.URL+"/api/endpoint").
+		Header("x-application-token", "token").
+		Header("x-auth-admin", "mock-token").
+		JsonRequestBody(req).
+		JsonResponseBody(&resp).
+		StatusCodeToError().
+		Do(context.Background())
+	require.NoError(err)
+	require.EqualValues(req.Id, resp.Id)
+
+	_, err = cli.Post(srv.URL+"/api/failed_endpoint").
+		Header("x-application-token", "token").
+		Header("x-auth-admin", "mock-token").
+		JsonRequestBody(req).
+		JsonResponseBody(&resp).
+		StatusCodeToError().
+		Do(context.Background())
+	errResp := httpcli.ErrorResponse{}
+	require.ErrorAs(err, &errResp)
+	require.EqualValues(http.StatusForbidden, errResp.StatusCode)
+}
+
 func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, redis.UniversalClient, *client.Client, *client.Client) {
 	require := test.Assert()
 	redisCli := NewRedis(test)
@@ -241,12 +307,17 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, r
 	})
 
 	adminService, adminCli := grpct.NewMock(test)
-	adminService.Mock("admin/secure/authenticate", func() domain.AdminAuthenticateResponse {
+	adminService.Mock("admin/secure/authenticate", func(req domain.AdminAuthorizeRequest) domain.AdminAuthenticateResponse {
 		return domain.AdminAuthenticateResponse{
 			Authenticated: true,
 			ErrorReason:   "",
 			AdminId:       1,
 		}
+	}).Mock("admin/secure/authorize", func(req domain.AdminAuthorizeRequest) domain.AdminAuthorizeResponse {
+		if req.Permission == "ok_permission" {
+			return domain.AdminAuthorizeResponse{Authorized: true}
+		}
+		return domain.AdminAuthorizeResponse{Authorized: false}
 	})
 
 	return config, redisCli, systemCli, adminCli
