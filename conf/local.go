@@ -12,7 +12,7 @@ type Local struct {
 
 type Location struct {
 	SkipAuth     bool
-	PathPrefix   string `valid:"required"`
-	Protocol     string `valid:"required,in(http|grpc|ws)"`
-	TargetModule string `valid:"required"`
+	PathPrefix   string `validate:"required"`
+	Protocol     string `validate:"required,oneof=http grpc ws"`
+	TargetModule string `validate:"required"`
 }

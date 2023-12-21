@@ -10,9 +10,9 @@ import (
 )
 
 func init() {
-	schema.CustomGenerators.Register("logLevel", func(field reflect.StructField, t *jsonschema.Type) {
+	schema.CustomGenerators.Register("logLevel", func(field reflect.StructField, t *jsonschema.Schema) {
 		t.Type = "string"
-		t.Enum = []interface{}{"debug", "info", "error", "fatal"}
+		t.Enum = []interface{}{"debug", "info", "warn", "error", "fatal"}
 	})
 }
 
@@ -26,8 +26,8 @@ type Remote struct {
 }
 
 type Http struct {
-	MaxRequestBodySizeInMb int64 `valid:"required" schema:"Максимальная длинна тела запроса,в мегабайтах"`
-	ProxyTimeoutInSec      int   `valid:"required" schema:"Таймаут на проксирование,в секундах"`
+	MaxRequestBodySizeInMb int64 `validate:"required" schema:"Максимальная длинна тела запроса,в мегабайтах"`
+	ProxyTimeoutInSec      int   `validate:"required" schema:"Таймаут на проксирование,в секундах"`
 }
 
 type Logging struct {
@@ -38,18 +38,18 @@ type Logging struct {
 }
 
 type Caching struct {
-	AuthenticationDataInSec int `valid:"required" schema:"Время кеширования данных аутентификации,в секундах"`
-	AuthorizationDataInSec  int `valid:"required" schema:"Время кеширования данных авторизации,в секундах"`
+	AuthenticationDataInSec int `validate:"required" schema:"Время кеширования данных аутентификации,в секундах"`
+	AuthorizationDataInSec  int `validate:"required" schema:"Время кеширования данных авторизации,в секундах"`
 }
 
 type DailyLimit struct {
-	ApplicationId  int   `valid:"required" schema:"ID приложения"`
-	RequestsPerDay int64 `valid:"required" schema:"Запросов в сутки"`
+	ApplicationId  int   `validate:"required" schema:"ID приложения"`
+	RequestsPerDay int64 `validate:"required" schema:"Запросов в сутки"`
 }
 
 type Throttling struct {
-	ApplicationId      int `valid:"required" schema:"ID приложения"`
-	RequestsPerSeconds int `valid:"required,range(1|1000)" schema:"Запросов в секунду,не конфликтует с суточными ограничениями, алгоритм не работает на значениях больше 1000"`
+	ApplicationId      int `validate:"required" schema:"ID приложения"`
+	RequestsPerSeconds int `validate:"required,min=1,max=1000" schema:"Запросов в секунду,не конфликтует с суточными ограничениями, алгоритм не работает на значениях больше 1000"`
 }
 
 type Redis struct {
@@ -60,8 +60,8 @@ type Redis struct {
 }
 
 type RedisSentinel struct {
-	Addresses  []string `valid:"required" schema:"Адреса нод в кластере"`
-	MasterName string   `valid:"required" schema:"Имя мастера"`
+	Addresses  []string `validate:"required" schema:"Адреса нод в кластере"`
+	MasterName string   `validate:"required" schema:"Имя мастера"`
 	Username   string   `schema:"Имя пользовтаеля в sentinel"`
 	Password   string   `schema:"Пароль в sentinel"`
 }
