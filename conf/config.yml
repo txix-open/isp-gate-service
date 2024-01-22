@@ -22,6 +22,3 @@ locations:
   - pathPrefix: /api
     protocol: grpc
     targetModule: router
-  - pathPrefix: /mdm
-    protocol: http
-    targetModule: mdm-api

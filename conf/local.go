@@ -11,6 +11,7 @@ type Local struct {
 }
 
 type Location struct {
+	WithPrefix   bool
 	SkipAuth     bool
 	PathPrefix   string `validate:"required"`
 	Protocol     string `validate:"required,oneof=http grpc ws"`
