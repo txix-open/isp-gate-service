@@ -25,3 +25,8 @@ locations:
   - pathPrefix: /mdm
     protocol: http
     targetModule: mdm-api
+  - pathPrefix: /api/pdp-4me-service/public
+    protocol: http
+    targetModule: pdp-4me-service
+    skipAuth: true
+    withPrefix: true
