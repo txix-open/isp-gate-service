@@ -1,0 +1,55 @@
+run:
+  timeout: 2m
+
+linters:
+  disable-all: true
+  enable:
+    - asciicheck
+    - bodyclose
+    - deadcode
+    - dogsled
+    - errcheck
+    - funlen
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - gomnd
+    - goprintffuncname
+    - gosimple
+    - govet
+    - nakedret
+    - nestif
+    - prealloc
+    - rowserrcheck
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - gosec
+    - misspell
+    - whitespace
+    - exhaustive    #смотрит на соответствие между элементами enum и swich кейсами
+    - exportloopref #for _,p := []int{1, 2, 3} { s.Bar(&p) /* If s stores the pointer, it will be bug.*/ }
+    - sqlclosecheck # Checks that sql.Rows and sql.Stmt are closed.
+linters-settings:
+  funlen:
+    lines: 80
+  lll:
+    line-length: 150
+  cyclop:
+    max-complexity: 15 #по умолчанию 10 мало
+  revive:
+    rules:
+      - name: var-naming #отключаем Id -> ID
+        disabled: true
+  stylecheck:
+    checks: #отключаем Id -> ID
+      - "-ST1000"
+      - "-ST1016"
+      - "-ST1020"
+      - "-ST1021"
+      - "-ST1022"

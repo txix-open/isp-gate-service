@@ -1,0 +1,30 @@
+configServiceAddress:
+  ip: 127.0.0.1
+  port: 9001
+grpcOuterAddress:
+  #ip: 127.0.0.1
+  port: 9003
+grpcInnerAddress:
+  ip: 0.0.0.0
+  port: 9003
+moduleName: isp-gate-service
+
+infraServerPort: 9553
+
+logfile:
+  path: /var/log/isp-gate-service/runtime.log
+  maxSizeMb: 512
+  maxBackups: 4
+  compress: true
+
+locations:
+  - pathPrefix: /ws/kkd-configuration-service
+    protocol: ws
+    targetModule: kkd-configuration-service
+  - pathPrefix: /api/kkd-configuration-service
+    protocol: http
+    targetModule: kkd-configuration-service
+  - pathPrefix: /api
+    protocol: grpc
+    skipAuth: false
+    targetModule: router
