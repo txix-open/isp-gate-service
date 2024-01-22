@@ -71,6 +71,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 
 	mux := mux2.NewRouter()
 	for _, location := range locations {
+		location := location
 		var proxyFunc middleware.Handler
 		enableBodyLog := config.Logging.BodyLogEnable
 
