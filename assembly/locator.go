@@ -115,8 +115,10 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 			config.Http.MaxRequestBodySizeInMb*1024*1024, //nolint:gomnd
 			handler,
 			l.logger,
-			location.PathPrefix,
-			location.WithPrefix,
+			middleware.EntryPointConfig{
+				WithPrefix: location.WithPrefix,
+				PathPrefix: location.PathPrefix,
+			},
 		)
 		mux.PathPrefix(location.PathPrefix).Handler(entrypoint)
 	}

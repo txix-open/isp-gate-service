@@ -10,13 +10,18 @@ import (
 	"isp-gate-service/request"
 )
 
-func Entrypoint(maxReqBodySize int64, next Handler, logger log.Logger, pathPrefix string, withPrefix bool) http.Handler {
+type EntryPointConfig struct {
+	PathPrefix string
+	WithPrefix bool
+}
+
+func Entrypoint(maxReqBodySize int64, next Handler, logger log.Logger, cfg EntryPointConfig) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
 		req.Body = http.MaxBytesReader(writer, req.Body, maxReqBodySize)
 
 		endpoint := req.URL.Path
-		if !withPrefix {
-			prefix := fmt.Sprintf("%s/", pathPrefix)
+		if !cfg.WithPrefix {
+			prefix := fmt.Sprintf("%s/", cfg.PathPrefix)
 			endpoint = strings.TrimPrefix(req.URL.Path, prefix)
 		}
 		ctx := request.NewContext(req, writer, endpoint)
