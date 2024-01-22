@@ -71,7 +71,6 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 
 	mux := mux2.NewRouter()
 	for _, location := range locations {
-		location := location
 		var proxyFunc middleware.Handler
 		enableBodyLog := config.Logging.BodyLogEnable
 
@@ -112,15 +111,12 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 				middleware.ErrorHandler(l.logger),
 			)
 		}
-		var prefixToTrim *string
-		if !location.WithPrefix {
-			prefixToTrim = &location.PathPrefix
-		}
 		entrypoint := middleware.Entrypoint(
 			config.Http.MaxRequestBodySizeInMb*1024*1024, //nolint:gomnd
 			handler,
 			l.logger,
-			prefixToTrim,
+			location.PathPrefix,
+			location.WithPrefix,
 		)
 		mux.PathPrefix(location.PathPrefix).Handler(entrypoint)
 	}
