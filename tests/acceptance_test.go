@@ -1,3 +1,4 @@
+// nolint:canonicalheader
 package tests
 
 import (
@@ -262,6 +263,7 @@ func (s *HappyPathTestSuite) TestAdminAuthorization() {
 	require.EqualValues(http.StatusForbidden, errResp.StatusCode)
 }
 
+// nolint:ireturn
 func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, redis.UniversalClient, *client.Client, *client.Client) {
 	require := test.Assert()
 	redisCli := NewRedis(test)
@@ -324,6 +326,7 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, r
 }
 
 func TestHappyPathTestSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(HappyPathTestSuite))
 }
 

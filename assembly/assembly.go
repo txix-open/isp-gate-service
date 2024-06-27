@@ -164,6 +164,7 @@ func (a *Assembly) Closers() []app.Closer {
 	return closers
 }
 
+// nolint:ireturn
 func (a *Assembly) redisClient(config conf.Redis) redis.UniversalClient {
 	if config.Sentinel != nil {
 		return redis.NewFailoverClient(&redis.FailoverOptions{

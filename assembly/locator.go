@@ -112,7 +112,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 			)
 		}
 		entrypoint := middleware.Entrypoint(
-			config.Http.MaxRequestBodySizeInMb*1024*1024, //nolint:gomnd
+			config.Http.MaxRequestBodySizeInMb*1024*1024, //nolint:mnd,gomnd
 			handler,
 			l.logger,
 			middleware.EntryPointConfig{

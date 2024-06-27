@@ -1,40 +1,48 @@
 run:
-  timeout: 2m
-
+  allow-parallel-runners: true
+issues:
+  exclude-rules:
+    - path: controller #достаточное кол-во контекса на уровне контроллеров
+      linters:
+        - wrapcheck
+    - path: transaction #транзакции прозрачны
+      linters:
+        - wrapcheck
+    - path: middleware #отсутствует необходимость оборачивать ошибки
+      linters:
+        - wrapcheck
+    - path: proxy
+      linters:
+        - gochecknoglobals
+        - mnd
+    - path: httperrors #отсутствует необходимость оборачивать ошибки
+      linters: 
+        - wrapcheck
 linters:
-  disable-all: true
-  enable:
-    - asciicheck
-    - bodyclose
-    - deadcode
-    - dogsled
-    - errcheck
-    - funlen
-    - goconst
-    - gocritic
-    - gocyclo
-    - gofmt
-    - gomnd
-    - goprintffuncname
-    - gosimple
-    - govet
-    - nakedret
-    - nestif
-    - prealloc
-    - rowserrcheck
-    - staticcheck
-    - structcheck
-    - typecheck
-    - unconvert
-    - unparam
-    - unused
-    - varcheck
-    - gosec
-    - misspell
-    - whitespace
-    - exhaustive    #смотрит на соответствие между элементами enum и swich кейсами
-    - exportloopref #for _,p := []int{1, 2, 3} { s.Bar(&p) /* If s stores the pointer, it will be bug.*/ }
-    - sqlclosecheck # Checks that sql.Rows and sql.Stmt are closed.
+  enable-all: true
+  disable:
+    - goimports #у нас собственные правила форматирования импортов
+    - wsl #расставление пробелов очень индивидуально
+    - exhaustivestruct #не имеет смысла
+    - varnamelen #очень индивидуально (db)
+    - exhaustruct #не имеет смысла
+    - golint #устарел
+    - contextcheck #не имеет смысла
+    - gci #у нас собственные правила форматирования импортов
+    - gofumpt #у нас собственные правила форматирования импортов
+    - nolintlint #Goland все равно форматирует с отступом
+    - nlreturn #не всегда имеет смысл
+    - godot #не актуально для свагера
+    - ifshort #приняли решение, что мы так не пишем if err := ...; err != nil {}
+    - godox #не позволяет оставлять todo
+    - maligned #аллокацией памяти для структур конфликтует с удобством их чтения
+    - nosnakecase #не позволяет заводить пакеты используя snake_case
+    - depguard #не всегда имеет смысл
+    - dupword #не имеет смысла
+    - tagalign #не всегда имеет смысл
+    - musttag #у нас собственные правило: не используем теги, если работаем с пакетом isp-kit/json и с внутренними структурами(между нашими сервисами), при этом теги обязательный для всех внених для нас структур
+    - perfsprint #мнимая производительность в угоду читаемости
+    - testpackage
 linters-settings:
   funlen:
     lines: 80
@@ -53,3 +61,6 @@ linters-settings:
       - "-ST1020"
       - "-ST1021"
       - "-ST1022"
+  testifylint:
+    disable:
+      - compares

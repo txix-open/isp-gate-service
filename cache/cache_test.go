@@ -9,6 +9,7 @@ import (
 )
 
 func TestGetBasic(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
 
 	cache := cache.New()
@@ -23,6 +24,7 @@ func TestGetBasic(t *testing.T) {
 }
 
 func TestGetExpired(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
 
 	cache := cache.New()
@@ -36,6 +38,7 @@ func TestGetExpired(t *testing.T) {
 }
 
 func TestNilValue(t *testing.T) {
+	t.Parallel()
 	require := require.New(t)
 
 	cache := cache.New()
