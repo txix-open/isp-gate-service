@@ -97,14 +97,14 @@ func Logger(
 
 			authData, _ := ctx.GetAuthData()
 			fields := []log.Field{
-				log.String("http_method", r.Method),
-				log.String("remote_addr", r.RemoteAddr),
-				log.String("x_forwarded_for", r.Header.Get("X-Forwarded-For")),
-				log.Int("status_code", scSrc.StatusCode()),
+				log.String("httpMethod", r.Method),
+				log.String("remoteAddr", r.RemoteAddr),
+				log.String("xForwardedFor", r.Header.Get("X-Forwarded-For")),
+				log.Int("statusCode", scSrc.StatusCode()),
 				log.String("path", originalPath),
 				log.String("endpoint", ctx.Endpoint()),
-				log.Int("application_id", authData.ApplicationId),
-				log.Int("admin_id", ctx.AdminId()),
+				log.Int("applicationId", authData.ApplicationId),
+				log.Int("adminId", ctx.AdminId()),
 			}
 
 			if logBodyFromCurrenRequest {

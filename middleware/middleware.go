@@ -16,6 +16,7 @@ func (f HandlerFunc) Handle(ctx *request.Context) error {
 
 type Middleware func(next Handler) Handler
 
+// nolint:ireturn
 func Chain(root Handler, middlewares ...Middleware) Handler {
 	for i := len(middlewares) - 1; i >= 0; i-- {
 		root = middlewares[i](root)

@@ -30,7 +30,7 @@ func (r RedisAuthCache) Get(ctx context.Context, token string) (*domain.AuthData
 		p.Get(ctx, token)
 		return nil
 	})
-	if err != nil && err != redis.Nil {
+	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, errors.WithMessage(err, "pipelined")
 	}
 
