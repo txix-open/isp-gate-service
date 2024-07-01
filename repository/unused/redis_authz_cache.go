@@ -29,7 +29,7 @@ func (r RedisAuthzCache) Get(ctx context.Context, applicationId int, endpoint st
 		p.Get(ctx, r.key(applicationId, endpoint))
 		return nil
 	})
-	if err != nil && err != redis.Nil {
+	if err != nil && !errors.Is(err, redis.Nil) {
 		return false, errors.WithMessage(err, "pipelined")
 	}
 

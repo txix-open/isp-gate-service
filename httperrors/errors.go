@@ -26,7 +26,7 @@ func (e HttpError) Error() string {
 }
 
 func (e HttpError) WriteError(w http.ResponseWriter) error {
-	w.Header().Set("content-type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(e.statusCode)
 	data := map[string]interface{}{
 		"errorCode":    http.StatusText(e.statusCode),

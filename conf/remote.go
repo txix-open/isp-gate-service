@@ -1,3 +1,4 @@
+// nolint:gochecknoinits,lll
 package conf
 
 import (
