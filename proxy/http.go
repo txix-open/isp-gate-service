@@ -102,9 +102,9 @@ func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) err
 		header.Set(grpc.ServiceIdHeader, strconv.Itoa(authData.ServiceId))
 		header.Set(grpc.ApplicationIdHeader, strconv.Itoa(authData.ApplicationId))
 		if ctx.IsAdminAuthenticated() {
-			header.Set(xAdminIdHeader, strconv.Itoa(ctx.AdminId()))
+			header.Set(xAdminIdHeader, strconv.Itoa(ctx.AdminId())) //nolint:canonicalheader
 		} else {
-			header.Del(xAdminIdHeader)
+			header.Del(xAdminIdHeader) //nolint:canonicalheader
 		}
 	}
 	return nil

@@ -9,16 +9,17 @@ import (
 	"strconv"
 	"testing"
 
+	"isp-gate-service/assembly"
+	"isp-gate-service/conf"
+	"isp-gate-service/domain"
+	"isp-gate-service/routes"
+
 	etp "github.com/integration-system/isp-etp-go/v2"
 	etpcli "github.com/integration-system/isp-etp-go/v2/client"
 	"github.com/integration-system/isp-kit/cluster"
 	"github.com/integration-system/isp-kit/http/httpcli"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
-	"isp-gate-service/assembly"
-	"isp-gate-service/conf"
-	"isp-gate-service/domain"
-	"isp-gate-service/routes"
 
 	"github.com/google/uuid"
 	"github.com/integration-system/isp-kit/grpc"
@@ -287,9 +288,10 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, r
 		Http:  conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
 		Logging: conf.Logging{LogLevel: log.DebugLevel, RequestLogEnable: true, BodyLogEnable: true,
 			SkipBodyLoggingEndpointPrefixes: []string{"endpoint"}},
-		Caching:     conf.Caching{AuthorizationDataInSec: 1, AuthenticationDataInSec: 1},
-		DailyLimits: []conf.DailyLimit{{ApplicationId: 1, RequestsPerDay: 100}},
-		Throttling:  []conf.Throttling{{ApplicationId: 1, RequestsPerSeconds: 100}},
+		Caching:                         conf.Caching{AuthorizationDataInSec: 1, AuthenticationDataInSec: 1},
+		DailyLimits:                     []conf.DailyLimit{{ApplicationId: 1, RequestsPerDay: 100}},
+		Throttling:                      []conf.Throttling{{ApplicationId: 1, RequestsPerSeconds: 100}},
+		EnableClientRequestIdForwarding: true,
 	}
 
 	systemService, systemCli := grpct.NewMock(test)

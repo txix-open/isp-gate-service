@@ -3,28 +3,35 @@ package middleware
 import (
 	"strings"
 
+	"isp-gate-service/request"
+
 	"github.com/integration-system/isp-kit/log"
 	"github.com/integration-system/isp-kit/requestid"
-	"isp-gate-service/request"
 )
 
 const (
 	requestIdHeader = "x-request-id"
 )
 
-func RequestId() Middleware {
+func RequestId(forwardClientRequestId bool) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
-			requestId := strings.TrimSpace(ctx.Request().Header.Get(requestIdHeader))
-			if requestId == "" {
-				requestId = requestid.Next()
+			requestId := requestid.Next()
+			clientRequestId := strings.TrimSpace(ctx.Request().Header.Get(requestIdHeader))
+
+			logFields := make([]log.Field, 0)
+			if clientRequestId != "" {
+				logFields = append(logFields, log.String("clientRequestId", clientRequestId))
+				if forwardClientRequestId {
+					requestId = clientRequestId
+				}
 			}
+			logFields = append(logFields, log.String("requestId", requestId))
 
 			context := requestid.ToContext(ctx.Context(), requestId)
-			context = log.ToContext(context, log.String("requestId", requestId))
+			context = log.ToContext(context, logFields...)
 
 			ctx.SetContext(context)
-
 			return next.Handle(ctx)
 		})
 	}
