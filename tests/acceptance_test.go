@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"testing"
+	"time"
 
 	"isp-gate-service/assembly"
 	"isp-gate-service/conf"
@@ -189,7 +190,9 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	}.Encode()
 	err = cli.Dial(context.Background(), requestUrl.String())
 	require.NoError(err)
-	resp, err := cli.EmitWithAck(context.Background(), "hello", []byte("data"))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+	resp, err := cli.EmitWithAck(ctx, "hello", []byte("data"))
 	require.NoError(err)
 	require.EqualValues("world", string(resp))
 	err = cli.Close()
