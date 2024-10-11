@@ -14,23 +14,23 @@ import (
 	"isp-gate-service/domain"
 	"isp-gate-service/routes"
 
-	etp "github.com/integration-system/isp-etp-go/v2"
-	etpcli "github.com/integration-system/isp-etp-go/v2/client"
-	"github.com/integration-system/isp-kit/cluster"
-	"github.com/integration-system/isp-kit/http/httpcli"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
+	etp "github.com/txix-open/etp/v3"
+	"github.com/txix-open/etp/v3/msg"
+	"github.com/txix-open/isp-kit/cluster"
+	"github.com/txix-open/isp-kit/http/httpcli"
 
 	"github.com/google/uuid"
-	"github.com/integration-system/isp-kit/grpc"
-	"github.com/integration-system/isp-kit/grpc/client"
-	"github.com/integration-system/isp-kit/lb"
-	"github.com/integration-system/isp-kit/log"
-	"github.com/integration-system/isp-kit/requestid"
-	"github.com/integration-system/isp-kit/test"
-	"github.com/integration-system/isp-kit/test/grpct"
-	"github.com/integration-system/isp-kit/test/httpt"
 	"github.com/stretchr/testify/suite"
+	"github.com/txix-open/isp-kit/grpc"
+	"github.com/txix-open/isp-kit/grpc/client"
+	"github.com/txix-open/isp-kit/lb"
+	"github.com/txix-open/isp-kit/log"
+	"github.com/txix-open/isp-kit/requestid"
+	"github.com/txix-open/isp-kit/test"
+	"github.com/txix-open/isp-kit/test/grpct"
+	"github.com/txix-open/isp-kit/test/httpt"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -148,20 +148,16 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	config, redisCli, systemCli, adminCli := s.commonDependencies(test)
 
 	requestId := requestid.Next()
-	wsServer := etp.NewServer(context.Background(), etp.ServerConfig{
-		ConnectionReadLimit: 2048,
-		InsecureSkipVerify:  true,
+	wsServer := etp.NewServer(etp.WithServerReadLimit(2048))
+	wsServer.On("hello", wsEventHandlerMock{
+		requestId: requestId,
+		require:   require,
+		t:         test.T(),
 	})
-	wsServer.OnWithAck("hello", func(conn etp.Conn, data []byte) []byte {
-		headers := conn.RemoteHeader()
-		ctx := requestid.ToContext(context.Background(), headers.Get("x-request-id"))
-		assertHeaders(require, requestId, ctx, headers)
-		require.EqualValues("data", string(data))
-		return []byte("world")
-	})
+
 	wsMux := http.NewServeMux()
 	wsMux.Handle("/service", http.HandlerFunc(func(writer http.ResponseWriter, r *http.Request) {
-		wsServer.ServeHttp(writer, r)
+		wsServer.ServeHTTP(writer, r)
 	}))
 	targetService := httptest.NewServer(wsMux)
 	targetUrl, err := url.Parse(targetService.URL)
@@ -179,12 +175,11 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	require.NoError(err)
 	srv := httptest.NewServer(handler)
 
-	cli := etpcli.NewClient(etpcli.Config{
-		HttpHeaders: map[string][]string{
+	cli := etp.NewClient(etp.WithClientDialOptions(&etp.DialOptions{
+		HTTPHeader: map[string][]string{
 			"x-request-id": {requestId},
 		},
-	})
-
+	}))
 	requestUrl, err := url.Parse(srv.URL)
 	require.NoError(err)
 	requestUrl.Path = "ws/service"
@@ -199,6 +194,20 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	require.EqualValues("world", string(resp))
 	err = cli.Close()
 	require.NoError(err)
+}
+
+type wsEventHandlerMock struct {
+	requestId string
+	require   *require.Assertions
+	t         require.TestingT
+}
+
+func (s wsEventHandlerMock) Handle(_ context.Context, conn *etp.Conn, event msg.Event) []byte {
+	headers := conn.HttpRequest().Header
+	ctx := requestid.ToContext(context.Background(), headers.Get("x-request-id"))
+	assertHeaders(s.require, s.requestId, ctx, headers)
+	require.EqualValues(s.t, "data", event.Data)
+	return []byte("world")
 }
 
 func (s *HappyPathTestSuite) TestAdminAuthorization() {

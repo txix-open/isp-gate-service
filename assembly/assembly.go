@@ -7,14 +7,14 @@ import (
 	"isp-gate-service/conf"
 	"isp-gate-service/routes"
 
-	"github.com/integration-system/isp-kit/app"
-	"github.com/integration-system/isp-kit/bootstrap"
-	"github.com/integration-system/isp-kit/cluster"
-	"github.com/integration-system/isp-kit/grpc/client"
-	"github.com/integration-system/isp-kit/http"
-	"github.com/integration-system/isp-kit/lb"
-	"github.com/integration-system/isp-kit/log"
 	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/app"
+	"github.com/txix-open/isp-kit/bootstrap"
+	"github.com/txix-open/isp-kit/cluster"
+	"github.com/txix-open/isp-kit/grpc/client"
+	"github.com/txix-open/isp-kit/http"
+	"github.com/txix-open/isp-kit/lb"
+	"github.com/txix-open/isp-kit/log"
 )
 
 type Assembly struct {

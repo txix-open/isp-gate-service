@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/integration-system/isp-kit/log"
 	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/log"
 	"isp-gate-service/request"
 )
 

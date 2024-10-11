@@ -11,12 +11,12 @@ import (
 	"isp-gate-service/httperrors"
 	"isp-gate-service/request"
 
-	"github.com/integration-system/isp-kit/grpc"
-	"github.com/integration-system/isp-kit/grpc/client"
-	"github.com/integration-system/isp-kit/grpc/isp"
-	"github.com/integration-system/isp-kit/json"
-	"github.com/integration-system/isp-kit/requestid"
 	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/grpc"
+	"github.com/txix-open/isp-kit/grpc/client"
+	"github.com/txix-open/isp-kit/grpc/isp"
+	"github.com/txix-open/isp-kit/json"
+	"github.com/txix-open/isp-kit/requestid"
 	_ "google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -70,7 +70,7 @@ func (p Grpc) Handle(ctx *request.Context) error {
 
 	md := metadata.MD{
 		grpc.ProxyMethodNameHeader: {ctx.Endpoint()},
-		grpc.RequestIdHeader:       {requestid.FromContext(ctx.Context())},
+		requestid.RequestIdHeader:  {requestid.FromContext(ctx.Context())},
 	}
 	if !p.skipAuth {
 		authData, err := ctx.GetAuthData()

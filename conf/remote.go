@@ -4,10 +4,10 @@ package conf
 import (
 	"reflect"
 
-	"github.com/integration-system/isp-kit/log"
-	"github.com/integration-system/isp-kit/rc/schema"
-	"github.com/integration-system/jsonschema"
 	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/log"
+	"github.com/txix-open/isp-kit/rc/schema"
+	"github.com/txix-open/jsonschema"
 )
 
 func init() {

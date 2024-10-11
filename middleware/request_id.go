@@ -5,8 +5,8 @@ import (
 
 	"isp-gate-service/request"
 
-	"github.com/integration-system/isp-kit/log"
-	"github.com/integration-system/isp-kit/requestid"
+	"github.com/txix-open/isp-kit/log"
+	"github.com/txix-open/isp-kit/requestid"
 )
 
 const (

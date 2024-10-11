@@ -3,7 +3,7 @@ package routes
 import (
 	"context"
 
-	"github.com/integration-system/isp-kit/cluster"
+	"github.com/txix-open/isp-kit/cluster"
 )
 
 type Routes struct {

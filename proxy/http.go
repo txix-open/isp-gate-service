@@ -12,9 +12,9 @@ import (
 	"isp-gate-service/httperrors"
 	"isp-gate-service/request"
 
-	"github.com/integration-system/isp-kit/grpc"
-	"github.com/integration-system/isp-kit/requestid"
 	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/grpc"
+	"github.com/txix-open/isp-kit/requestid"
 	"golang.org/x/net/context"
 )
 
@@ -91,7 +91,7 @@ func (p Http) Handle(ctx *request.Context) error {
 }
 
 func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) error {
-	header.Set(grpc.RequestIdHeader, requestid.FromContext(ctx.Context()))
+	header.Set(requestid.RequestIdHeader, requestid.FromContext(ctx.Context()))
 	if !skipAuth {
 		authData, err := ctx.GetAuthData()
 		if err != nil {

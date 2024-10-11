@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/integration-system/isp-kit/json"
 	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/json"
 	"isp-gate-service/cache"
 	"isp-gate-service/domain"
 )

@@ -14,10 +14,10 @@ import (
 	mux2 "github.com/gorilla/mux"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/integration-system/isp-kit/grpc/client"
-	"github.com/integration-system/isp-kit/lb"
-	"github.com/integration-system/isp-kit/log"
 	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/grpc/client"
+	"github.com/txix-open/isp-kit/lb"
+	"github.com/txix-open/isp-kit/log"
 )
 
 type Locator struct {
