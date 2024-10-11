@@ -3,7 +3,7 @@ package httperrors
 import (
 	"net/http"
 
-	"github.com/integration-system/isp-kit/json"
+	"github.com/txix-open/isp-kit/json"
 )
 
 type HttpError struct {

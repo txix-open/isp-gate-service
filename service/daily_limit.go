@@ -29,7 +29,7 @@ func NewDailyLimit(repo DailyLimitRepo, configs []conf.DailyLimit) DailyLimit {
 }
 
 func (s DailyLimit) IncrementAndCheck(ctx context.Context, applicationId int) (bool, error) {
-	max, ok := s.limits[applicationId]
+	limit, ok := s.limits[applicationId]
 	if !ok {
 		return true, nil
 	}
@@ -39,5 +39,5 @@ func (s DailyLimit) IncrementAndCheck(ctx context.Context, applicationId int) (b
 		return false, errors.WithMessage(err, "increment")
 	}
 
-	return newValue <= max, nil
+	return newValue <= limit, nil
 }
