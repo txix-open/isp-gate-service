@@ -4,8 +4,8 @@ package repository
 import (
 	"context"
 
-	"github.com/integration-system/isp-kit/grpc/client"
 	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/grpc/client"
 	"isp-gate-service/domain"
 )
 

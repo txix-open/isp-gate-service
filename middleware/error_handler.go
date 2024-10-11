@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/integration-system/isp-kit/log"
+	"github.com/txix-open/isp-kit/log"
 	"isp-gate-service/httperrors"
 	"isp-gate-service/request"
 )

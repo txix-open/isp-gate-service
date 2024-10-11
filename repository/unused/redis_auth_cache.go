@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/integration-system/isp-kit/json"
+	"isp-gate-service/domain"
+
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
-	"isp-gate-service/domain"
+	"github.com/txix-open/isp-kit/json"
 )
 
 type RedisAuthCache struct {

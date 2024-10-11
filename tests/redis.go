@@ -3,8 +3,8 @@ package tests
 import (
 	"fmt"
 
-	"github.com/integration-system/isp-kit/test"
 	"github.com/redis/go-redis/v9"
+	"github.com/txix-open/isp-kit/test"
 )
 
 type Redis struct {

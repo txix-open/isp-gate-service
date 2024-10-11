@@ -6,8 +6,8 @@ import (
 
 	"isp-gate-service/domain"
 
-	"github.com/integration-system/isp-kit/grpc/client"
 	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/grpc/client"
 )
 
 const (

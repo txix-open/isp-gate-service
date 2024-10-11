@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	mux2 "github.com/gorilla/mux"
-	"github.com/redis/go-redis/v9"
 	"isp-gate-service/conf"
 	"isp-gate-service/middleware"
 	"isp-gate-service/proxy"
@@ -13,10 +11,13 @@ import (
 	"isp-gate-service/routes"
 	"isp-gate-service/service"
 
-	"github.com/integration-system/isp-kit/grpc/client"
-	"github.com/integration-system/isp-kit/lb"
-	"github.com/integration-system/isp-kit/log"
+	mux2 "github.com/gorilla/mux"
+	"github.com/redis/go-redis/v9"
+
 	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/grpc/client"
+	"github.com/txix-open/isp-kit/lb"
+	"github.com/txix-open/isp-kit/log"
 )
 
 type Locator struct {
@@ -91,7 +92,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 
 		handler := middleware.Chain(
 			proxyFunc,
-			middleware.RequestId(),
+			middleware.RequestId(config.EnableClientRequestIdForwarding),
 			middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog,
 				config.Logging.SkipBodyLoggingEndpointPrefixes),
 			middleware.ErrorHandler(l.logger),
@@ -105,7 +106,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 		if location.SkipAuth {
 			handler = middleware.Chain(
 				proxyFunc,
-				middleware.RequestId(),
+				middleware.RequestId(config.EnableClientRequestIdForwarding),
 				middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog,
 					config.Logging.SkipBodyLoggingEndpointPrefixes),
 				middleware.ErrorHandler(l.logger),
