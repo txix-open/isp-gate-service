@@ -70,7 +70,7 @@ func (p Grpc) Handle(ctx *request.Context) error {
 
 	md := metadata.MD{
 		grpc.ProxyMethodNameHeader: {ctx.Endpoint()},
-		requestid.RequestIdHeader:  {requestid.FromContext(ctx.Context())},
+		requestid.Header:           {requestid.FromContext(ctx.Context())},
 	}
 	if !p.skipAuth {
 		authData, err := ctx.GetAuthData()

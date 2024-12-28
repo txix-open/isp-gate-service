@@ -91,7 +91,7 @@ func (p Http) Handle(ctx *request.Context) error {
 }
 
 func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) error {
-	header.Set(requestid.RequestIdHeader, requestid.FromContext(ctx.Context()))
+	header.Set(requestid.Header, requestid.FromContext(ctx.Context()))
 	if !skipAuth {
 		authData, err := ctx.GetAuthData()
 		if err != nil {
