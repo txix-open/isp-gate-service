@@ -108,8 +108,10 @@ func Logger(
 				log.Int("statusCode", scSrc.StatusCode()),
 				log.String("path", originalPath),
 				log.String("endpoint", ctx.Endpoint()),
-				log.Int("applicationId", authData.ApplicationId),
 				log.Int("adminId", ctx.AdminId()),
+			}
+			if authData.ApplicationId != 0 {
+				fields = append(fields, log.Int("applicationId", authData.ApplicationId))
 			}
 
 			if logBodyFromCurrentRequest {
