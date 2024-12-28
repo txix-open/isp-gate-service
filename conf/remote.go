@@ -37,6 +37,7 @@ type Logging struct {
 	RequestLogEnable                bool      `schema:"Включить логирование запросов"`
 	BodyLogEnable                   bool      `schema:"Включить логирование тел запросов и ответов,должно быть включено логирование запросов"`
 	SkipBodyLoggingEndpointPrefixes []string  `schema:"регулярные выражения для отключения логирования"`
+	DisableBodyLogForZeroAppId      bool      `schema:"отключить логирование тела запроса и ответа с applicationId=0"`
 }
 
 type Caching struct {

@@ -43,10 +43,12 @@ func (w *writerWrapper) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
+// nolint:gocognit
 func Logger(
 	logger log.Logger,
 	enableRequestLogging bool,
 	enableBodyLogging bool,
+	disableZeroAppIdBodyLogging bool,
 	skipBodyLoggingEndpointPrefixes []string,
 ) Middleware {
 	return func(next Handler) Handler {
@@ -57,19 +59,23 @@ func Logger(
 
 			r := ctx.Request()
 
-			logBodyFromCurrenRequest := enableBodyLogging
-			if logBodyFromCurrenRequest {
+			logBodyFromCurrentRequest := enableBodyLogging
+			if logBodyFromCurrentRequest {
 				for _, prefix := range skipBodyLoggingEndpointPrefixes {
 					if strings.HasPrefix(ctx.Endpoint(), prefix) {
-						logBodyFromCurrenRequest = false
+						logBodyFromCurrentRequest = false
 						break
 					}
 				}
 			}
+			authData, _ := ctx.GetAuthData()
+			if authData.ApplicationId == 0 && disableZeroAppIdBodyLogging {
+				logBodyFromCurrentRequest = false
+			}
 
 			var scSrc scSource
 			var buf *buffer.Buffer
-			if logBodyFromCurrenRequest {
+			if logBodyFromCurrentRequest {
 				buf = buffer.Acquire(ctx.ResponseWriter())
 				defer buffer.Release(buf)
 
@@ -95,7 +101,6 @@ func Logger(
 			// can be changed in http proxy
 			err := next.Handle(ctx)
 
-			authData, _ := ctx.GetAuthData()
 			fields := []log.Field{
 				log.String("httpMethod", r.Method),
 				log.String("remoteAddr", r.RemoteAddr),
@@ -107,7 +112,7 @@ func Logger(
 				log.Int("adminId", ctx.AdminId()),
 			}
 
-			if logBodyFromCurrenRequest {
+			if logBodyFromCurrentRequest {
 				fields = append(fields,
 					log.ByteString("request", buf.RequestBody()),
 					log.ByteString("response", buf.ResponseBody()),

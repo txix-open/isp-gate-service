@@ -89,12 +89,12 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 		default:
 			return nil, errors.Errorf("not supported protocol %s", location.Protocol)
 		}
-
+		disableBodyLogForZeroAppId := !config.Logging.DisableBodyLogForZeroAppId
 		handler := middleware.Chain(
 			proxyFunc,
 			middleware.RequestId(config.EnableClientRequestIdForwarding),
 			middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog,
-				config.Logging.SkipBodyLoggingEndpointPrefixes),
+				disableBodyLogForZeroAppId, config.Logging.SkipBodyLoggingEndpointPrefixes),
 			middleware.ErrorHandler(l.logger),
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
@@ -108,7 +108,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 				proxyFunc,
 				middleware.RequestId(config.EnableClientRequestIdForwarding),
 				middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog,
-					config.Logging.SkipBodyLoggingEndpointPrefixes),
+					disableBodyLogForZeroAppId, config.Logging.SkipBodyLoggingEndpointPrefixes),
 				middleware.ErrorHandler(l.logger),
 			)
 		}
