@@ -33,7 +33,7 @@ func (r RedisAuthzCache) Get(ctx context.Context, applicationId int, endpoint st
 		return false, errors.WithMessage(err, "pipelined")
 	}
 
-	_, err = result[1].(*redis.StringCmd).Result()
+	_, err = result[1].(*redis.StringCmd).Result() // nolint: forcetypeassert
 	if errors.Is(err, redis.Nil) {
 		return false, nil
 	}
