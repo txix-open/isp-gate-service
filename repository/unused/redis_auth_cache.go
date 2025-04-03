@@ -35,7 +35,7 @@ func (r RedisAuthCache) Get(ctx context.Context, token string) (*domain.AuthData
 		return nil, errors.WithMessage(err, "pipelined")
 	}
 
-	data, err := results[1].(*redis.StringCmd).Result()
+	data, err := results[1].(*redis.StringCmd).Result() // nolint: forcetypeassert
 	if errors.Is(err, redis.Nil) {
 		return nil, domain.ErrAuthenticationCacheMiss
 	}
