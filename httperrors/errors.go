@@ -6,6 +6,7 @@ import (
 	"github.com/txix-open/isp-kit/json"
 )
 
+// nolint: recvcheck
 type HttpError struct {
 	statusCode  int
 	userMessage string
