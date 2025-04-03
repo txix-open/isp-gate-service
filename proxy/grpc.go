@@ -68,10 +68,12 @@ func (p Grpc) Handle(ctx *request.Context) error {
 		return errors.WithMessage(err, "grpc: read body")
 	}
 
+	requestId := requestid.FromContext(ctx.Context())
 	md := metadata.MD{
 		grpc.ProxyMethodNameHeader: {ctx.Endpoint()},
-		requestid.Header:           {requestid.FromContext(ctx.Context())},
+		requestid.Header:           {requestId},
 	}
+
 	if !p.skipAuth {
 		authData, err := ctx.GetAuthData()
 		if err != nil {
@@ -93,13 +95,13 @@ func (p Grpc) Handle(ctx *request.Context) error {
 		Body: &isp.Message_BytesBody{BytesBody: body},
 	})
 	if err != nil {
-		return p.handleError(err, ctx.ResponseWriter())
+		return p.handleError(err, requestId, ctx.ResponseWriter())
 	}
 
-	return p.writeResponse(http.StatusOK, result.GetBytesBody(), ctx.ResponseWriter())
+	return p.writeResponse(http.StatusOK, result.GetBytesBody(), requestid.FromContext(ctx.Context()), ctx.ResponseWriter())
 }
 
-func (p Grpc) handleError(err error, w http.ResponseWriter) error {
+func (p Grpc) handleError(err error, requestId string, w http.ResponseWriter) error {
 	status, ok := status.FromError(err)
 	if !ok {
 		return httperrors.New(
@@ -115,14 +117,13 @@ func (p Grpc) handleError(err error, w http.ResponseWriter) error {
 		case *isp.Message:
 			switch {
 			case typeOfDetail.GetBytesBody() != nil:
-				return p.writeResponse(statusCode, typeOfDetail.GetBytesBody(), w)
 			case typeOfDetail.GetListBody() != nil:
-				return p.writeProto(statusCode, typeOfDetail.GetListBody(), w)
+				return p.writeProto(statusCode, typeOfDetail.GetListBody(), requestId, w)
 			case typeOfDetail.GetStructBody() != nil:
-				return p.writeProto(statusCode, typeOfDetail.GetStructBody(), w)
+				return p.writeProto(statusCode, typeOfDetail.GetStructBody(), requestId, w)
 			}
 		default:
-			return p.writeProto(statusCode, typeOfDetail, w)
+			return p.writeProto(statusCode, typeOfDetail, requestId, w)
 		}
 	}
 
@@ -133,16 +134,17 @@ func (p Grpc) handleError(err error, w http.ResponseWriter) error {
 	)
 }
 
-func (p Grpc) writeProto(statusCode int, proto interface{}, w http.ResponseWriter) error {
+func (p Grpc) writeProto(statusCode int, proto interface{}, requestId string, w http.ResponseWriter) error {
 	data, err := json.Marshal(proto)
 	if err != nil {
 		return errors.WithMessage(err, "marshal grpc details to json")
 	}
-	return p.writeResponse(statusCode, data, w)
+	return p.writeResponse(statusCode, data, requestId, w)
 }
 
-func (p Grpc) writeResponse(statusCode int, data []byte, w http.ResponseWriter) error {
+func (p Grpc) writeResponse(statusCode int, data []byte, requestId string, w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set(requestid.Header, requestId)
 	w.WriteHeader(statusCode)
 	_, err := w.Write(data)
 	if err != nil {
