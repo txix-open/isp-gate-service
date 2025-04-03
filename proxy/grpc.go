@@ -117,6 +117,7 @@ func (p Grpc) handleError(err error, w http.ResponseWriter) error {
 		case *isp.Message:
 			switch {
 			case typeOfDetail.GetBytesBody() != nil:
+				return p.writeResponse(statusCode, typeOfDetail.GetBytesBody(), "", w)
 			case typeOfDetail.GetListBody() != nil:
 				return p.writeProto(statusCode, typeOfDetail.GetListBody(), w)
 			case typeOfDetail.GetStructBody() != nil:
