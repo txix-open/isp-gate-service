@@ -6,27 +6,26 @@ import (
 	"github.com/txix-open/isp-kit/json"
 )
 
-// nolint: recvcheck
 type HttpError struct {
 	statusCode  int
 	userMessage string
-	details     []interface{}
+	details     []any
 	err         error
 }
 
-func New(statusCode int, userMessage string, internalError error) HttpError {
-	return HttpError{
+func New(statusCode int, userMessage string, internalError error) *HttpError {
+	return &HttpError{
 		statusCode:  statusCode,
 		userMessage: userMessage,
 		err:         internalError,
 	}
 }
 
-func (e HttpError) Error() string {
+func (e *HttpError) Error() string {
 	return e.err.Error()
 }
 
-func (e HttpError) WriteError(w http.ResponseWriter) error {
+func (e *HttpError) WriteError(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(e.statusCode)
 	data := map[string]interface{}{
@@ -37,6 +36,6 @@ func (e HttpError) WriteError(w http.ResponseWriter) error {
 	return json.NewEncoder(w).Encode(data)
 }
 
-func (e *HttpError) WithDetails(details ...interface{}) {
+func (e *HttpError) WithDetails(details ...any) {
 	e.details = details
 }
