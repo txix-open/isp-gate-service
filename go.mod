@@ -11,7 +11,7 @@ require (
 	github.com/redis/go-redis/v9 v9.7.3
 	github.com/stretchr/testify v1.10.0
 	github.com/tomakado/websocketproxy v0.1.0
-	github.com/txix-open/isp-kit v1.46.0
+	github.com/txix-open/isp-kit v1.47.0
 	github.com/txix-open/jsonschema v1.2.0
 	golang.org/x/net v0.39.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250421163800-61c742ae3ef0
