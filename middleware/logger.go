@@ -44,21 +44,6 @@ func (w *writerWrapper) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
-func forceUnescapingUnicode(data []byte) []byte {
-	var body any
-	err := json.Unmarshal(data, &body)
-	if err != nil {
-		return data
-	}
-
-	newData, err := json.Marshal(body)
-	if err != nil {
-		return data
-	}
-
-	return newData
-}
-
 func Logger( // nolint:gocognit
 	logger log.Logger,
 	enableRequestLogging bool,
@@ -138,4 +123,19 @@ func Logger( // nolint:gocognit
 			return err
 		})
 	}
+}
+
+func forceUnescapingUnicode(data []byte) []byte {
+	var body any
+	err := json.Unmarshal(data, &body)
+	if err != nil {
+		return data
+	}
+
+	newData, err := json.Marshal(body)
+	if err != nil {
+		return data
+	}
+
+	return newData
 }
