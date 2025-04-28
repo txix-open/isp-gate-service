@@ -125,7 +125,7 @@ func Logger( // nolint:gocognit
 			}
 
 			if logBodyFromCurrenRequest {
-				if enableForceUnescapingUnicode && strings.Contains(string(buf.RequestBody()), "\\u") {
+				if enableForceUnescapingUnicode && bytes.Contains(buf.RequestBody(), []byte("\\u")) {
 					fields = append(fields, log.ByteString("request", forceUnescapingUnicode(buf.RequestBody())))
 				} else {
 					fields = append(fields, log.ByteString("request", buf.RequestBody()))
