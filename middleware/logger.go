@@ -15,6 +15,10 @@ import (
 	"isp-gate-service/request"
 )
 
+var (
+	unicodeEscapePrefix = []byte("\\u") // nolint:gochecknoglobals
+)
+
 type scSource interface {
 	StatusCode() int
 }
@@ -110,7 +114,7 @@ func Logger( // nolint:gocognit
 			}
 
 			if logBodyFromCurrenRequest {
-				if enableForceUnescapingUnicode && bytes.Contains(buf.RequestBody(), []byte("\\u")) {
+				if enableForceUnescapingUnicode && bytes.Contains(buf.RequestBody(), unicodeEscapePrefix) {
 					fields = append(fields, log.ByteString("request", forceUnescapingUnicode(buf.RequestBody())))
 				} else {
 					fields = append(fields, log.ByteString("request", buf.RequestBody()))
