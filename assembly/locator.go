@@ -47,7 +47,7 @@ func NewLocator(
 	}
 }
 
-func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli redis.UniversalClient) (http.Handler, error) {
+func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli redis.UniversalClient) (http.Handler, error) { // nolint:funlen
 	systemRepo := repository.NewSystem(l.systemCli)
 	adminRepo := repository.NewAdmin(l.adminCli)
 
@@ -93,8 +93,12 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 		handler := middleware.Chain(
 			proxyFunc,
 			middleware.RequestId(config.EnableClientRequestIdForwarding),
-			middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog,
-				config.Logging.SkipBodyLoggingEndpointPrefixes),
+			middleware.Logger(
+				l.logger, config.Logging.RequestLogEnable,
+				enableBodyLog,
+				config.Logging.SkipBodyLoggingEndpointPrefixes,
+				config.Logging.EnableForceUnescapingUnicode,
+			),
 			middleware.ErrorHandler(l.logger),
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
@@ -107,8 +111,11 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 			handler = middleware.Chain(
 				proxyFunc,
 				middleware.RequestId(config.EnableClientRequestIdForwarding),
-				middleware.Logger(l.logger, config.Logging.RequestLogEnable, enableBodyLog,
-					config.Logging.SkipBodyLoggingEndpointPrefixes),
+				middleware.Logger(l.logger, config.Logging.RequestLogEnable,
+					enableBodyLog,
+					config.Logging.SkipBodyLoggingEndpointPrefixes,
+					config.Logging.EnableForceUnescapingUnicode,
+				),
 				middleware.ErrorHandler(l.logger),
 			)
 		}
