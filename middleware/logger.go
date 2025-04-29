@@ -3,6 +3,7 @@ package middleware
 import (
 	"bufio"
 	"bytes"
+	"github.com/txix-open/isp-kit/json"
 	"io"
 	"net"
 	"net/http"
@@ -12,6 +13,10 @@ import (
 	"github.com/txix-open/isp-kit/http/endpoint/buffer"
 	"github.com/txix-open/isp-kit/log"
 	"isp-gate-service/request"
+)
+
+var (
+	unicodeEscapePrefix = []byte("\\u") // nolint:gochecknoglobals
 )
 
 type scSource interface {
@@ -43,11 +48,12 @@ func (w *writerWrapper) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
-func Logger(
+func Logger( // nolint:gocognit
 	logger log.Logger,
 	enableRequestLogging bool,
 	enableBodyLogging bool,
 	skipBodyLoggingEndpointPrefixes []string,
+	enableForceUnescapingUnicode bool,
 ) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
@@ -108,14 +114,32 @@ func Logger(
 			}
 
 			if logBodyFromCurrenRequest {
-				fields = append(fields,
-					log.ByteString("request", buf.RequestBody()),
-					log.ByteString("response", buf.ResponseBody()),
-				)
+				if enableForceUnescapingUnicode && bytes.Contains(buf.RequestBody(), unicodeEscapePrefix) {
+					fields = append(fields, log.ByteString("request", forceUnescapingUnicode(buf.RequestBody())))
+				} else {
+					fields = append(fields, log.ByteString("request", buf.RequestBody()))
+				}
+
+				fields = append(fields, log.ByteString("response", buf.ResponseBody()))
 			}
 			logger.Debug(ctx.Context(), "log request", fields...)
 
 			return err
 		})
 	}
+}
+
+func forceUnescapingUnicode(data []byte) []byte {
+	var body any
+	err := json.Unmarshal(data, &body)
+	if err != nil {
+		return data
+	}
+
+	newData, err := json.Marshal(body)
+	if err != nil {
+		return data
+	}
+
+	return newData
 }
