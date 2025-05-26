@@ -126,7 +126,6 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 			middleware.EntryPointConfig{
 				WithPrefix: location.WithPrefix,
 				PathPrefix: location.PathPrefix,
-				IsGrpcPath: location.Protocol == "grpc",
 			},
 		)
 		mux.PathPrefix(location.PathPrefix).Handler(entrypoint)
