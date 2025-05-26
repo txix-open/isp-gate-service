@@ -2,6 +2,7 @@ package routes
 
 import (
 	"context"
+	"strings"
 
 	"github.com/txix-open/isp-kit/cluster"
 )
@@ -40,10 +41,21 @@ func (s *Routes) ReceiveRoutes(ctx context.Context, routes cluster.RoutingConfig
 }
 
 func (s *Routes) IsInnerEndpoint(path string) bool {
-	return s.innerEndpoints[path]
+	return s.innerEndpoints[path] || s.innerEndpoints[invertLeadingSlash(path)]
 }
 
 func (s *Routes) RequiredAdminPermission(path string) (string, bool) {
 	perm, ok := s.requiredPermissions[path]
+	if !ok {
+		perm, ok = s.requiredPermissions[invertLeadingSlash(path)]
+	}
 	return perm, ok
+}
+
+func invertLeadingSlash(path string) string {
+	path, withoutSlash := strings.CutPrefix(path, "/")
+	if withoutSlash {
+		return path
+	}
+	return "/" + path
 }
