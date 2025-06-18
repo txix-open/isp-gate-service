@@ -4,7 +4,6 @@ package conf
 import (
 	"reflect"
 
-	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/log"
 	"github.com/txix-open/isp-kit/rc/schema"
 	"github.com/txix-open/jsonschema"
@@ -18,7 +17,6 @@ func init() {
 }
 
 type Remote struct {
-	Redis                           *Redis       `schema:"Настройки Redis,обязательно, если используется механизм суточных ограничений или ограничений пропускной способности"`
 	Http                            Http         `schema:"Настройки HTTP"`
 	Logging                         Logging      `schema:"Настройки логирования"`
 	Caching                         Caching      `schema:"Настройки кеширования"`
@@ -53,28 +51,4 @@ type DailyLimit struct {
 type Throttling struct {
 	ApplicationId      int `validate:"required" schema:"ID приложения"`
 	RequestsPerSeconds int `validate:"required,min=1,max=1000" schema:"Запросов в секунду,не конфликтует с суточными ограничениями, алгоритм не работает на значениях больше 1000"`
-}
-
-type Redis struct {
-	Address  string         `schema:"Адрес,обязателено, если sentinel не указан"`
-	Username string         `schema:"Имя пользовтаеля"`
-	Password string         `schema:"Пароль"`
-	Sentinel *RedisSentinel `schema:"Настройки sentinel,обязательно, если address не указан"`
-}
-
-type RedisSentinel struct {
-	Addresses  []string `validate:"required" schema:"Адреса нод в кластере"`
-	MasterName string   `validate:"required" schema:"Имя мастера"`
-	Username   string   `schema:"Имя пользовтаеля в sentinel"`
-	Password   string   `schema:"Пароль в sentinel"`
-}
-
-func (r Remote) Validate() error {
-	if (len(r.Throttling) > 0 || len(r.DailyLimits) > 0) && r.Redis == nil {
-		return errors.New("redis is required if dailyLimits or throttling were specified")
-	}
-	if r.Redis != nil && r.Redis.Sentinel == nil && r.Redis.Address == "" {
-		return errors.New("invalid redis config. sentinel or address are required")
-	}
-	return nil
 }

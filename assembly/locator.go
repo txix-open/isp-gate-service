@@ -12,8 +12,6 @@ import (
 	"isp-gate-service/service"
 
 	mux2 "github.com/gorilla/mux"
-	"github.com/redis/go-redis/v9"
-
 	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/grpc/client"
 	"github.com/txix-open/isp-kit/lb"
@@ -27,6 +25,7 @@ type Locator struct {
 	routes                      *routes.Routes
 	systemCli                   *client.Client
 	adminCli                    *client.Client
+	lockerCli                   *client.Client
 }
 
 func NewLocator(
@@ -36,6 +35,7 @@ func NewLocator(
 	routes *routes.Routes,
 	systemCli *client.Client,
 	adminCli *client.Client,
+	lockerCli *client.Client,
 ) Locator {
 	return Locator{
 		logger:                      logger,
@@ -44,10 +44,11 @@ func NewLocator(
 		routes:                      routes,
 		systemCli:                   systemCli,
 		adminCli:                    adminCli,
+		lockerCli:                   lockerCli,
 	}
 }
 
-func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli redis.UniversalClient) (http.Handler, error) { // nolint:funlen
+func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Handler, error) { // nolint:funlen
 	systemRepo := repository.NewSystem(l.systemCli)
 	adminRepo := repository.NewAdmin(l.adminCli)
 
@@ -64,11 +65,9 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 		systemRepo,
 	)
 
-	dailyLimitRepo := repository.NewDailyLimit(redisCli)
-	dailyLimitService := service.NewDailyLimit(dailyLimitRepo, config.DailyLimits)
-
-	throttlingRepo := repository.NewThrottling(redisCli)
-	throttlingService := service.NewThrottling(throttlingRepo, config.Throttling)
+	lockRepo := repository.NewLocker(l.lockerCli)
+	dailyLimitService := service.NewDailyLimit(lockRepo, config.DailyLimits)
+	throttlingService := service.NewThrottling(lockRepo, config.Throttling)
 
 	mux := mux2.NewRouter()
 	for _, location := range locations {

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -9,7 +10,7 @@ import (
 )
 
 type DailyLimitRepo interface {
-	Increment(ctx context.Context, applicationId int, today time.Time) (int64, error)
+	Increment(ctx context.Context, key string, today time.Time) (int64, error)
 }
 
 type DailyLimit struct {
@@ -34,10 +35,16 @@ func (s DailyLimit) IncrementAndCheck(ctx context.Context, applicationId int) (b
 		return true, nil
 	}
 
-	newValue, err := s.repo.Increment(ctx, applicationId, time.Now())
+	key := s.key(applicationId, time.Now())
+	newValue, err := s.repo.Increment(ctx, key, time.Now())
 	if err != nil {
 		return false, errors.WithMessage(err, "increment")
 	}
 
 	return newValue <= limit, nil
+}
+
+func (s DailyLimit) key(applicationId int, today time.Time) string {
+	y, m, d := today.Date()
+	return fmt.Sprintf("isp-gate-service::daily-limit::%d:%d-%d-%d", applicationId, y, m, d)
 }

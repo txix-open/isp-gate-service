@@ -15,9 +15,8 @@ import (
 	"isp-gate-service/domain"
 	"isp-gate-service/routes"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
-	etp "github.com/txix-open/etp/v3"
+	"github.com/txix-open/etp/v3"
 	"github.com/txix-open/etp/v3/msg"
 	"github.com/txix-open/isp-kit/cluster"
 	"github.com/txix-open/isp-kit/http/httpcli"
@@ -49,7 +48,7 @@ type HappyPathTestSuite struct {
 
 func (s *HappyPathTestSuite) TestGrpcProxy() {
 	test, require := test.New(s.T())
-	config, redisCli, systemCli, adminCli := s.commonDependencies(test)
+	config, systemCli, adminCli := s.commonDependencies(test)
 
 	requestId := requestid.Next()
 	targetService, targetCli := grpct.NewMock(test)
@@ -77,7 +76,7 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 	targetClients := map[string]*client.Client{"target": targetCli}
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
 	require.NoError(err)
-	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(), systemCli, adminCli)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(), systemCli, adminCli, nil)
 
 	locations := []conf.Location{{
 		SkipAuth:     false,
@@ -85,7 +84,7 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 		Protocol:     "grpc",
 		TargetModule: "target",
 	}}
-	handler, err := locator.Handler(config, locations, redisCli)
+	handler, err := locator.Handler(config, locations)
 	require.NoError(err)
 
 	srv := httptest.NewServer(handler)
@@ -106,7 +105,7 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 
 func (s *HappyPathTestSuite) TestHttpProxy() {
 	test, require := test.New(s.T())
-	config, redisCli, systemCli, adminCli := s.commonDependencies(test)
+	config, systemCli, adminCli := s.commonDependencies(test)
 
 	requestId := requestid.Next()
 	targetService := httpt.NewMock(test)
@@ -118,14 +117,14 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 	require.NoError(err)
 	rr := lb.NewRoundRobin([]string{targetUrl.Host})
 	targetClients := map[string]*lb.RoundRobin{"target": rr}
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes.NewRoutes(), systemCli, adminCli)
+	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes.NewRoutes(), systemCli, adminCli, nil)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/api",
 		Protocol:     "http",
 		TargetModule: "target",
 	}}
-	handler, err := locator.Handler(config, locations, redisCli)
+	handler, err := locator.Handler(config, locations)
 	require.NoError(err)
 
 	srv := httptest.NewServer(handler)
@@ -146,7 +145,7 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 
 func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	test, require := test.New(s.T())
-	config, redisCli, systemCli, adminCli := s.commonDependencies(test)
+	config, systemCli, adminCli := s.commonDependencies(test)
 
 	requestId := requestid.Next()
 	wsServer := etp.NewServer(etp.WithServerReadLimit(2048))
@@ -165,14 +164,14 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	require.NoError(err)
 	rr := lb.NewRoundRobin([]string{targetUrl.Host})
 	targetClients := map[string]*lb.RoundRobin{"target": rr}
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes.NewRoutes(), systemCli, adminCli)
+	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes.NewRoutes(), systemCli, adminCli, nil)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/ws",
 		Protocol:     "ws",
 		TargetModule: "target",
 	}}
-	handler, err := locator.Handler(config, locations, redisCli)
+	handler, err := locator.Handler(config, locations)
 	require.NoError(err)
 	srv := httptest.NewServer(handler)
 
@@ -215,7 +214,7 @@ func (s wsEventHandlerMock) Handle(_ context.Context, conn *etp.Conn, event msg.
 
 func (s *HappyPathTestSuite) TestAdminAuthorization() {
 	test, require := test.New(s.T())
-	config, redisCli, systemCli, adminCli := s.commonDependencies(test)
+	config, systemCli, adminCli := s.commonDependencies(test)
 
 	targetService, targetCli := grpct.NewMock(test)
 	targetService.Mock("endpoint", func(ctx context.Context, authData grpc.AuthData, req request) response {
@@ -225,7 +224,7 @@ func (s *HappyPathTestSuite) TestAdminAuthorization() {
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
 	require.NoError(err)
 	routes := routes.NewRoutes()
-	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil)
 
 	locations := []conf.Location{{
 		SkipAuth:     false,
@@ -233,7 +232,7 @@ func (s *HappyPathTestSuite) TestAdminAuthorization() {
 		Protocol:     "grpc",
 		TargetModule: "target",
 	}}
-	handler, err := locator.Handler(config, locations, redisCli)
+	handler, err := locator.Handler(config, locations)
 	require.NoError(err)
 
 	err = routes.ReceiveRoutes(context.Background(), cluster.RoutingConfig{{
@@ -277,27 +276,9 @@ func (s *HappyPathTestSuite) TestAdminAuthorization() {
 }
 
 // nolint:ireturn
-func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, redis.UniversalClient, *client.Client, *client.Client) {
-	require := test.Assert()
-	redisCli := NewRedis(test)
-	ctx := context.Background()
-
-	s.T().Cleanup(func() {
-		_, err := redisCli.Pipelined(ctx, func(p redis.Pipeliner) error {
-			p.Select(ctx, 0)
-			p.FlushDB(ctx)
-			p.Select(ctx, 1)
-			p.FlushDB(ctx)
-			p.Select(ctx, 2)
-			p.FlushDB(ctx)
-			return nil
-		})
-		require.NoError(err)
-	})
-
+func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *client.Client, *client.Client) {
 	config := conf.Remote{
-		Redis: &conf.Redis{Address: redisCli.address},
-		Http:  conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
+		Http: conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
 		Logging: conf.Logging{LogLevel: log.DebugLevel, RequestLogEnable: true, BodyLogEnable: true,
 			SkipBodyLoggingEndpointPrefixes: []string{"endpoint"}},
 		Caching:                         conf.Caching{AuthorizationDataInSec: 1, AuthenticationDataInSec: 1},
@@ -336,7 +317,7 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, r
 		return domain.AdminAuthorizeResponse{Authorized: false}
 	})
 
-	return config, redisCli, systemCli, adminCli
+	return config, systemCli, adminCli
 }
 
 func TestHappyPathTestSuite(t *testing.T) {
