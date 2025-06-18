@@ -3,7 +3,6 @@ package assembly
 import (
 	"context"
 
-	"github.com/redis/go-redis/v9"
 	"isp-gate-service/conf"
 	"isp-gate-service/routes"
 
@@ -22,9 +21,9 @@ type Assembly struct {
 	server    *http.Server
 	logger    *log.Adapter
 	routes    *routes.Routes
-	redisCli  redis.UniversalClient
 	systemCli *client.Client
 	adminCli  *client.Client
+	lockerCli *client.Client
 
 	locations                   []conf.Location
 	grpcClientByModuleName      map[string]*client.Client
@@ -62,10 +61,13 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "create system cli")
 	}
-
 	adminCli, err := client.Default()
 	if err != nil {
 		return nil, errors.WithMessage(err, "create admin cli")
+	}
+	lockerCli, err := client.Default()
+	if err != nil {
+		return nil, errors.WithMessage(err, "create isp-lock-service client")
 	}
 
 	return &Assembly{
@@ -78,6 +80,7 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 		httpHostManagerByModuleName: httpHostManagerByModuleName,
 		systemCli:                   systemCli,
 		adminCli:                    adminCli,
+		lockerCli:                   lockerCli,
 	}, nil
 }
 
@@ -90,31 +93,23 @@ func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) error
 	if err != nil {
 		a.logger.Fatal(ctx, errors.WithMessage(err, "upgrade remote config"))
 	}
-	err = newCfg.Validate()
-	if err != nil {
-		a.logger.Fatal(ctx, errors.WithMessage(err, "invalid remote config"))
-	}
-
 	a.logger.SetLevel(newCfg.Logging.LogLevel)
 
-	var newRedisCli redis.UniversalClient
-	if newCfg.Redis != nil {
-		newRedisCli = a.redisClient(*newCfg.Redis)
-	}
-
-	locator := NewLocator(a.logger, a.grpcClientByModuleName, a.httpHostManagerByModuleName, a.routes, a.systemCli, a.adminCli)
-
-	handler, err := locator.Handler(newCfg, a.locations, newRedisCli)
+	locator := NewLocator(
+		a.logger,
+		a.grpcClientByModuleName,
+		a.httpHostManagerByModuleName,
+		a.routes,
+		a.systemCli,
+		a.adminCli,
+		a.lockerCli,
+	)
+	handler, err := locator.Handler(newCfg, a.locations)
 	if err != nil {
 		return errors.WithMessage(err, "locator handler")
 	}
 
 	a.server.Upgrade(handler)
-
-	if a.redisCli != nil {
-		_ = a.redisCli.Close()
-		a.redisCli = newRedisCli
-	}
 
 	return nil
 }
@@ -130,9 +125,9 @@ func (a *Assembly) Runners() []app.Runner {
 	for moduleName, upgrader := range a.httpHostManagerByModuleName {
 		eventHandler.RequireModule(moduleName, upgrader)
 	}
-
 	eventHandler.RequireModule("isp-system-service", a.systemCli)
 	eventHandler.RequireModule("msp-admin-service", a.adminCli)
+	eventHandler.RequireModule("isp-lock-service", a.lockerCli)
 
 	return []app.Runner{
 		app.RunnerFunc(func(ctx context.Context) error {
@@ -154,31 +149,7 @@ func (a *Assembly) Closers() []app.Closer {
 	for _, cliCloser := range a.grpcClientByModuleName {
 		closers = append(closers, cliCloser)
 	}
-	closers = append(closers, a.systemCli, a.adminCli, app.CloserFunc(func() error {
-		if a.redisCli != nil {
-			return a.redisCli.Close()
-		}
-		return nil
-	}))
+	closers = append(closers, a.systemCli, a.adminCli, a.lockerCli)
 
 	return closers
-}
-
-// nolint:ireturn
-func (a *Assembly) redisClient(config conf.Redis) redis.UniversalClient {
-	if config.Sentinel != nil {
-		return redis.NewFailoverClient(&redis.FailoverOptions{
-			MasterName:       config.Sentinel.MasterName,
-			SentinelAddrs:    config.Sentinel.Addresses,
-			SentinelUsername: config.Sentinel.Username,
-			SentinelPassword: config.Sentinel.Password,
-			Username:         config.Username,
-			Password:         config.Password,
-		})
-	}
-	return redis.NewClient(&redis.Options{
-		Addr:     config.Address,
-		Username: config.Username,
-		Password: config.Password,
-	})
 }

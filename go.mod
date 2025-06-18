@@ -3,7 +3,6 @@ module isp-gate-service
 go 1.24
 
 require (
-	github.com/go-redis/redis_rate/v10 v10.0.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
