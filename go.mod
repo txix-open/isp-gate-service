@@ -8,10 +8,10 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/pkg/errors v0.9.1
-	github.com/redis/go-redis/v9 v9.9.0
+	github.com/redis/go-redis/v9 v9.11.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tomakado/websocketproxy v0.1.0
-	github.com/txix-open/isp-kit v1.52.0
+	github.com/txix-open/isp-kit v1.52.1
 	github.com/txix-open/jsonschema v1.3.0
 	golang.org/x/net v0.41.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822
