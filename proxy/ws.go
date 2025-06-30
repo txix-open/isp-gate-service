@@ -25,7 +25,6 @@ func NewWs(hostManager HttpHostManager, skipAuth bool) Ws {
 	}
 }
 
-//nolint:gomnd
 func (ws Ws) Handle(ctx *request.Context) error {
 	host, err := ws.hostManager.Next()
 	if err != nil {

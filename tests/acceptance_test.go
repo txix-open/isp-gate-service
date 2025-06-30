@@ -72,12 +72,21 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 		require.NoError(err)
 		require.EqualValues("1", adminId)
 
-		return response{Id: req.Id} //nolint:gosimple
+		return response{Id: req.Id}
 	})
 	targetClients := map[string]*client.Client{"target": targetCli}
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
 	require.NoError(err)
-	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(), systemCli, adminCli)
+
+	routes := routes.NewRoutes()
+	err = routes.ReceiveRoutes(s.T().Context(), cluster.RoutingConfig{{
+		Endpoints: []cluster.EndpointDescriptor{{
+			Path: "endpoint",
+		}},
+	}})
+	require.NoError(err)
+
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli)
 
 	locations := []conf.Location{{
 		SkipAuth:     false,
@@ -112,13 +121,22 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 	targetService := httpt.NewMock(test)
 	targetService.POST("/endpoint", func(ctx context.Context, httpReq *http.Request, req request) response {
 		assertHeaders(require, requestId, ctx, httpReq.Header)
-		return response{Id: req.Id} //nolint:gosimple
+		return response{Id: req.Id}
 	})
 	targetUrl, err := url.Parse(targetService.BaseURL())
 	require.NoError(err)
 	rr := lb.NewRoundRobin([]string{targetUrl.Host})
 	targetClients := map[string]*lb.RoundRobin{"target": rr}
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes.NewRoutes(), systemCli, adminCli)
+
+	routes := routes.NewRoutes()
+	err = routes.ReceiveRoutes(s.T().Context(), cluster.RoutingConfig{{
+		Endpoints: []cluster.EndpointDescriptor{{
+			Path: "/endpoint",
+		}},
+	}})
+	require.NoError(err)
+
+	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/api",
@@ -165,7 +183,16 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	require.NoError(err)
 	rr := lb.NewRoundRobin([]string{targetUrl.Host})
 	targetClients := map[string]*lb.RoundRobin{"target": rr}
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes.NewRoutes(), systemCli, adminCli)
+
+	routes := routes.NewRoutes()
+	err = routes.ReceiveRoutes(s.T().Context(), cluster.RoutingConfig{{
+		Endpoints: []cluster.EndpointDescriptor{{
+			Path: "/service",
+		}},
+	}})
+	require.NoError(err)
+
+	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/ws",
@@ -219,7 +246,7 @@ func (s *HappyPathTestSuite) TestAdminAuthorization() {
 
 	targetService, targetCli := grpct.NewMock(test)
 	targetService.Mock("endpoint", func(ctx context.Context, authData grpc.AuthData, req request) response {
-		return response{Id: req.Id} //nolint:gosimple
+		return response{Id: req.Id}
 	})
 	targetClients := map[string]*client.Client{"target": targetCli}
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
