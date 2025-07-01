@@ -27,7 +27,7 @@ func (r DailyLimit) Increment(ctx context.Context, applicationId int, today time
 	}
 
 	if value == 1 {
-		err := r.cli.ExpireNX(ctx, key, 24*time.Hour).Err() //nolint:mnd,gomnd
+		err := r.cli.ExpireNX(ctx, key, 24*time.Hour).Err() //nolint:mnd
 		if err != nil {
 			return 0, errors.WithMessage(err, "expire nx")
 		}

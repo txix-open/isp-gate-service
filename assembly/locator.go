@@ -120,14 +120,14 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location, redisCli
 			)
 		}
 		entrypoint := middleware.Entrypoint(
-			config.Http.MaxRequestBodySizeInMb*1024*1024, //nolint:mnd,gomnd
+			config.Http.MaxRequestBodySizeInMb*1024*1024, //nolint:mnd
 			handler,
-			l.logger,
 			middleware.EntryPointConfig{
 				WithPrefix: location.WithPrefix,
 				PathPrefix: location.PathPrefix,
-				IsGrpcPath: location.Protocol == "grpc",
 			},
+			l.routes,
+			l.logger,
 		)
 		mux.PathPrefix(location.PathPrefix).Handler(entrypoint)
 	}
