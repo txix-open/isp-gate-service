@@ -65,7 +65,7 @@ func (s *Routes) ResolveEndpoint(path string, cfg middleware.EntryPointConfig) s
 		return invertedLeadingSlash
 	}
 
-	return "unknown_endpoint"
+	return noPrefixPath //pdp-webapi-service(анонсирует вот такой ендпоинт GET /api/:token/profile/me/:blocks) hack =(
 }
 
 func (s *Routes) IsInnerEndpoint(endpoint string) bool {
