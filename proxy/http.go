@@ -18,7 +18,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-// nolint:gomnd
 var (
 	httpTransport = &http.Transport{
 		Proxy: http.ProxyFromEnvironment,

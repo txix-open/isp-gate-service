@@ -10,8 +10,8 @@ import (
 )
 
 type AdminMethodStore interface {
-	IsInnerEndpoint(path string) bool
-	RequiredAdminPermission(path string) (string, bool)
+	IsInnerEndpoint(endpoint string) bool
+	RequiredAdminPermission(endpoint string) (string, bool)
 }
 
 type AdminAuthorizer interface {
