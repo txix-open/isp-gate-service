@@ -2,22 +2,24 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
+	"isp-gate-service/entity"
 )
 
-type ThrottlingRepo interface {
-	IsAllowRequestPerSecond(ctx context.Context, applicationId int, rate int) (*domain.RateLimitResult, error)
+type LockRepo interface {
+	IsAllowRequestPerSecond(ctx context.Context, key string, rate int) (*entity.RateLimiterResponse, error)
 }
 
 type Throttling struct {
-	repo   ThrottlingRepo
+	repo   LockRepo
 	limits map[int]int
 }
 
-func NewThrottling(repo ThrottlingRepo, configs []conf.Throttling) Throttling {
+func NewThrottling(repo LockRepo, configs []conf.Throttling) Throttling {
 	limits := make(map[int]int)
 	for _, config := range configs {
 		limits[config.ApplicationId] = config.RequestsPerSeconds
@@ -38,10 +40,19 @@ func (s Throttling) AllowRateLimit(ctx context.Context, applicationId int) (*dom
 		}, nil
 	}
 
-	result, err := s.repo.IsAllowRequestPerSecond(ctx, applicationId, rate)
+	key := s.key(applicationId)
+	result, err := s.repo.IsAllowRequestPerSecond(ctx, key, rate)
 	if err != nil {
 		return nil, errors.WithMessage(err, "is allow request per second")
 	}
 
-	return result, nil
+	return &domain.RateLimitResult{
+		Allow:      result.Allow,
+		Remaining:  result.Remaining,
+		RetryAfter: result.RetryAfter,
+	}, nil
+}
+
+func (s Throttling) key(applicationId int) string {
+	return fmt.Sprintf("isp-gate-service::rate-limit::%d", applicationId)
 }

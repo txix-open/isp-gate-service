@@ -46,7 +46,6 @@ func main() {
 		})
 	}()
 	config := conf.Remote{
-		Redis:       &conf.Redis{Address: "localhost:6379"},
 		Http:        conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
 		Logging:     conf.Logging{LogLevel: log.DebugLevel, RequestLogEnable: true, BodyLogEnable: true},
 		Caching:     conf.Caching{AuthorizationDataInSec: 15, AuthenticationDataInSec: 15},
@@ -85,14 +84,14 @@ func main() {
 	})
 	targetClients := map[string]*client.Client{"target": targetCli}
 	logger, _ = log.New(log.WithLevel(log.DebugLevel))
-	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(), systemCli, adminCli)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(), systemCli, adminCli, nil)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/api",
 		Protocol:     "grpc",
 		TargetModule: "target",
 	}}
-	handler, _ := locator.Handler(config, locations, redisCli)
+	handler, _ := locator.Handler(config, locations)
 
 	srv := &http.Server{
 		Addr:    "localhost:8000",
