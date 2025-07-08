@@ -131,7 +131,7 @@ func (p Grpc) handleError(err error, w http.ResponseWriter) error {
 	return httperrors.New(
 		statusCode,
 		status.Message(),
-		status.Err(),
+		errors.Wrap(err, "unhandled gRPC error"),
 	)
 }
 
