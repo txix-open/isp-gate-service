@@ -95,13 +95,13 @@ func (p Grpc) Handle(ctx *request.Context) error {
 		Body: &isp.Message_BytesBody{BytesBody: body},
 	})
 	if err != nil {
-		return p.handleError(err, ctx.ResponseWriter())
+		return p.handleError(err, ctx.ResponseWriter(), ctx.Endpoint())
 	}
 
 	return p.writeResponse(http.StatusOK, result.GetBytesBody(), requestId, ctx.ResponseWriter())
 }
 
-func (p Grpc) handleError(err error, w http.ResponseWriter) error {
+func (p Grpc) handleError(err error, w http.ResponseWriter, endpoint string) error {
 	status, ok := status.FromError(err)
 	if !ok {
 		return httperrors.New(
@@ -131,7 +131,7 @@ func (p Grpc) handleError(err error, w http.ResponseWriter) error {
 	return httperrors.New(
 		statusCode,
 		status.Message(),
-		errors.Wrap(err, "unhandled gRPC error"),
+		errors.WithMessagef(err, "isp-routing-service: proxy '%s'", endpoint),
 	)
 }
 
