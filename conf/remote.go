@@ -17,12 +17,18 @@ func init() {
 }
 
 type Remote struct {
-	Http                            Http         `schema:"Настройки HTTP"`
-	Logging                         Logging      `schema:"Настройки логирования"`
-	Caching                         Caching      `schema:"Настройки кеширования"`
-	DailyLimits                     []DailyLimit `schema:"Настройки суточных ограничений,сбрасываются раз в сутки в 00:00"`
-	Throttling                      []Throttling `schema:"Настройки пропускной способности"`
-	EnableClientRequestIdForwarding bool         `schema:"Включить проброс requestId из заголовка запроса"`
+	Http                            Http                         `schema:"Настройки HTTP"`
+	Logging                         Logging                      `schema:"Настройки логирования"`
+	Caching                         Caching                      `schema:"Настройки кеширования"`
+	DailyLimits                     []DailyLimit                 `schema:"Настройки суточных ограничений,сбрасываются раз в сутки в 00:00"`
+	Throttling                      []Throttling                 `schema:"Настройки пропускной способности"`
+	EnableClientRequestIdForwarding bool                         `schema:"Включить проброс requestId из заголовка запроса"`
+	ForwardReqIdClientSettings      []ForwardReqIdClientSettings `schema:"Настройки проброcа requestId для приложений"`
+}
+
+type ForwardReqIdClientSettings struct {
+	ApplicationId    int  `schema:"Идентификатор приложения"`
+	ForwardRequestId bool `schema:"Включить проброс requestId из заголовка запроса"`
 }
 
 type Http struct {

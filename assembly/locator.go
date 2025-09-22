@@ -89,9 +89,13 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			return nil, errors.Errorf("not supported protocol %s", location.Protocol)
 		}
 
+		forwardReqIdByAppId := make(map[int]bool, len(config.ForwardReqIdClientSettings))
+		for _, setting := range config.ForwardReqIdClientSettings {
+			forwardReqIdByAppId[setting.ApplicationId] = setting.ForwardRequestId
+		}
+
 		handler := middleware.Chain(
 			proxyFunc,
-			middleware.RequestId(config.EnableClientRequestIdForwarding),
 			middleware.Logger(
 				l.logger, config.Logging.RequestLogEnable,
 				enableBodyLog,
@@ -105,17 +109,18 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			middleware.AdminAuthorize(l.routes, adminService),
 			middleware.Throttling(throttlingService),
 			middleware.DailyLimit(dailyLimitService),
+			middleware.RequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
 		)
 		if location.SkipAuth {
 			handler = middleware.Chain(
 				proxyFunc,
-				middleware.RequestId(config.EnableClientRequestIdForwarding),
 				middleware.Logger(l.logger, config.Logging.RequestLogEnable,
 					enableBodyLog,
 					config.Logging.SkipBodyLoggingEndpointPrefixes,
 					config.Logging.EnableForceUnescapingUnicode,
 				),
 				middleware.ErrorHandler(l.logger),
+				middleware.RequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
 			)
 		}
 		entrypoint := middleware.Entrypoint(
