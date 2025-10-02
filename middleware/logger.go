@@ -8,11 +8,13 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"unsafe"
+
+	"isp-gate-service/request"
 
 	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/http/endpoint/buffer"
 	"github.com/txix-open/isp-kit/log"
-	"isp-gate-service/request"
 )
 
 var (
@@ -132,24 +134,36 @@ func Logger( // nolint:gocognit
 
 func forceUnescapingUnicode(data []byte) []byte {
 	n := len(data)
-	out := make([]byte, 0, n)
+	out := make([]byte, len(data)) // максимально возможный размер
+	j := 0                         // индекс записи
 
 	for i := 0; i < n; {
+		if data[i] != '\\' {
+			// копируем весь блок до следующего '\'
+			start := i
+			for i < n && data[i] != '\\' {
+				i++
+			}
+			j += copy(out[j:], data[start:i])
+			continue
+		}
+
 		if isUnicodeEscape(data, i) {
 			r, consumed := decodeUnicodeEscape(data[i:])
 			if r >= 0 {
-				out = appendRune(out, uint32(r))
+				j = appendRuneAt(out, j, uint32(r))
 				i += consumed
 				continue
 			}
 		}
 
-		// обычный байт
-		out = append(out, data[i])
+		// обычный байт (одиночный '\')
+		out[j] = data[i]
+		j++
 		i++
 	}
 
-	return out
+	return out[:j]
 }
 
 // Проверяет, начинается ли здесь \uXXXX
@@ -204,20 +218,26 @@ func hexValue(b byte) (uint16, bool) {
 }
 
 // appendRune добавляет руну в UTF-8
-func appendRune(buf []byte, r uint32) []byte {
+func appendRuneAt(buf []byte, j int, r uint32) int {
+	p := (*[4]byte)(unsafe.Pointer(&buf[j]))
 	switch {
 	case r < 0x80:
-		buf = append(buf, byte(r))
+		p[0] = byte(r)
+		return j + 1
 	case r < 0x800:
-		buf = append(buf, byte(0xC0|(r>>6)), byte(0x80|(r&0x3F)))
+		p[0] = 0xC0 | byte(r>>6)
+		p[1] = 0x80 | byte(r&0x3F)
+		return j + 2
 	case r < 0x10000:
-		buf = append(buf, byte(0xE0|(r>>12)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
+		p[0] = 0xE0 | byte(r>>12)
+		p[1] = 0x80 | byte((r>>6)&0x3F)
+		p[2] = 0x80 | byte(r&0x3F)
+		return j + 3
 	default:
-		buf = append(buf,
-			byte(0xF0|(r>>18)),
-			byte(0x80|((r>>12)&0x3F)),
-			byte(0x80|((r>>6)&0x3F)),
-			byte(0x80|(r&0x3F)))
+		p[0] = 0xF0 | byte(r>>18)
+		p[1] = 0x80 | byte((r>>12)&0x3F)
+		p[2] = 0x80 | byte((r>>6)&0x3F)
+		p[3] = 0x80 | byte(r&0x3F)
+		return j + 4
 	}
-	return buf
 }
