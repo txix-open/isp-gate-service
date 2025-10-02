@@ -1,9 +1,9 @@
+// nolint:mnd
 package middleware
 
 import (
 	"bufio"
 	"bytes"
-	"github.com/txix-open/isp-kit/json"
 	"io"
 	"net"
 	"net/http"
@@ -131,16 +131,93 @@ func Logger( // nolint:gocognit
 }
 
 func forceUnescapingUnicode(data []byte) []byte {
-	var body any
-	err := json.Unmarshal(data, &body)
-	if err != nil {
-		return data
+	n := len(data)
+	out := make([]byte, 0, n)
+
+	for i := 0; i < n; {
+		if isUnicodeEscape(data, i) {
+			r, consumed := decodeUnicodeEscape(data[i:])
+			if r >= 0 {
+				out = appendRune(out, uint32(r))
+				i += consumed
+				continue
+			}
+		}
+
+		// обычный байт
+		out = append(out, data[i])
+		i++
 	}
 
-	newData, err := json.Marshal(body)
-	if err != nil {
-		return data
+	return out
+}
+
+// Проверяет, начинается ли здесь \uXXXX
+func isUnicodeEscape(data []byte, i int) bool {
+	return i+5 < len(data) && data[i] == '\\' && data[i+1] == 'u'
+}
+
+// Декодирует \uXXXX, учитывая суррогатную пару.
+// Возвращает руну и сколько байт было прочитано.
+func decodeUnicodeEscape(data []byte) (rune, int) {
+	v1, ok := parseHex4(data[2:6])
+	if !ok {
+		return -1, 1
 	}
 
-	return newData
+	// Проверка суррогатной пары
+	if 0xD800 <= v1 && v1 <= 0xDBFF && isUnicodeEscape(data, 6) {
+		v2, ok2 := parseHex4(data[8:12])
+		if ok2 && 0xDC00 <= v2 && v2 <= 0xDFFF {
+			r := 0x10000 + ((uint32(v1)-0xD800)<<10 | (uint32(v2) - 0xDC00))
+			return rune(r), 12
+		}
+	}
+
+	return rune(v1), 6
+}
+
+// Парсим 4 hex-символа через hexValue
+func parseHex4(b []byte) (uint16, bool) {
+	v := uint16(0)
+	for _, c := range b {
+		h, ok := hexValue(c)
+		if !ok {
+			return 0, false
+		}
+		v = v<<4 | h
+	}
+	return v, true
+}
+
+func hexValue(b byte) (uint16, bool) {
+	switch {
+	case '0' <= b && b <= '9':
+		return uint16(b - '0'), true
+	case 'a' <= b && b <= 'f':
+		return uint16(b - 'a' + 10), true
+	case 'A' <= b && b <= 'F':
+		return uint16(b - 'A' + 10), true
+	default:
+		return 0, false
+	}
+}
+
+// appendRune добавляет руну в UTF-8
+func appendRune(buf []byte, r uint32) []byte {
+	switch {
+	case r < 0x80:
+		buf = append(buf, byte(r))
+	case r < 0x800:
+		buf = append(buf, byte(0xC0|(r>>6)), byte(0x80|(r&0x3F)))
+	case r < 0x10000:
+		buf = append(buf, byte(0xE0|(r>>12)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
+	default:
+		buf = append(buf,
+			byte(0xF0|(r>>18)),
+			byte(0x80|((r>>12)&0x3F)),
+			byte(0x80|((r>>6)&0x3F)),
+			byte(0x80|(r&0x3F)))
+	}
+	return buf
 }
