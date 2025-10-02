@@ -13,7 +13,7 @@ const (
 	requestIdHeader = "x-request-id"
 )
 
-func RequestId(forwardClientRequestId bool) Middleware {
+func RequestId(forwardClientRequestId bool, forwardReqIdByApp map[int]bool) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
 			requestId := requestid.Next()
@@ -22,7 +22,9 @@ func RequestId(forwardClientRequestId bool) Middleware {
 			logFields := make([]log.Field, 0)
 			if clientRequestId != "" {
 				logFields = append(logFields, log.String("clientRequestId", clientRequestId))
-				if forwardClientRequestId {
+
+				authData, _ := ctx.GetAuthData()
+				if forwardClientRequestId || forwardReqIdByApp[authData.ApplicationId] {
 					requestId = clientRequestId
 				}
 			}

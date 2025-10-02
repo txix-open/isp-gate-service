@@ -101,7 +101,7 @@ func main() {
 }
 
 func TestServer(service isp.BackendServiceServer) (*grpc.Server, *client.Client, *client.Client) {
-	listener, _ := net.Listen("tcp", "127.0.0.1:")
+	listener, _ := net.Listen("tcp", "127.0.0.1:") // nolint:noctx
 	srv := grpc.NewServer()
 	sysCli, _ := client.Default()
 	adminCli, _ := client.Default()
@@ -118,7 +118,7 @@ func TestServer(service isp.BackendServiceServer) (*grpc.Server, *client.Client,
 type MockServer struct {
 	srv           *grpc.Server
 	logger        log.Logger
-	mockEndpoints map[string]interface{}
+	mockEndpoints map[string]any
 }
 
 func NewMock(logger log.Logger) (*MockServer, *client.Client, *client.Client) {
