@@ -3,16 +3,17 @@ package middleware
 import (
 	"bufio"
 	"bytes"
-	"github.com/txix-open/isp-kit/json"
 	"io"
 	"net"
 	"net/http"
 	"strings"
 
+	"isp-gate-service/helpers"
+	"isp-gate-service/request"
+
 	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/http/endpoint/buffer"
 	"github.com/txix-open/isp-kit/log"
-	"isp-gate-service/request"
 )
 
 var (
@@ -116,7 +117,7 @@ func Logger( // nolint:gocognit
 
 			if logBodyFromCurrenRequest {
 				if enableForceUnescapingUnicode && bytes.Contains(buf.RequestBody(), unicodeEscapePrefix) {
-					fields = append(fields, log.ByteString("request", forceUnescapingUnicode(buf.RequestBody())))
+					fields = append(fields, log.ByteString("request", helpers.UnescapeUnicode(buf.RequestBody())))
 				} else {
 					fields = append(fields, log.ByteString("request", buf.RequestBody()))
 				}
@@ -128,19 +129,4 @@ func Logger( // nolint:gocognit
 			return err
 		})
 	}
-}
-
-func forceUnescapingUnicode(data []byte) []byte {
-	var body any
-	err := json.Unmarshal(data, &body)
-	if err != nil {
-		return data
-	}
-
-	newData, err := json.Marshal(body)
-	if err != nil {
-		return data
-	}
-
-	return newData
 }

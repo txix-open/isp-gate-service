@@ -1,0 +1,402 @@
+[
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1977-02-22\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"38924\",\"flat\":\"185\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Сергей\",\"middleName\":\"Петрович\",\"birthDay\":\"1977-02-22\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"38924\",\"flat\":\"185\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1950-08-18\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"63988\",\"flat\":\"78\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Петров\",\"firstName\":\"Иван\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1950-08-18\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"63988\",\"flat\":\"78\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1991-01-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"07460\",\"flat\":\"39\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Сергей\",\"middleName\":\"Козлович\",\"birthDay\":\"1991-01-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"07460\",\"flat\":\"39\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1982-05-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"31319\",\"flat\":\"191\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Иван\",\"middleName\":\"Петрович\",\"birthDay\":\"1982-05-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"31319\",\"flat\":\"191\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1993-01-13\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"70892\",\"flat\":\"51\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Алексей\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1993-01-13\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"70892\",\"flat\":\"51\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1963-10-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"64647\",\"flat\":\"176\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Петров\",\"firstName\":\"Петр\",\"middleName\":\"Михайлович\",\"birthDay\":\"1963-10-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"64647\",\"flat\":\"176\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1997-01-27\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"05466\",\"flat\":\"101\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Петров\",\"firstName\":\"Алексей\",\"middleName\":\"Козлович\",\"birthDay\":\"1997-01-27\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"05466\",\"flat\":\"101\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1985-06-07\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"62526\",\"flat\":\"40\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Петр\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1985-06-07\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"62526\",\"flat\":\"40\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1964-02-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"67088\",\"flat\":\"111\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Иван\",\"middleName\":\"Петрович\",\"birthDay\":\"1964-02-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"67088\",\"flat\":\"111\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1985-11-07\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"59230\",\"flat\":\"143\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Михаил\",\"middleName\":\"Козлович\",\"birthDay\":\"1985-11-07\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"59230\",\"flat\":\"143\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1988-10-25\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"03392\",\"flat\":\"180\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Сергей\",\"middleName\":\"Козлович\",\"birthDay\":\"1988-10-25\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"03392\",\"flat\":\"180\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1977-06-16\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"20665\",\"flat\":\"166\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Алексей\",\"middleName\":\"Козлович\",\"birthDay\":\"1977-06-16\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"20665\",\"flat\":\"166\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1987-12-12\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"66035\",\"flat\":\"90\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Сергей\",\"middleName\":\"Козлович\",\"birthDay\":\"1987-12-12\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"66035\",\"flat\":\"90\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1974-02-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"39439\",\"flat\":\"148\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Алексей\",\"middleName\":\"Петрович\",\"birthDay\":\"1974-02-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"39439\",\"flat\":\"148\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1989-02-21\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"01481\",\"flat\":\"147\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Сергей\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1989-02-21\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"01481\",\"flat\":\"147\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1952-11-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"54019\",\"flat\":\"67\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Петр\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1952-11-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"54019\",\"flat\":\"67\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1967-04-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"80312\",\"flat\":\"79\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Сергей\",\"middleName\":\"Иванович\",\"birthDay\":\"1967-04-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"80312\",\"flat\":\"79\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1951-12-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"60752\",\"flat\":\"136\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Иван\",\"middleName\":\"Козлович\",\"birthDay\":\"1951-12-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"60752\",\"flat\":\"136\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1989-07-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"52236\",\"flat\":\"49\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Петров\",\"firstName\":\"Михаил\",\"middleName\":\"Козлович\",\"birthDay\":\"1989-07-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"52236\",\"flat\":\"49\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1961-06-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"48602\",\"flat\":\"159\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Петр\",\"middleName\":\"Козлович\",\"birthDay\":\"1961-06-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"48602\",\"flat\":\"159\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1966-11-11\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"30072\",\"flat\":\"58\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Сергей\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1966-11-11\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"30072\",\"flat\":\"58\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1974-08-21\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"22508\",\"flat\":\"80\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Михаил\",\"middleName\":\"Петрович\",\"birthDay\":\"1974-08-21\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"22508\",\"flat\":\"80\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1993-04-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"31222\",\"flat\":\"130\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Михаил\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1993-04-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"31222\",\"flat\":\"130\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1969-11-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"43510\",\"flat\":\"98\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Петр\",\"middleName\":\"Петрович\",\"birthDay\":\"1969-11-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"43510\",\"flat\":\"98\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1965-04-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"93733\",\"flat\":\"39\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Алексей\",\"middleName\":\"Петрович\",\"birthDay\":\"1965-04-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"93733\",\"flat\":\"39\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1969-05-28\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"87093\",\"flat\":\"167\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Алексей\",\"middleName\":\"Михайлович\",\"birthDay\":\"1969-05-28\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"87093\",\"flat\":\"167\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1951-12-24\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"27732\",\"flat\":\"112\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Сергей\",\"middleName\":\"Михайлович\",\"birthDay\":\"1951-12-24\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"27732\",\"flat\":\"112\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1989-07-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"31765\",\"flat\":\"51\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Михаил\",\"middleName\":\"Михайлович\",\"birthDay\":\"1989-07-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"31765\",\"flat\":\"51\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1978-05-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"96998\",\"flat\":\"180\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Алексей\",\"middleName\":\"Иванович\",\"birthDay\":\"1978-05-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"96998\",\"flat\":\"180\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1993-10-12\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"01064\",\"flat\":\"100\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Михаил\",\"middleName\":\"Михайлович\",\"birthDay\":\"1993-10-12\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"01064\",\"flat\":\"100\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1993-04-19\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"45967\",\"flat\":\"82\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Петр\",\"middleName\":\"Иванович\",\"birthDay\":\"1993-04-19\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"45967\",\"flat\":\"82\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1981-08-21\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"74957\",\"flat\":\"64\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Петров\",\"firstName\":\"Петр\",\"middleName\":\"Михайлович\",\"birthDay\":\"1981-08-21\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"74957\",\"flat\":\"64\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1993-01-10\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"19023\",\"flat\":\"22\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Алексей\",\"middleName\":\"Михайлович\",\"birthDay\":\"1993-01-10\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"19023\",\"flat\":\"22\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1962-01-27\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"73929\",\"flat\":\"198\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Сергей\",\"middleName\":\"Козлович\",\"birthDay\":\"1962-01-27\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"73929\",\"flat\":\"198\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1956-08-03\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"46793\",\"flat\":\"83\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Петр\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1956-08-03\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"46793\",\"flat\":\"83\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1954-04-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"22410\",\"flat\":\"162\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Сергей\",\"middleName\":\"Петрович\",\"birthDay\":\"1954-04-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"22410\",\"flat\":\"162\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1991-12-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"92089\",\"flat\":\"62\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Петров\",\"firstName\":\"Иван\",\"middleName\":\"Петрович\",\"birthDay\":\"1991-12-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"92089\",\"flat\":\"62\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1970-10-10\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"91849\",\"flat\":\"22\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Иван\",\"middleName\":\"Иванович\",\"birthDay\":\"1970-10-10\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"91849\",\"flat\":\"22\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1952-07-25\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"49639\",\"flat\":\"87\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Сергей\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1952-07-25\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"49639\",\"flat\":\"87\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1967-03-09\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"43225\",\"flat\":\"165\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Иван\",\"middleName\":\"Петрович\",\"birthDay\":\"1967-03-09\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"43225\",\"flat\":\"165\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1969-05-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"90629\",\"flat\":\"102\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Алексей\",\"middleName\":\"Иванович\",\"birthDay\":\"1969-05-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"90629\",\"flat\":\"102\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1989-07-13\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"14363\",\"flat\":\"38\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Михаил\",\"middleName\":\"Козлович\",\"birthDay\":\"1989-07-13\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"14363\",\"flat\":\"38\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1992-12-26\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"80159\",\"flat\":\"66\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Алексей\",\"middleName\":\"Козлович\",\"birthDay\":\"1992-12-26\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"80159\",\"flat\":\"66\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1982-05-14\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"76418\",\"flat\":\"69\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Сергей\",\"middleName\":\"Михайлович\",\"birthDay\":\"1982-05-14\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"76418\",\"flat\":\"69\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1966-08-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"63785\",\"flat\":\"185\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Михаил\",\"middleName\":\"Петрович\",\"birthDay\":\"1966-08-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"63785\",\"flat\":\"185\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1985-06-22\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"35007\",\"flat\":\"72\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Иван\",\"middleName\":\"Михайлович\",\"birthDay\":\"1985-06-22\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"35007\",\"flat\":\"72\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1966-07-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"78468\",\"flat\":\"85\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Алексей\",\"middleName\":\"Козлович\",\"birthDay\":\"1966-07-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"78468\",\"flat\":\"85\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1959-10-28\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"40385\",\"flat\":\"40\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Михаил\",\"middleName\":\"Михайлович\",\"birthDay\":\"1959-10-28\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"40385\",\"flat\":\"40\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1982-07-15\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"20633\",\"flat\":\"74\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Алексей\",\"middleName\":\"Козлович\",\"birthDay\":\"1982-07-15\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"20633\",\"flat\":\"74\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1983-11-27\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"61366\",\"flat\":\"140\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Иван\",\"middleName\":\"Петрович\",\"birthDay\":\"1983-11-27\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"61366\",\"flat\":\"140\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1991-10-02\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"05236\",\"flat\":\"4\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Сергей\",\"middleName\":\"Михайлович\",\"birthDay\":\"1991-10-02\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"05236\",\"flat\":\"4\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1960-08-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"01631\",\"flat\":\"93\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Петров\",\"firstName\":\"Петр\",\"middleName\":\"Козлович\",\"birthDay\":\"1960-08-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"01631\",\"flat\":\"93\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1999-09-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"76893\",\"flat\":\"170\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Сергей\",\"middleName\":\"Козлович\",\"birthDay\":\"1999-09-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"76893\",\"flat\":\"170\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1966-01-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"72424\",\"flat\":\"98\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Алексей\",\"middleName\":\"Козлович\",\"birthDay\":\"1966-01-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"72424\",\"flat\":\"98\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1977-06-24\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"04063\",\"flat\":\"82\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Михаил\",\"middleName\":\"Петрович\",\"birthDay\":\"1977-06-24\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"04063\",\"flat\":\"82\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1969-04-13\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"43443\",\"flat\":\"80\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Сергей\",\"middleName\":\"Петрович\",\"birthDay\":\"1969-04-13\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"43443\",\"flat\":\"80\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1950-11-03\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"83732\",\"flat\":\"46\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Иван\",\"middleName\":\"Иванович\",\"birthDay\":\"1950-11-03\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"83732\",\"flat\":\"46\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1958-04-03\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"91863\",\"flat\":\"47\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Иван\",\"middleName\":\"Михайлович\",\"birthDay\":\"1958-04-03\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"91863\",\"flat\":\"47\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1953-10-26\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"67751\",\"flat\":\"61\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Алексей\",\"middleName\":\"Иванович\",\"birthDay\":\"1953-10-26\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"67751\",\"flat\":\"61\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1988-01-28\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"14661\",\"flat\":\"58\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Михаил\",\"middleName\":\"Козлович\",\"birthDay\":\"1988-01-28\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"14661\",\"flat\":\"58\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1981-12-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"10812\",\"flat\":\"57\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Алексей\",\"middleName\":\"Козлович\",\"birthDay\":\"1981-12-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"10812\",\"flat\":\"57\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1970-01-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"87418\",\"flat\":\"150\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Михаил\",\"middleName\":\"Иванович\",\"birthDay\":\"1970-01-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"87418\",\"flat\":\"150\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1952-02-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"71225\",\"flat\":\"39\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Иван\",\"middleName\":\"Иванович\",\"birthDay\":\"1952-02-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"71225\",\"flat\":\"39\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1993-08-15\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"80780\",\"flat\":\"188\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Иван\",\"middleName\":\"Михайлович\",\"birthDay\":\"1993-08-15\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"80780\",\"flat\":\"188\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1981-07-07\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"17884\",\"flat\":\"138\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Петр\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1981-07-07\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"17884\",\"flat\":\"138\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1963-01-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"75966\",\"flat\":\"12\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Петр\",\"middleName\":\"Михайлович\",\"birthDay\":\"1963-01-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"75966\",\"flat\":\"12\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1962-11-13\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"80065\",\"flat\":\"79\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Михаил\",\"middleName\":\"Иванович\",\"birthDay\":\"1962-11-13\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"80065\",\"flat\":\"79\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1963-07-18\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"42476\",\"flat\":\"4\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Алексей\",\"middleName\":\"Иванович\",\"birthDay\":\"1963-07-18\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"42476\",\"flat\":\"4\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1961-12-18\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"34741\",\"flat\":\"200\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Иван\",\"middleName\":\"Козлович\",\"birthDay\":\"1961-12-18\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"34741\",\"flat\":\"200\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1998-06-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"46796\",\"flat\":\"144\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Петр\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1998-06-17\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"46796\",\"flat\":\"144\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1965-07-24\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"98293\",\"flat\":\"188\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Михаил\",\"middleName\":\"Козлович\",\"birthDay\":\"1965-07-24\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"98293\",\"flat\":\"188\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1980-12-27\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"67475\",\"flat\":\"122\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Петров\",\"firstName\":\"Иван\",\"middleName\":\"Петрович\",\"birthDay\":\"1980-12-27\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"67475\",\"flat\":\"122\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1981-02-25\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"90604\",\"flat\":\"63\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Иван\",\"middleName\":\"Козлович\",\"birthDay\":\"1981-02-25\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"90604\",\"flat\":\"63\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1954-05-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"37669\",\"flat\":\"28\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Алексей\",\"middleName\":\"Козлович\",\"birthDay\":\"1954-05-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"37669\",\"flat\":\"28\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1981-09-22\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"32425\",\"flat\":\"25\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Петров\",\"firstName\":\"Иван\",\"middleName\":\"Козлович\",\"birthDay\":\"1981-09-22\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"32425\",\"flat\":\"25\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1964-11-16\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"41589\",\"flat\":\"105\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Иван\",\"middleName\":\"Михайлович\",\"birthDay\":\"1964-11-16\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"41589\",\"flat\":\"105\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1969-12-25\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"06495\",\"flat\":\"32\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Петров\",\"firstName\":\"Петр\",\"middleName\":\"Петрович\",\"birthDay\":\"1969-12-25\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"06495\",\"flat\":\"32\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1969-01-19\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"58569\",\"flat\":\"79\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Петр\",\"middleName\":\"Иванович\",\"birthDay\":\"1969-01-19\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"58569\",\"flat\":\"79\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1983-01-11\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"39765\",\"flat\":\"162\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Алексей\",\"middleName\":\"Козлович\",\"birthDay\":\"1983-01-11\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"39765\",\"flat\":\"162\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1956-07-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"24412\",\"flat\":\"118\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Петр\",\"middleName\":\"Михайлович\",\"birthDay\":\"1956-07-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"24412\",\"flat\":\"118\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1981-08-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"45511\",\"flat\":\"88\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Михаил\",\"middleName\":\"Иванович\",\"birthDay\":\"1981-08-20\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"45511\",\"flat\":\"88\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1951-12-02\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"19511\",\"flat\":\"53\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Сергей\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1951-12-02\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"19511\",\"flat\":\"53\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1963-06-22\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"17982\",\"flat\":\"62\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Иван\",\"middleName\":\"Михайлович\",\"birthDay\":\"1963-06-22\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"17982\",\"flat\":\"62\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1960-11-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"52978\",\"flat\":\"30\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Алексей\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1960-11-06\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"52978\",\"flat\":\"30\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1966-01-25\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"75948\",\"flat\":\"49\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Михаил\",\"middleName\":\"Иванович\",\"birthDay\":\"1966-01-25\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"75948\",\"flat\":\"49\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1986-06-02\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"23634\",\"flat\":\"64\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Сергей\",\"middleName\":\"Иванович\",\"birthDay\":\"1986-06-02\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"23634\",\"flat\":\"64\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1969-11-07\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"26792\",\"flat\":\"87\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Михаил\",\"middleName\":\"Иванович\",\"birthDay\":\"1969-11-07\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"26792\",\"flat\":\"87\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1956-09-07\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"70768\",\"flat\":\"108\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Иван\",\"middleName\":\"Петрович\",\"birthDay\":\"1956-09-07\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"70768\",\"flat\":\"108\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0410\\u043B\\u0435\\u043A\\u0441\\u0435\\u0439\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1998-07-14\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"18771\",\"flat\":\"178\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Алексей\",\"middleName\":\"Михайлович\",\"birthDay\":\"1998-07-14\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"18771\",\"flat\":\"178\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1999-02-19\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"01147\",\"flat\":\"162\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Михаил\",\"middleName\":\"Петрович\",\"birthDay\":\"1999-02-19\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"01147\",\"flat\":\"162\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1959-02-10\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"45931\",\"flat\":\"179\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Иван\",\"middleName\":\"Михайлович\",\"birthDay\":\"1959-02-10\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"45931\",\"flat\":\"179\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0421\\u0438\\u0434\\u043E\\u0440\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1967-07-19\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"42295\",\"flat\":\"130\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Сидоров\",\"firstName\":\"Михаил\",\"middleName\":\"Петрович\",\"birthDay\":\"1967-07-19\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"42295\",\"flat\":\"130\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1961-11-21\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"14998\",\"flat\":\"185\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Сергей\",\"middleName\":\"Иванович\",\"birthDay\":\"1961-11-21\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"14998\",\"flat\":\"185\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041C\\u0438\\u0445\\u0430\\u0438\\u043B\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1963-08-11\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"31521\",\"flat\":\"198\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Михаил\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1963-08-11\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"31521\",\"flat\":\"198\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1965-09-26\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"50495\",\"flat\":\"67\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Сергей\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1965-09-26\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"50495\",\"flat\":\"67\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0418\\u0432\\u0430\\u043D\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1950-05-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"96951\",\"flat\":\"179\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Иван\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1950-05-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"96951\",\"flat\":\"179\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1998-01-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"59966\",\"flat\":\"108\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Петр\",\"middleName\":\"Козлович\",\"birthDay\":\"1998-01-23\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"59966\",\"flat\":\"108\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u0418\\u0432\\u0430\\u043D\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1981-02-14\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"49056\",\"flat\":\"113\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Иванов\",\"firstName\":\"Сергей\",\"middleName\":\"Петрович\",\"birthDay\":\"1981-02-14\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"49056\",\"flat\":\"113\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041A\\u043E\\u0437\\u043B\\u043E\\u0432\",\"firstName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0439\",\"middleName\":\"\\u041F\\u0435\\u0442\\u0440\\u043E\\u0432\\u0438\\u0447\",\"birthDay\":\"1995-08-26\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"27045\",\"flat\":\"107\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Козлов\",\"firstName\":\"Сергей\",\"middleName\":\"Петрович\",\"birthDay\":\"1995-08-26\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"27045\",\"flat\":\"107\"}}"
+  },
+  {
+    "raw": "{\"fiodr\":{\"lastName\":\"\\u041C\\u0438\\u0445\\u0430\\u0439\\u043B\\u043E\\u0432\",\"firstName\":\"\\u041F\\u0435\\u0442\\u0440\",\"middleName\":\"\\u0421\\u0435\\u0440\\u0433\\u0435\\u0435\\u0432\\u0438\\u0447\",\"birthDay\":\"1958-07-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"35022\",\"flat\":\"180\"}}",
+    "expected": "{\"fiodr\":{\"lastName\":\"Михайлов\",\"firstName\":\"Петр\",\"middleName\":\"Сергеевич\",\"birthDay\":\"1958-07-05\"},\"objectType\":\"addresses.addr_registration\",\"params\":{\"unom\":\"35022\",\"flat\":\"180\"}}"
+  }
+]
