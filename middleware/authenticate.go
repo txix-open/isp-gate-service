@@ -21,7 +21,7 @@ type Authenticator interface {
 func Authenticate(authenticator Authenticator) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
-			token := ctx.Param(applicationTokenHeader)
+			token, appName := extractToken(ctx)
 			if token == "" {
 				return httperrors.New(
 					http.StatusUnauthorized,
@@ -32,18 +32,36 @@ func Authenticate(authenticator Authenticator) Middleware {
 
 			resp, err := authenticator.Authenticate(ctx.Context(), token)
 			if err != nil {
-				return errors.WithMessagef(err, "authenticate: authenticate")
+				return errors.WithMessage(err, "authenticate: authenticator error")
 			}
+
 			if !resp.Authenticated {
 				return httperrors.New(
 					http.StatusUnauthorized,
 					"invalid application token",
-					errors.WithMessage(errors.New(resp.ErrorReason), "authenticate: authenticate"),
+					errors.Errorf("authenticate: %s", resp.ErrorReason),
 				)
 			}
-			ctx.Authenticate(request.AuthData(*resp.AuthData))
 
+			if appName != "" && resp.AuthData.AppName != appName {
+				return httperrors.New(
+					http.StatusUnauthorized,
+					"invalid application token",
+					errors.New("authenticate: basic auth failed"),
+				)
+			}
+
+			ctx.Authenticate(request.AuthData(*resp.AuthData))
 			return next.Handle(ctx)
 		})
 	}
+}
+
+func extractToken(ctx *request.Context) (string, string) {
+	appName, token, ok := ctx.Request().BasicAuth()
+	if ok {
+		return token, appName
+	}
+
+	return ctx.Param(applicationTokenHeader), ""
 }
