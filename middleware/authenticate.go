@@ -50,7 +50,7 @@ func Authenticate(authenticator Authenticator) Middleware {
 				return httperrors.New(
 					http.StatusUnauthorized,
 					"invalid application token",
-					errors.New("authenticate: basic auth failed"),
+					errors.New("authenticate: application name mismatch"),
 				)
 			}
 
