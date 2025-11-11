@@ -21,7 +21,10 @@ type Authenticator interface {
 func Authenticate(authenticator Authenticator) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
-			token, appName := extractToken(ctx)
+			token, appName, err := extractToken(ctx)
+			if err != nil {
+				return err
+			}
 			if token == "" {
 				return httperrors.New(
 					http.StatusUnauthorized,
@@ -57,11 +60,18 @@ func Authenticate(authenticator Authenticator) Middleware {
 	}
 }
 
-func extractToken(ctx *request.Context) (string, string) {
+func extractToken(ctx *request.Context) (string, string, error) {
 	appName, token, ok := ctx.Request().BasicAuth()
-	if ok {
-		return token, appName
+	if !ok {
+		return ctx.Param(applicationTokenHeader), "", nil
 	}
 
-	return ctx.Param(applicationTokenHeader), ""
+	if appName == "" {
+		return "", "", httperrors.New(
+			http.StatusUnauthorized,
+			"application name required",
+			errors.New("authenticate: application name required on basic auth"),
+		)
+	}
+	return token, appName, nil
 }
