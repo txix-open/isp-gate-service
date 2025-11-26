@@ -4,10 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pkg/errors"
 	"isp-gate-service/domain"
 	"isp-gate-service/httperrors"
 	"isp-gate-service/request"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -61,17 +62,25 @@ func Authenticate(authenticator Authenticator) Middleware {
 }
 
 func extractToken(ctx *request.Context) (string, string, error) {
-	appName, token, ok := ctx.Request().BasicAuth()
-	if !ok {
-		return ctx.Param(applicationTokenHeader), "", nil
+	var (
+		appName string
+		token   string
+		ok      bool
+	)
+
+	token = ctx.Param(applicationTokenHeader)
+	if token != "" {
+		return token, "", nil
 	}
 
-	if appName == "" {
+	appName, token, ok = ctx.Request().BasicAuth()
+	if ok && appName == "" {
 		return "", "", httperrors.New(
 			http.StatusUnauthorized,
 			"application name required",
 			errors.New("authenticate: application name required on basic auth"),
 		)
 	}
+
 	return token, appName, nil
 }
