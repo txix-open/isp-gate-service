@@ -21,7 +21,10 @@ type Authenticator interface {
 func Authenticate(authenticator Authenticator) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
-			token := ctx.Param(applicationTokenHeader)
+			token, appName, err := extractToken(ctx)
+			if err != nil {
+				return err
+			}
 			if token == "" {
 				return httperrors.New(
 					http.StatusUnauthorized,
@@ -32,18 +35,43 @@ func Authenticate(authenticator Authenticator) Middleware {
 
 			resp, err := authenticator.Authenticate(ctx.Context(), token)
 			if err != nil {
-				return errors.WithMessagef(err, "authenticate: authenticate")
+				return errors.WithMessage(err, "authenticate: authenticator error")
 			}
+
 			if !resp.Authenticated {
 				return httperrors.New(
 					http.StatusUnauthorized,
 					"invalid application token",
-					errors.WithMessage(errors.New(resp.ErrorReason), "authenticate: authenticate"),
+					errors.Errorf("authenticate: %s", resp.ErrorReason),
 				)
 			}
-			ctx.Authenticate(request.AuthData(*resp.AuthData))
 
+			if appName != "" && resp.AuthData.AppName != appName {
+				return httperrors.New(
+					http.StatusUnauthorized,
+					"invalid application token",
+					errors.New("authenticate: application name mismatch"),
+				)
+			}
+
+			ctx.Authenticate(request.AuthData(*resp.AuthData))
 			return next.Handle(ctx)
 		})
 	}
+}
+
+func extractToken(ctx *request.Context) (string, string, error) {
+	appName, token, ok := ctx.Request().BasicAuth()
+	if !ok {
+		return ctx.Param(applicationTokenHeader), "", nil
+	}
+
+	if appName == "" {
+		return "", "", httperrors.New(
+			http.StatusUnauthorized,
+			"application name required",
+			errors.New("authenticate: application name required on basic auth"),
+		)
+	}
+	return token, appName, nil
 }
