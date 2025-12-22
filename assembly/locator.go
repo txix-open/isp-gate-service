@@ -1,6 +1,8 @@
 package assembly
 
 import (
+	"github.com/txix-open/isp-kit/metrics"
+	"github.com/txix-open/isp-kit/metrics/http_metrics"
 	"net/http"
 	"time"
 
@@ -94,6 +96,8 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			forwardReqIdByAppId[setting.ApplicationId] = setting.ForwardRequestId
 		}
 
+		metricsStorage := http_metrics.NewServerStorage(metrics.DefaultRegistry)
+
 		handler := middleware.Chain(
 			proxyFunc,
 			middleware.Logger(
@@ -110,6 +114,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			middleware.Throttling(throttlingService),
 			middleware.DailyLimit(dailyLimitService),
 			middleware.RequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
+			middleware.Metrics(metricsStorage),
 		)
 		if location.SkipAuth {
 			handler = middleware.Chain(
@@ -121,6 +126,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 				),
 				middleware.ErrorHandler(l.logger),
 				middleware.RequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
+				middleware.Metrics(metricsStorage),
 			)
 		}
 		entrypoint := middleware.Entrypoint(
