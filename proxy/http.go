@@ -100,6 +100,7 @@ func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) err
 		header.Set(grpc.DomainIdHeader, strconv.Itoa(authData.DomainId))
 		header.Set(grpc.ServiceIdHeader, strconv.Itoa(authData.ServiceId))
 		header.Set(grpc.ApplicationIdHeader, strconv.Itoa(authData.ApplicationId))
+		header.Set(xAppNameHeader, authData.AppName) //nolint:canonicalheader
 		if ctx.IsAdminAuthenticated() {
 			header.Set(xAdminIdHeader, strconv.Itoa(ctx.AdminId())) //nolint:canonicalheader
 		} else {
