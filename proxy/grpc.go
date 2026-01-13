@@ -83,7 +83,7 @@ func (p Grpc) Handle(ctx *request.Context) error {
 		md[grpc.DomainIdHeader] = []string{strconv.Itoa(authData.DomainId)}
 		md[grpc.ServiceIdHeader] = []string{strconv.Itoa(authData.ServiceId)}
 		md[grpc.ApplicationIdHeader] = []string{strconv.Itoa(authData.ApplicationId)}
-		md[xAppNameHeader] = []string{authData.AppName}
+		md[grpc.ApplicationNameHeader] = []string{authData.AppName}
 		if ctx.IsAdminAuthenticated() {
 			md[xAdminIdHeader] = []string{strconv.Itoa(ctx.AdminId())}
 		}
