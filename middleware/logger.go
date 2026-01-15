@@ -112,6 +112,7 @@ func Logger( // nolint:gocognit
 				log.String("path", originalPath),
 				log.String("endpoint", ctx.Endpoint()),
 				log.Int("applicationId", authData.ApplicationId),
+				log.String("applicationName", authData.AppName),
 				log.Int("adminId", ctx.AdminId()),
 			}
 
