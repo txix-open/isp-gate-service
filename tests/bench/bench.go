@@ -65,7 +65,7 @@ func main() {
 				ApplicationId: 1,
 			},
 		}
-	}).Mock("system/secure/authorize", func() domain.AuthorizeResponse {
+	}).Mock("system/secure/authorize_one_of", func() domain.AuthorizeResponse {
 		return domain.AuthorizeResponse{Authorized: true}
 	})
 

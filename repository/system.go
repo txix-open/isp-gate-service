@@ -4,14 +4,15 @@ package repository
 import (
 	"context"
 
+	"isp-gate-service/domain"
+
 	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/grpc/client"
-	"isp-gate-service/domain"
 )
 
 const (
-	authenticate = "system/secure/authenticate"
-	authorize    = "system/secure/authorize"
+	authenticate   = "system/secure/authenticate"
+	authorizeOneOf = "system/secure/authorize_one_of"
 )
 
 type System struct {
@@ -36,14 +37,14 @@ func (r System) Authenticate(ctx context.Context, token string) (*domain.Authent
 	return &resp, nil
 }
 
-func (r System) Authorize(ctx context.Context, applicationId int, endpoint string) (bool, error) {
+func (r System) AuthorizeOneOf(ctx context.Context, applicationId int, endpoints []string) (bool, error) {
 	resp := domain.AuthorizeResponse{}
-	err := r.cli.Invoke(authorize).
-		JsonRequestBody(domain.AuthorizeRequest{ApplicationId: applicationId, Endpoint: endpoint}).
+	err := r.cli.Invoke(authorizeOneOf).
+		JsonRequestBody(domain.AuthorizeOneOfRequest{ApplicationId: applicationId, Endpoints: endpoints}).
 		JsonResponseBody(&resp).
 		Do(ctx)
 	if err != nil {
-		return false, errors.WithMessagef(err, "grpc client invoke: %s", authorize)
+		return false, errors.WithMessagef(err, "grpc client invoke: %s", authorizeOneOf)
 	}
 	return resp.Authorized, nil
 }

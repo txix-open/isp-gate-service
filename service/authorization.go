@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -12,7 +13,7 @@ type AuthorizationCache interface {
 }
 
 type AuthorizationRepo interface {
-	Authorize(ctx context.Context, applicationId int, endpoint string) (bool, error)
+	AuthorizeOneOf(ctx context.Context, applicationId int, endpoints []string) (bool, error)
 }
 
 type Authorization struct {
@@ -27,16 +28,21 @@ func NewAuthorization(cache AuthorizationCache, repo AuthorizationRepo) Authoriz
 	}
 }
 
-func (s Authorization) Authorize(ctx context.Context, applicationId int, endpoint string) (bool, error) {
+func (s Authorization) Authorize(ctx context.Context, applicationId int, httpMethod string, endpoint string) (bool, error) {
 	ok, err := s.cache.Get(ctx, applicationId, endpoint)
 	if err != nil {
 		return false, errors.WithMessage(err, "authz cache get")
 	}
 	if ok {
-		return ok, nil
+		return true, nil
 	}
 
-	ok, err = s.repo.Authorize(ctx, applicationId, endpoint)
+	endpoints := []string{
+		fmt.Sprintf("%s %s", httpMethod, endpoint),
+		endpoint,
+	}
+
+	ok, err = s.repo.AuthorizeOneOf(ctx, applicationId, endpoints)
 	if err != nil {
 		return false, errors.WithMessagef(err, "authz repo authorize")
 	}

@@ -10,9 +10,9 @@ type AuthenticateResponse struct {
 	AuthData      *AuthData
 }
 
-type AuthorizeRequest struct {
+type AuthorizeOneOfRequest struct {
 	ApplicationId int
-	Endpoint      string
+	Endpoints     []string
 }
 
 type AuthorizeResponse struct {

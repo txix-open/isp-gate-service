@@ -327,7 +327,7 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *
 				AppName:       "test",
 			},
 		}
-	}).Mock("system/secure/authorize", func() domain.AuthorizeResponse {
+	}).Mock("system/secure/authorize_one_of", func() domain.AuthorizeResponse {
 		return domain.AuthorizeResponse{Authorized: true}
 	})
 
