@@ -4,9 +4,10 @@ package repository
 import (
 	"context"
 
+	"isp-gate-service/domain"
+
 	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/grpc/client"
-	"isp-gate-service/domain"
 )
 
 const (
@@ -36,10 +37,10 @@ func (r System) Authenticate(ctx context.Context, token string) (*domain.Authent
 	return &resp, nil
 }
 
-func (r System) Authorize(ctx context.Context, applicationId int, endpoint string) (bool, error) {
+func (r System) Authorize(ctx context.Context, req domain.AuthorizeRequest) (bool, error) {
 	resp := domain.AuthorizeResponse{}
 	err := r.cli.Invoke(authorize).
-		JsonRequestBody(domain.AuthorizeRequest{ApplicationId: applicationId, Endpoint: endpoint}).
+		JsonRequestBody(req).
 		JsonResponseBody(&resp).
 		Do(ctx)
 	if err != nil {
