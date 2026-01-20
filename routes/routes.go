@@ -2,85 +2,116 @@ package routes
 
 import (
 	"context"
-	"fmt"
+	"isp-gate-service/domain"
 	"isp-gate-service/middleware"
+	"net/http"
 	"strings"
 
+	"github.com/julienschmidt/httprouter"
+	"github.com/pkg/errors"
+
 	"github.com/txix-open/isp-kit/cluster"
+	"github.com/txix-open/isp-kit/log"
 )
 
 type Routes struct {
-	allEndpoints        map[string]bool
-	innerEndpoints      map[string]bool
-	requiredPermissions map[string]string
+	logger         log.Logger
+	allHttpMethods []string
+	router         *httprouter.Router
 }
 
-func NewRoutes() *Routes {
+func NewRoutes(logger log.Logger) *Routes {
 	return &Routes{
-		allEndpoints:        make(map[string]bool),
-		innerEndpoints:      make(map[string]bool),
-		requiredPermissions: make(map[string]string),
+		logger: logger,
+		allHttpMethods: []string{
+			http.MethodGet,
+			http.MethodHead,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+			http.MethodConnect,
+			http.MethodOptions,
+			http.MethodTrace,
+		},
+		router: httprouter.New(),
 	}
 }
 
 func (s *Routes) ReceiveRoutes(ctx context.Context, routes cluster.RoutingConfig) error {
-	newAllEndpoints := make(map[string]bool)
-	newInnerMethods := make(map[string]bool)
-	newRequiredPermissions := make(map[string]string)
+	router := httprouter.New()
+
 	for _, backend := range routes {
-		for _, v := range backend.Endpoints {
-			newAllEndpoints[v.Path] = true
-			if v.Inner {
-				newInnerMethods[v.Path] = true
-			}
-			perm, ok := cluster.GetRequiredAdminPermission(v)
-			if ok {
-				newRequiredPermissions[v.Path] = perm
+		for _, descriptor := range backend.Endpoints {
+			path := normalizeDescriptorPath(descriptor.Path)
+			if descriptor.HttpMethod != "" {
+				s.registerEndpoint(router, descriptor.HttpMethod, path, descriptor)
+			} else {
+				for _, httpMethmethod := range s.allHttpMethods {
+					s.registerEndpoint(router, httpMethmethod, path, descriptor)
+				}
 			}
 		}
 	}
 
-	s.allEndpoints = newAllEndpoints
-	s.innerEndpoints = newInnerMethods
-	s.requiredPermissions = newRequiredPermissions
-
+	s.router = router
 	return nil
 }
 
-func (s *Routes) ResolveEndpoint(path string, cfg middleware.EntryPointConfig) string {
-	if cfg.WithPrefix {
-		return path
+func (s *Routes) ResolveEndpoint(method string, path string, cfg middleware.EntryPointConfig) (*domain.EndpointMeta, error) {
+	lookupPath := path
+	if !cfg.WithPrefix {
+		lookupPath = strings.TrimPrefix(lookupPath, cfg.PathPrefix)
 	}
 
-	prefix := fmt.Sprintf("%s/", cfg.PathPrefix)
-	noPrefixPath := strings.TrimPrefix(path, prefix)
-	ok := s.allEndpoints[noPrefixPath]
-	if ok {
-		return noPrefixPath
+	handler, params, _ := s.router.Lookup(method, lookupPath)
+
+	metaEndpoint := lookupPath
+	if !cfg.WithLendingSlash {
+		metaEndpoint = strings.TrimLeft(metaEndpoint, "/")
 	}
 
-	invertedLeadingSlash := invertLeadingSlash(noPrefixPath)
-	ok = s.allEndpoints[invertedLeadingSlash]
-	if ok {
-		return invertedLeadingSlash
+	if handler == nil {
+		if cfg.ErrorOnUnknownEndpoint {
+			return nil, errors.Errorf("unknown endpoint '%s'", lookupPath)
+		}
+		return &domain.EndpointMeta{
+			Endpoint: metaEndpoint,
+		}, nil
 	}
 
-	return noPrefixPath // pdp-webapi-service(анонсирует вот такой ендпоинт GET /api/:token/profile/me/:blocks) hack =(
+	req, _ := http.NewRequestWithContext(context.Background(), method, lookupPath, nil)
+	handler(nil, req, params)
+
+	meta := domain.EndpointMetaFromContext(req.Context())
+	meta.Endpoint = metaEndpoint
+	return &meta, nil
 }
 
-func (s *Routes) IsInnerEndpoint(endpoint string) bool {
-	return s.innerEndpoints[endpoint]
-}
+func (s *Routes) registerEndpoint(
+	router *httprouter.Router,
+	httpMethod string,
+	path string,
+	descriptor cluster.EndpointDescriptor,
+) {
+	defer func() {
+		_ = recover()
+	}()
 
-func (s *Routes) RequiredAdminPermission(endpoint string) (string, bool) {
-	perm, ok := s.requiredPermissions[endpoint]
-	return perm, ok
-}
-
-func invertLeadingSlash(path string) string {
-	path, withoutSlash := strings.CutPrefix(path, "/")
-	if withoutSlash {
-		return path
+	requiredAdminPerm, _ := cluster.GetRequiredAdminPermission(descriptor)
+	meta := domain.EndpointMeta{
+		Inner:                   descriptor.Inner,
+		RequiredAdminPermission: requiredAdminPerm,
+		PathSchema:              descriptor.Path,
 	}
-	return "/" + path
+
+	router.HandlerFunc(
+		httpMethod,
+		path,
+		func(_ http.ResponseWriter, r *http.Request) {
+			ctx := meta.ToContext(r.Context())
+			// хак для передачи метадаты обратно в код
+			*r = *r.WithContext(ctx)
+		},
+	)
 }

@@ -70,7 +70,7 @@ func (p Grpc) Handle(ctx *request.Context) error {
 
 	requestId := requestid.FromContext(ctx.Context())
 	md := metadata.MD{
-		grpc.ProxyMethodNameHeader: {ctx.Endpoint()},
+		grpc.ProxyMethodNameHeader: {ctx.EndpointMeta().Endpoint},
 		requestid.Header:           {requestId},
 	}
 
@@ -96,7 +96,7 @@ func (p Grpc) Handle(ctx *request.Context) error {
 		Body: &isp.Message_BytesBody{BytesBody: body},
 	})
 	if err != nil {
-		return p.handleError(err, ctx.ResponseWriter(), ctx.Endpoint())
+		return p.handleError(err, ctx.ResponseWriter(), ctx.EndpointMeta().Endpoint)
 	}
 
 	return p.writeResponse(http.StatusOK, result.GetBytesBody(), requestId, ctx.ResponseWriter())

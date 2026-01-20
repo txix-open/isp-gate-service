@@ -10,7 +10,7 @@ require (
 	github.com/redis/go-redis/v9 v9.11.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tomakado/websocketproxy v0.1.0
-	github.com/txix-open/isp-kit v1.64.6
+	github.com/txix-open/isp-kit v1.31.5-0.20260119094629-a818c966a58f
 	github.com/txix-open/jsonschema v1.3.0
 	golang.org/x/net v0.47.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250908214217-97024824d090
@@ -40,7 +40,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/julienschmidt/httprouter v1.3.0 // indirect
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
