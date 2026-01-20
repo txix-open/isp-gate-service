@@ -9,19 +9,16 @@ import (
 	"isp-gate-service/request"
 )
 
-type AdminMethodStore interface {
-	IsInnerEndpoint(endpoint string) bool
-	RequiredAdminPermission(endpoint string) (string, bool)
-}
-
 type AdminAuthorizer interface {
 	AdminAuthorize(ctx context.Context, adminId int, permission string) (bool, error)
 }
 
-func AdminAuthorize(store AdminMethodStore, authorizer AdminAuthorizer) Middleware {
+func AdminAuthorize(authorizer AdminAuthorizer) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
-			isInner := store.IsInnerEndpoint(ctx.Endpoint())
+			endpointMeta := ctx.EndpointMeta()
+
+			isInner := endpointMeta.Inner
 			if !isInner {
 				return next.Handle(ctx)
 			}
@@ -30,12 +27,13 @@ func AdminAuthorize(store AdminMethodStore, authorizer AdminAuthorizer) Middlewa
 				return httperrors.New(
 					http.StatusForbidden,
 					"admin authentication required",
-					errors.Errorf("admin authorization: admin authentication required for '%s'", ctx.Endpoint()),
+					errors.Errorf("admin authorization: admin authentication required for '%s'",
+						endpointMeta.Endpoint),
 				)
 			}
 
-			requiredPerm, ok := store.RequiredAdminPermission(ctx.Endpoint())
-			if !ok {
+			requiredPerm := endpointMeta.RequiredAdminPermission
+			if requiredPerm == "" {
 				return next.Handle(ctx)
 			}
 
@@ -49,7 +47,7 @@ func AdminAuthorize(store AdminMethodStore, authorizer AdminAuthorizer) Middlewa
 					"endpoint is not allowed",
 					errors.Errorf(
 						"admin authorization: endpoint '%s' requires '%s' permission, but admin '%d' doesn't have it",
-						ctx.Endpoint(), requiredPerm, ctx.AdminId(),
+						endpointMeta.Endpoint, requiredPerm, ctx.AdminId(),
 					),
 				)
 			}

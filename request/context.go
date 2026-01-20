@@ -2,6 +2,7 @@ package request
 
 import (
 	"context"
+	"isp-gate-service/domain"
 	"net/http"
 	"strings"
 
@@ -24,7 +25,7 @@ type Context struct {
 	request        *http.Request
 	responseWriter http.ResponseWriter
 
-	endpoint string
+	endpointMeta *domain.EndpointMeta
 
 	authenticated bool
 	authData      *AuthData
@@ -36,11 +37,15 @@ type Context struct {
 	queryParams map[string]string
 }
 
-func NewContext(request *http.Request, response http.ResponseWriter, endpoint string) *Context {
+func NewContext(
+	request *http.Request,
+	response http.ResponseWriter,
+	endpointMeta *domain.EndpointMeta,
+) *Context {
 	return &Context{
 		request:        request,
 		responseWriter: response,
-		endpoint:       endpoint,
+		endpointMeta:   endpointMeta,
 	}
 }
 
@@ -56,8 +61,8 @@ func (c *Context) SetResponseWriter(writer http.ResponseWriter) {
 	c.responseWriter = writer
 }
 
-func (c *Context) Endpoint() string {
-	return c.endpoint
+func (c *Context) EndpointMeta() *domain.EndpointMeta {
+	return c.endpointMeta
 }
 
 func (c *Context) Authenticate(authData AuthData) {

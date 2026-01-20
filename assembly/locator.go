@@ -1,10 +1,11 @@
 package assembly
 
 import (
-	"github.com/txix-open/isp-kit/metrics"
-	"github.com/txix-open/isp-kit/metrics/http_metrics"
 	"net/http"
 	"time"
+
+	"github.com/txix-open/isp-kit/metrics"
+	"github.com/txix-open/isp-kit/metrics/http_metrics"
 
 	"isp-gate-service/conf"
 	"isp-gate-service/middleware"
@@ -110,13 +111,16 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
 			middleware.Authorize(authorization, l.logger),
-			middleware.AdminAuthorize(l.routes, adminService),
+			middleware.AdminAuthorize(adminService),
 			middleware.Throttling(throttlingService),
 			middleware.DailyLimit(dailyLimitService),
 			middleware.RequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
 			middleware.Metrics(metricsStorage),
 		)
+
+		errorOnUnknownEndpoint := true
 		if location.SkipAuth {
+			errorOnUnknownEndpoint = false
 			handler = middleware.Chain(
 				proxyFunc,
 				middleware.Logger(l.logger, config.Logging.RequestLogEnable,
@@ -133,8 +137,10 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			config.Http.MaxRequestBodySizeInMb*1024*1024, //nolint:mnd
 			handler,
 			middleware.EntryPointConfig{
-				WithPrefix: location.WithPrefix,
-				PathPrefix: location.PathPrefix,
+				WithPrefix:             location.WithPrefix,
+				PathPrefix:             location.PathPrefix,
+				ErrorOnUnknownEndpoint: errorOnUnknownEndpoint,
+				WithLendingSlash:       location.Protocol != conf.GrpcProtocol,
 			},
 			l.routes,
 			l.logger,

@@ -10,8 +10,8 @@ import (
 func Metrics(storage *http_metrics.ServerStorage) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
-			endpoint := ctx.Endpoint()
-			if endpoint == "" {
+			pathSchema := ctx.EndpointMeta().PathSchema
+			if pathSchema == "" {
 				return next.Handle(ctx)
 			}
 
@@ -23,7 +23,7 @@ func Metrics(storage *http_metrics.ServerStorage) Middleware {
 				return err
 			}
 
-			storage.ObserveDuration(r.Method, endpoint, time.Since(start))
+			storage.ObserveDuration(r.Method, pathSchema, time.Since(start))
 
 			return nil
 		})
