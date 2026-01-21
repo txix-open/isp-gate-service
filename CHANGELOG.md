@@ -1,3 +1,6 @@
+### v5.8.0
+* Изменён resolve для endpoint'ов, теперь используется `lookup` у `github.com/julienschmidt/httprouter`
+* Добавлен http метод в запрос авторизации (`system/secure/authorize`)
 ### v5.7.0
 * Добавлено лог поле `applicationName` в логи `log request` и `bypassing unauthorized request because it has admin privilege`
 ### v5.6.2
