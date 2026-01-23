@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net"
 	"net/http"
@@ -100,7 +101,8 @@ func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) err
 		header.Set(grpc.DomainIdHeader, strconv.Itoa(authData.DomainId))
 		header.Set(grpc.ServiceIdHeader, strconv.Itoa(authData.ServiceId))
 		header.Set(grpc.ApplicationIdHeader, strconv.Itoa(authData.ApplicationId))
-		header.Set(grpc.ApplicationNameHeader, authData.AppName) //nolint:canonicalheader
+		encodedAppName := base64.StdEncoding.EncodeToString([]byte(authData.AppName))
+		header.Set(grpc.ApplicationNameHeader, encodedAppName) //nolint:canonicalheader
 		if ctx.IsAdminAuthenticated() {
 			header.Set(xAdminIdHeader, strconv.Itoa(ctx.AdminId())) //nolint:canonicalheader
 		} else {

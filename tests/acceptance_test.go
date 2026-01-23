@@ -3,6 +3,7 @@ package tests
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -367,7 +368,8 @@ func assertHeaders(require *require.Assertions, requestId string, ctx context.Co
 	require.EqualValues(2, domainId)
 	require.EqualValues(3, serviceId)
 	require.EqualValues(4, applicationId)
-	require.EqualValues("test", headers.Get("x-application-name"))
+	expectedAppName := base64.StdEncoding.EncodeToString([]byte("test"))
+	require.EqualValues(expectedAppName, headers.Get("x-application-name"))
 
 	adminId, err := strconv.Atoi(headers.Get("x-admin-id"))
 	require.NoError(err)
