@@ -3,6 +3,7 @@ package proxy
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"strconv"
@@ -83,7 +84,8 @@ func (p Grpc) Handle(ctx *request.Context) error {
 		md[grpc.DomainIdHeader] = []string{strconv.Itoa(authData.DomainId)}
 		md[grpc.ServiceIdHeader] = []string{strconv.Itoa(authData.ServiceId)}
 		md[grpc.ApplicationIdHeader] = []string{strconv.Itoa(authData.ApplicationId)}
-		md[grpc.ApplicationNameHeader] = []string{authData.AppName}
+		encodedAppName := base64.StdEncoding.EncodeToString([]byte(authData.AppName))
+		md[grpc.ApplicationNameHeader] = []string{encodedAppName}
 		if ctx.IsAdminAuthenticated() {
 			md[xAdminIdHeader] = []string{strconv.Itoa(ctx.AdminId())}
 		}
