@@ -1,3 +1,5 @@
+### v5.7.0
+* Добавлено лог поле `applicationName` в логи `log request` и `bypassing unauthorized request because it has admin privilege`
 ### v5.6.2
 * Обновлено заполнение заголовка `x-application-name` для поддержки кириллических символов
 ### v5.6.1

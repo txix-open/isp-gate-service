@@ -31,6 +31,7 @@ func Authorize(authorizer Authorizer, logger log.Logger) Middleware {
 					ctx.Context(),
 					"bypassing unauthorized request because it has admin privilege",
 					log.Int("applicationId", authData.ApplicationId),
+					log.String("applicationName", authData.AppName),
 					log.Int("adminId", ctx.AdminId()),
 				)
 				return next.Handle(ctx)
