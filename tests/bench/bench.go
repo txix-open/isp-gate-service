@@ -84,7 +84,7 @@ func main() {
 	})
 	targetClients := map[string]*client.Client{"target": targetCli}
 	logger, _ = log.New(log.WithLevel(log.DebugLevel))
-	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(), systemCli, adminCli, nil)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(logger), systemCli, adminCli, nil)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/api",

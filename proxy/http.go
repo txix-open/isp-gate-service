@@ -66,7 +66,7 @@ func (p Http) Handle(ctx *request.Context) error {
 	}
 
 	request := ctx.Request()
-	request.URL.Path = ctx.Endpoint()
+	request.URL.Path = ctx.EndpointMeta().Endpoint
 	err = setHttpHeaders(ctx, request.Header, p.skipAuth)
 	if err != nil {
 		return err

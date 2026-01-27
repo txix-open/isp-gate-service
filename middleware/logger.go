@@ -68,7 +68,7 @@ func Logger( // nolint:gocognit
 			logBodyFromCurrenRequest := enableBodyLogging
 			if logBodyFromCurrenRequest {
 				for _, prefix := range skipBodyLoggingEndpointPrefixes {
-					if strings.HasPrefix(ctx.Endpoint(), prefix) {
+					if strings.HasPrefix(ctx.EndpointMeta().Endpoint, prefix) {
 						logBodyFromCurrenRequest = false
 						break
 					}
@@ -110,7 +110,7 @@ func Logger( // nolint:gocognit
 				log.String("xForwardedFor", r.Header.Get("X-Forwarded-For")),
 				log.Int("statusCode", scSrc.StatusCode()),
 				log.String("path", originalPath),
-				log.String("endpoint", ctx.Endpoint()),
+				log.String("endpoint", ctx.EndpointMeta().Endpoint),
 				log.Int("applicationId", authData.ApplicationId),
 				log.String("applicationName", authData.AppName),
 				log.Int("adminId", ctx.AdminId()),

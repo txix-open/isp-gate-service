@@ -11,7 +11,7 @@ import (
 )
 
 type Authorizer interface {
-	Authorize(ctx context.Context, applicationId int, endpoint string) (bool, error)
+	Authorize(ctx context.Context, applicationId int, httpMethod string, pathSchema string) (bool, error)
 }
 
 func Authorize(authorizer Authorizer, logger log.Logger) Middleware {
@@ -22,7 +22,13 @@ func Authorize(authorizer Authorizer, logger log.Logger) Middleware {
 				return errors.WithMessage(err, "authorize: get auth data")
 			}
 
-			ok, err := authorizer.Authorize(ctx.Context(), authData.ApplicationId, ctx.Endpoint())
+			endpointMeta := ctx.EndpointMeta()
+			ok, err := authorizer.Authorize(
+				ctx.Context(),
+				authData.ApplicationId,
+				ctx.Request().Method,
+				endpointMeta.PathSchema,
+			)
 			if err != nil {
 				return errors.WithMessage(err, "authorize: authorize")
 			}
@@ -40,7 +46,9 @@ func Authorize(authorizer Authorizer, logger log.Logger) Middleware {
 				return httperrors.New(
 					http.StatusForbidden,
 					"endpoint is not allowed",
-					errors.Errorf("authorize: endpoint '%s' is not allowed for application '%d'", ctx.Endpoint(), authData.ApplicationId),
+					errors.Errorf("authorize: endpoint '%s' with http method '%s' is not allowed for application '%d'",
+						endpointMeta.PathSchema, ctx.Request().Method, authData.ApplicationId,
+					),
 				)
 			}
 
