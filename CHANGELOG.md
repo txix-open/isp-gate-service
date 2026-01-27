@@ -1,3 +1,5 @@
+### v5.8.1
+* Обновлены зависимости
 ### v5.8.0
 * Изменён resolve для endpoint'ов, теперь используется `lookup` у `github.com/julienschmidt/httprouter`
 * Добавлен http метод в запрос авторизации (`system/secure/authorize`)
