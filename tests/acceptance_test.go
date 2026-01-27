@@ -78,7 +78,7 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
 	require.NoError(err)
 
-	routes := routes.NewRoutes()
+	routes := routes.NewRoutes(logger)
 	err = routes.ReceiveRoutes(s.T().Context(), cluster.RoutingConfig{{
 		Endpoints: []cluster.EndpointDescriptor{{
 			Path: "endpoint",
@@ -128,7 +128,7 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 	rr := lb.NewRoundRobin([]string{targetUrl.Host})
 	targetClients := map[string]*lb.RoundRobin{"target": rr}
 
-	routes := routes.NewRoutes()
+	routes := routes.NewRoutes(test.Logger())
 	err = routes.ReceiveRoutes(s.T().Context(), cluster.RoutingConfig{{
 		Endpoints: []cluster.EndpointDescriptor{{
 			Path: "/endpoint",
@@ -184,7 +184,7 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	rr := lb.NewRoundRobin([]string{targetUrl.Host})
 	targetClients := map[string]*lb.RoundRobin{"target": rr}
 
-	routes := routes.NewRoutes()
+	routes := routes.NewRoutes(test.Logger())
 	err = routes.ReceiveRoutes(s.T().Context(), cluster.RoutingConfig{{
 		Endpoints: []cluster.EndpointDescriptor{{
 			Path: "/service",
@@ -251,7 +251,7 @@ func (s *HappyPathTestSuite) TestAdminAuthorization() {
 	targetClients := map[string]*client.Client{"target": targetCli}
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
 	require.NoError(err)
-	routes := routes.NewRoutes()
+	routes := routes.NewRoutes(logger)
 	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil)
 
 	locations := []conf.Location{{

@@ -38,7 +38,7 @@ func (ws Ws) Handle(ctx *request.Context) error {
 	}
 
 	request := ctx.Request()
-	request.URL.Path = ctx.Endpoint()
+	request.URL.Path = ctx.EndpointMeta().Endpoint
 
 	var resultError error
 	proxy := websocketproxy.NewProxy(target)

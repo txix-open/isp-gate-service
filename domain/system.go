@@ -12,6 +12,7 @@ type AuthenticateResponse struct {
 
 type AuthorizeRequest struct {
 	ApplicationId int
+	HttpMethod    string
 	Endpoint      string
 }
 

@@ -74,7 +74,7 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 		boot:                        boot,
 		server:                      server,
 		logger:                      boot.App.Logger(),
-		routes:                      routes.NewRoutes(),
+		routes:                      routes.NewRoutes(boot.App.Logger()),
 		locations:                   localConfig.Locations,
 		grpcClientByModuleName:      grpcClientByModuleName,
 		httpHostManagerByModuleName: httpHostManagerByModuleName,
