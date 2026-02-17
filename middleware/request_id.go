@@ -13,10 +13,28 @@ const (
 	requestIdHeader = "x-request-id"
 )
 
-func RequestId(forwardClientRequestId bool, forwardReqIdByApp map[int]bool) Middleware {
+func RequestId() Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
 			requestId := requestid.Next()
+
+			context := requestid.ToContext(ctx.Context(), requestId)
+			context = log.ToContext(context, log.String("requestId", requestId))
+
+			ctx.SetContext(context)
+			return next.Handle(ctx)
+		})
+	}
+}
+
+func ClientRequestId(forwardClientRequestId bool, forwardReqIdByApp map[int]bool) Middleware {
+	return func(next Handler) Handler {
+		return HandlerFunc(func(ctx *request.Context) error {
+			requestId := requestid.FromContext(ctx.Context())
+			if requestId == "" {
+				requestId = requestid.Next()
+			}
+
 			clientRequestId := strings.TrimSpace(ctx.Request().Header.Get(requestIdHeader))
 
 			logFields := make([]log.Field, 0)
