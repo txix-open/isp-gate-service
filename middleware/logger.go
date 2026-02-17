@@ -50,7 +50,7 @@ func (w *writerWrapper) WriteHeader(statusCode int) {
 	w.ResponseWriter.WriteHeader(statusCode)
 }
 
-func Logger( // nolint:gocognit
+func Logger( // nolint:gocognit,funlen
 	logger log.Logger,
 	enableRequestLogging bool,
 	enableBodyLogging bool,
@@ -125,7 +125,15 @@ func Logger( // nolint:gocognit
 
 				fields = append(fields, log.ByteString("response", buf.ResponseBody()))
 			}
-			logger.Debug(ctx.Context(), "log request", fields...)
+
+			switch {
+			case scSrc.StatusCode() >= http.StatusInternalServerError:
+				logger.Error(ctx.Context(), "log request", fields...)
+			case scSrc.StatusCode() >= http.StatusBadRequest:
+				logger.Warn(ctx.Context(), "log request", fields...)
+			default:
+				logger.Debug(ctx.Context(), "log request", fields...)
+			}
 
 			return err
 		})
