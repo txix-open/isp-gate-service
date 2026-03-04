@@ -105,13 +105,10 @@ func (s *Routes) registerEndpoint(
 		PathSchema:              descriptor.Path,
 	}
 
-	router.HandlerFunc(
-		httpMethod,
-		path,
-		func(_ http.ResponseWriter, r *http.Request) {
-			ctx := meta.ToContext(r.Context())
-			// хак для передачи метадаты обратно в код
-			*r = *r.WithContext(ctx)
-		},
-	)
+	handler := func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		ctx := meta.ToContext(r.Context())
+		// хак для передачи метадаты обратно в код
+		*r = *r.WithContext(ctx)
+	}
+	router.Handle(httpMethod, path, handler)
 }
