@@ -107,14 +107,15 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 				config.Logging.SkipBodyLoggingEndpointPrefixes,
 				config.Logging.EnableForceUnescapingUnicode,
 			),
+			middleware.RequestId(),
 			middleware.ErrorHandler(l.logger),
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
+			middleware.ClientRequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
 			middleware.Authorize(authorization, l.logger),
 			middleware.AdminAuthorize(adminService),
 			middleware.Throttling(throttlingService),
 			middleware.DailyLimit(dailyLimitService),
-			middleware.RequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
 			middleware.Metrics(metricsStorage),
 		)
 
@@ -128,8 +129,9 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 					config.Logging.SkipBodyLoggingEndpointPrefixes,
 					config.Logging.EnableForceUnescapingUnicode,
 				),
+				middleware.RequestId(),
 				middleware.ErrorHandler(l.logger),
-				middleware.RequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
+				middleware.ClientRequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
 				middleware.Metrics(metricsStorage),
 			)
 		}
