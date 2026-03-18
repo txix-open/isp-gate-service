@@ -59,17 +59,9 @@ func (s *Routes) ReceiveRoutes(ctx context.Context, routes cluster.RoutingConfig
 }
 
 func (s *Routes) ResolveEndpoint(method string, path string, cfg middleware.EntryPointConfig) (*domain.EndpointMeta, error) {
-	lookupPath := path
-	if !cfg.WithPrefix {
-		lookupPath = strings.TrimPrefix(lookupPath, cfg.PathPrefix)
-	}
+	lookupPath, metaEndpoint := s.GetPaths(path, cfg)
 
 	handler, params, _ := s.router.Lookup(method, lookupPath)
-
-	metaEndpoint := lookupPath
-	if !cfg.WithLendingSlash {
-		metaEndpoint = strings.TrimLeft(metaEndpoint, "/")
-	}
 
 	if handler == nil {
 		if cfg.ErrorOnUnknownEndpoint {
@@ -86,6 +78,18 @@ func (s *Routes) ResolveEndpoint(method string, path string, cfg middleware.Entr
 	meta := domain.EndpointMetaFromContext(req.Context())
 	meta.Endpoint = metaEndpoint
 	return &meta, nil
+}
+
+func (s *Routes) GetPaths(path string, cfg middleware.EntryPointConfig) (string, string) {
+	lookupPath := path
+	if !cfg.WithPrefix {
+		lookupPath = strings.TrimPrefix(lookupPath, cfg.PathPrefix)
+	}
+	metaEndpoint := lookupPath
+	if !cfg.WithLendingSlash {
+		metaEndpoint = strings.TrimLeft(metaEndpoint, "/")
+	}
+	return lookupPath, metaEndpoint
 }
 
 func (s *Routes) registerEndpoint(

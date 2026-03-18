@@ -1,4 +1,4 @@
-// nolint:mnd
+// nolint:mnd,gosec
 package helpers
 
 import (

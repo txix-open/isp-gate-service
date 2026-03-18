@@ -18,6 +18,7 @@ type EntryPointConfig struct {
 
 type EndpointResolver interface {
 	ResolveEndpoint(method string, path string, cfg EntryPointConfig) (*domain.EndpointMeta, error)
+	GetPaths(path string, cfg EntryPointConfig) (string, string)
 }
 
 func Entrypoint(
@@ -32,6 +33,17 @@ func Entrypoint(
 
 		endpoint, err := entryPointResolver.ResolveEndpoint(req.Method, req.URL.Path, cfg)
 		if err != nil {
+			lookupPath, endpoint := entryPointResolver.GetPaths(req.URL.Path, cfg)
+			logger.Warn(
+				req.Context(),
+				"call unknown method",
+				log.String("pathPrefix", cfg.PathPrefix),
+				log.String("httpMethod", req.Method),
+				log.String("originalPath", req.URL.Path),
+				log.String("lookupPath", lookupPath),
+				log.String("enpoint", endpoint),
+			)
+
 			http.Error(writer, err.Error(), http.StatusNotImplemented)
 			return
 		}
