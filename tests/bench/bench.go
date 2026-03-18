@@ -126,11 +126,11 @@ func NewMock(logger log.Logger) (*MockServer, *client.Client, *client.Client) {
 	return &MockServer{
 		srv:           srv,
 		logger:        logger,
-		mockEndpoints: make(map[string]interface{}),
+		mockEndpoints: make(map[string]any),
 	}, syscli, admincli
 }
 
-func (m *MockServer) Mock(endpoint string, handler interface{}) *MockServer {
+func (m *MockServer) Mock(endpoint string, handler any) *MockServer {
 	m.mockEndpoints[endpoint] = handler
 	wrapper := endpoint2.DefaultWrapper(m.logger)
 	muxer := grpc.NewMux()

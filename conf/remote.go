@@ -12,7 +12,7 @@ import (
 func init() {
 	schema.CustomGenerators.Register("logLevel", func(field reflect.StructField, t *jsonschema.Schema) {
 		t.Type = "string"
-		t.Enum = []interface{}{"debug", "info", "warn", "error", "fatal"}
+		t.Enum = []any{"debug", "info", "warn", "error", "fatal"}
 	})
 }
 

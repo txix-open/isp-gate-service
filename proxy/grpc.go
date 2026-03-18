@@ -138,7 +138,7 @@ func (p Grpc) handleError(err error, w http.ResponseWriter, endpoint string) err
 	)
 }
 
-func (p Grpc) writeProto(statusCode int, proto interface{}, w http.ResponseWriter) error {
+func (p Grpc) writeProto(statusCode int, proto any, w http.ResponseWriter) error {
 	data, err := json.Marshal(proto)
 	if err != nil {
 		return errors.WithMessage(err, "marshal grpc details to json")
