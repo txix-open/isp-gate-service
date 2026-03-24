@@ -40,7 +40,7 @@ type Logging struct {
 	LogLevel                        log.Level `schemaGen:"logLevel" schema:"Уровень логирования,логирование запросов осуществляется на уровне debug"`
 	RequestLogEnable                bool      `schema:"Включить логирование запросов"`
 	BodyLogEnable                   bool      `schema:"Включить логирование тел запросов и ответов,должно быть включено логирование запросов"`
-	SkipBodyLoggingEndpointPrefixes []string  `schema:"регулярные выражения для отключения логирования"`
+	SkipBodyLoggingEndpointPrefixes []string  `schema:"Выключить логирование тел запросов и ответов для путей имеющих префикс из списка,'/' в начале игнорируется"`
 	EnableForceUnescapingUnicode    bool      `schema:"Включить перевод тел запроса из unicode в utf-8, должно быть включено логирование тел запросов и ответов"`
 }
 

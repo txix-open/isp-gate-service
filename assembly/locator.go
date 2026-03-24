@@ -2,6 +2,7 @@ package assembly
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/txix-open/isp-kit/metrics"
@@ -72,6 +73,11 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 	dailyLimitService := service.NewDailyLimit(lockRepo, config.DailyLimits)
 	throttlingService := service.NewThrottling(lockRepo, config.Throttling)
 
+	skipBodyLoggingEndpointPrefixes := make([]string, 0, len(config.Logging.SkipBodyLoggingEndpointPrefixes))
+	for _, prefix := range config.Logging.SkipBodyLoggingEndpointPrefixes {
+		skipBodyLoggingEndpointPrefixes = append(skipBodyLoggingEndpointPrefixes, strings.TrimPrefix(prefix, "/"))
+	}
+
 	mux := mux2.NewRouter()
 	for _, location := range locations {
 		var proxyFunc middleware.Handler
@@ -126,7 +132,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 				proxyFunc,
 				middleware.Logger(l.logger, config.Logging.RequestLogEnable,
 					enableBodyLog,
-					config.Logging.SkipBodyLoggingEndpointPrefixes,
+					skipBodyLoggingEndpointPrefixes,
 					config.Logging.EnableForceUnescapingUnicode,
 				),
 				middleware.RequestId(),
