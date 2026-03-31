@@ -11,20 +11,23 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	applicationTokenHeader = "x-application-token"
-)
-
 type Authenticator interface {
 	Authenticate(ctx context.Context, token string) (*domain.AuthenticateResponse, error)
 }
 
-func Authenticate(authenticator Authenticator) Middleware {
+type TokenExtractor interface {
+	ExtractToken(ctx *request.Context) (string, string, error)
+}
+
+func Authenticate(
+	tokenExtractor TokenExtractor,
+	authenticator Authenticator,
+) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
-			token, appName, err := extractToken(ctx)
+			token, appName, err := tokenExtractor.ExtractToken(ctx)
 			if err != nil {
-				return err
+				return errors.WithMessage(err, "extract token")
 			}
 			if token == "" {
 				return httperrors.New(
@@ -59,28 +62,4 @@ func Authenticate(authenticator Authenticator) Middleware {
 			return next.Handle(ctx)
 		})
 	}
-}
-
-func extractToken(ctx *request.Context) (string, string, error) {
-	var (
-		appName string
-		token   string
-		ok      bool
-	)
-
-	token = ctx.Param(applicationTokenHeader)
-	if token != "" {
-		return token, "", nil
-	}
-
-	appName, token, ok = ctx.Request().BasicAuth()
-	if ok && appName == "" {
-		return "", "", httperrors.New(
-			http.StatusUnauthorized,
-			"application name required",
-			errors.New("authenticate: application name required on basic auth"),
-		)
-	}
-
-	return token, appName, nil
 }

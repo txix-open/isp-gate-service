@@ -78,6 +78,14 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 		skipBodyLoggingEndpointPrefixes = append(skipBodyLoggingEndpointPrefixes, strings.TrimPrefix(prefix, "/"))
 	}
 
+	tokenExtractor, err := service.NewTokenExtractor(
+		config.ThirdPartyAuth.EndpointSettings,
+		config.ThirdPartyAuth.TokenProviders,
+	)
+	if err != nil {
+		return nil, errors.WithMessage(err, "init token extractor")
+	}
+
 	mux := mux2.NewRouter()
 	for _, location := range locations {
 		var proxyFunc middleware.Handler
@@ -115,7 +123,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			),
 			middleware.RequestId(),
 			middleware.ErrorHandler(l.logger),
-			middleware.Authenticate(authentication),
+			middleware.Authenticate(tokenExtractor, authentication),
 			middleware.AdminAuthenticate(adminService),
 			middleware.ClientRequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
 			middleware.Authorize(authorization, l.logger),
