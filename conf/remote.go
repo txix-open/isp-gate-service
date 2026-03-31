@@ -66,12 +66,12 @@ type Throttling struct {
 }
 
 type CustomAuth struct {
-	AuthProviders    []ThirdPartyAuthProvider `schema:"Настройки аутентификации/авторизации"`
-	TokenProviders   []TokenProvider          `schema:"Настройки получения токена из запроса"`
-	EndpointSettings []AuthEndpointSetting    `schema:"Настройка путей"`
+	AuthProviders    []AuthProvider        `schema:"Настройки аутентификации/авторизации"`
+	TokenProviders   []TokenProvider       `schema:"Настройки получения токена из запроса"`
+	EndpointSettings []AuthEndpointSetting `schema:"Настройка путей"`
 }
 
-type ThirdPartyAuthProvider struct {
+type AuthProvider struct {
 	Name       string `schema:"Название аутентификации/авторизации,должно быть уникальным" validate:"required"`
 	ModuleName string `schema:"Название модуля,реализующего аутентификацию/авторизацию" validate:"required"`
 }

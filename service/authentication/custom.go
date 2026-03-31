@@ -25,7 +25,7 @@ type CustomAuthentication struct {
 }
 
 func NewCustomAuthentication(
-	cfg []conf.ThirdPartyAuthProvider,
+	cfg []conf.AuthProvider,
 	cache CustomAuthenticationCache,
 	repo CustomAuthenticationRepo,
 ) CustomAuthentication {
