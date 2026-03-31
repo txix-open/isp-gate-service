@@ -69,7 +69,7 @@ func Logger( // nolint:gocognit,funlen
 			if ctx.EndpointMeta().PathSchema != "" {
 				endpoint = ctx.EndpointMeta().PathSchema
 			}
-			strings.TrimPrefix(endpoint, "/")
+			endpoint = strings.TrimPrefix(endpoint, "/")
 
 			logBodyFromCurrenRequest := enableBodyLogging
 			if logBodyFromCurrenRequest {

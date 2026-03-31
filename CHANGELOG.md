@@ -1,3 +1,5 @@
+### v5.9.3
+* Исправлена опечатка при вызове `strings.TrimPrefix`
 ### v5.9.2
 * При проверке `logging.skipBodyLoggingEndpointPrefixes` игнорируется `/` в начале, путь для проверки берётся из `pathSchema`, если `pathSchema` пустая, берётся вызываемый `endpoint`
 * В логе `log request` из значения в поле `endpoint` удаляется `/` в начале, путь берётся из `pathSchema`, если `pathSchema` пустая, берётся вызываемый `endpoint`
