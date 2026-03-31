@@ -68,7 +68,8 @@ func (s *Routes) ResolveEndpoint(method string, path string, cfg middleware.Entr
 			return nil, errors.Errorf("unknown endpoint '%s'", lookupPath)
 		}
 		return &domain.EndpointMeta{
-			Endpoint: metaEndpoint,
+			Endpoint:           metaEndpoint,
+			NormalizedEndpoint: normalizePath(metaEndpoint),
 		}, nil
 	}
 
@@ -77,6 +78,7 @@ func (s *Routes) ResolveEndpoint(method string, path string, cfg middleware.Entr
 
 	meta := domain.EndpointMetaFromContext(req.Context())
 	meta.Endpoint = metaEndpoint
+	meta.NormalizedEndpoint = normalizePath(meta.PathSchema)
 	return &meta, nil
 }
 
@@ -115,4 +117,8 @@ func (s *Routes) registerEndpoint(
 		*r = *r.WithContext(ctx)
 	}
 	router.Handle(httpMethod, path, handler)
+}
+
+func normalizePath(path string) string {
+	return strings.TrimPrefix(path, "/")
 }

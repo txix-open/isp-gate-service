@@ -13,14 +13,18 @@ import (
 
 	"isp-gate-service/assembly"
 	"isp-gate-service/conf"
-	"isp-gate-service/domain"
+	"isp-gate-service/entity"
 	"isp-gate-service/routes"
 
 	"github.com/stretchr/testify/require"
 	"github.com/txix-open/etp/v3"
 	"github.com/txix-open/etp/v3/msg"
 	"github.com/txix-open/isp-kit/cluster"
+	"github.com/txix-open/isp-kit/http/endpoint"
+	"github.com/txix-open/isp-kit/http/endpoint/httplog"
 	"github.com/txix-open/isp-kit/http/httpcli"
+	"github.com/txix-open/isp-kit/http/router"
+	"github.com/txix-open/isp-kit/test/fake"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
@@ -86,7 +90,7 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 	}})
 	require.NoError(err)
 
-	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, nil)
 
 	locations := []conf.Location{{
 		SkipAuth:     false,
@@ -101,14 +105,14 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 	cli := httpcli.New()
 	req := request{Id: uuid.New().String()}
 	resp := response{}
-	_, err = cli.Post(srv.URL+"/api/endpoint").
+	err = cli.Post(srv.URL+"/api/endpoint").
 		Header("x-application-token", "token").
 		Header("x-request-id", requestId).
 		Header("x-auth-admin", "mock-token").
 		JsonRequestBody(req).
 		JsonResponseBody(&resp).
 		StatusCodeToError().
-		Do(context.Background())
+		DoWithoutResponse(s.T().Context())
 	require.NoError(err)
 	require.EqualValues(req.Id, resp.Id)
 }
@@ -136,7 +140,7 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 	}})
 	require.NoError(err)
 
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil)
+	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil, nil)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/api",
@@ -150,19 +154,19 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 	cli := httpcli.New()
 	req := request{Id: uuid.New().String()}
 	resp := response{}
-	_, err = cli.Post(srv.URL+"/api/endpoint").
+	err = cli.Post(srv.URL+"/api/endpoint").
 		Header("x-application-token", "token").
 		Header("x-request-id", requestId).
 		Header("x-auth-admin", "mock-token").
 		JsonRequestBody(req).
 		JsonResponseBody(&resp).
 		StatusCodeToError().
-		Do(context.Background())
+		DoWithoutResponse(s.T().Context())
 	require.NoError(err)
 	require.EqualValues(req.Id, resp.Id)
 }
 
-func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
+func (s *HappyPathTestSuite) TestWsProxy() { // nolint:funlen
 	test, require := test.New(s.T())
 	config, systemCli, adminCli := s.commonDependencies(test)
 
@@ -192,7 +196,7 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	}})
 	require.NoError(err)
 
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil)
+	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil, nil)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/ws",
@@ -252,7 +256,7 @@ func (s *HappyPathTestSuite) TestAdminAuthorization() {
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
 	require.NoError(err)
 	routes := routes.NewRoutes(logger)
-	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, nil)
 
 	locations := []conf.Location{{
 		SkipAuth:     false,
@@ -281,26 +285,279 @@ func (s *HappyPathTestSuite) TestAdminAuthorization() {
 	cli := httpcli.New()
 	req := request{Id: uuid.New().String()}
 	resp := response{}
-	_, err = cli.Post(srv.URL+"/api/endpoint").
+	err = cli.Post(srv.URL+"/api/endpoint").
 		Header("x-application-token", "token").
 		Header("x-auth-admin", "mock-token").
 		JsonRequestBody(req).
 		JsonResponseBody(&resp).
 		StatusCodeToError().
-		Do(context.Background())
+		DoWithoutResponse(s.T().Context())
 	require.NoError(err)
 	require.EqualValues(req.Id, resp.Id)
 
-	_, err = cli.Post(srv.URL+"/api/failed_endpoint").
+	err = cli.Post(srv.URL+"/api/failed_endpoint").
 		Header("x-application-token", "token").
 		Header("x-auth-admin", "mock-token").
 		JsonRequestBody(req).
 		JsonResponseBody(&resp).
 		StatusCodeToError().
-		Do(context.Background())
+		DoWithoutResponse(s.T().Context())
 	errResp := httpcli.ErrorResponse{}
 	require.ErrorAs(err, &errResp)
 	require.EqualValues(http.StatusForbidden, errResp.StatusCode)
+}
+
+func (s *HappyPathTestSuite) TestUserAuthorization() { // nolint:funlen
+	test, require := test.New(s.T())
+	config, systemCli, adminCli := s.commonDependencies(test)
+	userAuthData := fake.It[entity.UserAuthData]()
+	userAuthData.IdentityHeader = "x-" + userAuthData.IdentityHeader
+
+	targetService, targetCli := grpct.NewMock(test)
+	targetService.Mock("endpoint", func(ctx context.Context, authData grpc.AuthData, req request) response {
+		md, ok := metadata.FromIncomingContext(ctx)
+		require.True(ok)
+		require.ElementsMatch([]string{userAuthData.Identity}, md.Get(userAuthData.IdentityHeader))
+
+		return response{Id: req.Id}
+	})
+	targetService.Mock("failed_auth_endpoint", func(ctx context.Context, authData grpc.AuthData, req request) response {
+		return response{Id: req.Id}
+	})
+
+	routerMux := router.New()
+	defaultWrapper := endpoint.DefaultWrapper(
+		test.Logger(),
+		httplog.Noop(),
+	)
+
+	userAuthToken := fake.It[string]()
+
+	routerMux.POST("/test-user-auth/authenticate",
+		defaultWrapper.Endpoint(func(req entity.UserAuthenticateRequest) entity.UserAuthenticateResponse {
+			require.Equal(userAuthToken, req.Token)
+			return entity.UserAuthenticateResponse{
+				Authenticated: true,
+				AuthData:      &userAuthData,
+			}
+		}))
+	routerMux.POST("/failed-user-auth/authenticate",
+		defaultWrapper.Endpoint(func(req entity.UserAuthenticateRequest) entity.UserAuthenticateResponse {
+			require.Equal(userAuthToken, req.Token)
+			return entity.UserAuthenticateResponse{
+				Authenticated: false,
+				ErrorReason:   "test fail",
+			}
+		}))
+	routerMock := httptest.NewServer(routerMux)
+	targetUrl, err := url.Parse(routerMock.URL)
+	require.NoError(err)
+	rr := lb.NewRoundRobin([]string{targetUrl.Host})
+
+	targetClients := map[string]*client.Client{"target": targetCli}
+	logger, err := log.New(log.WithLevel(log.DebugLevel))
+	require.NoError(err)
+	routes := routes.NewRoutes(logger)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, rr)
+
+	locations := []conf.Location{{
+		SkipAuth:     false,
+		PathPrefix:   "/api",
+		Protocol:     "grpc",
+		TargetModule: "target",
+	}}
+	config.UserAuth = conf.UserAuth{
+		TokenProviders: []conf.TokenProvider{
+			{
+				Name: "test_provider",
+				Type: conf.HeaderTokenProviderType,
+				HeaderProvider: &conf.HeaderTokenProvider{
+					HeaderName: "test-token-header",
+				},
+			},
+		},
+		EndpointSettings: []conf.AuthEndpointSetting{
+			{
+				EndpointPrefix: "endpoint",
+				TokenProviders: []string{"test_provider"},
+				AuthModuleName: "test-user-auth",
+			},
+			{
+				EndpointPrefix: "failed_auth_endpoint",
+				TokenProviders: []string{"test_provider"},
+				AuthModuleName: "failed-user-auth",
+			},
+		},
+	}
+	handler, err := locator.Handler(config, locations)
+	require.NoError(err)
+
+	err = routes.ReceiveRoutes(context.Background(), cluster.RoutingConfig{{
+		ModuleName: "target",
+		Endpoints: []cluster.EndpointDescriptor{{
+			Path:  "endpoint",
+			Inner: true,
+		}, {
+			Path:  "failed_auth_endpoint",
+			Inner: true,
+		}, {
+			Path:  "failed_endpoint",
+			Inner: true,
+		}},
+	}})
+	require.NoError(err)
+
+	srv := httptest.NewServer(handler)
+	cli := httpcli.New()
+	req := request{Id: uuid.New().String()}
+	resp := response{}
+	err = cli.Post(srv.URL+"/api/endpoint").
+		Header("x-application-token", "token").
+		Header("test-token-header", userAuthToken).
+		Header("x-auth-admin", "mock-token").
+		JsonRequestBody(req).
+		JsonResponseBody(&resp).
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
+	require.NoError(err)
+	require.EqualValues(req.Id, resp.Id)
+
+	err = cli.Post(srv.URL+"/api/failed_auth_endpoint").
+		Header("x-application-token", "token").
+		Header("test-token-header", userAuthToken).
+		Header("x-auth-admin", "mock-token").
+		JsonRequestBody(req).
+		JsonResponseBody(&resp).
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
+	errResp := httpcli.ErrorResponse{}
+	require.ErrorAs(err, &errResp)
+	require.EqualValues(http.StatusUnauthorized, errResp.StatusCode)
+}
+
+func (s *HappyPathTestSuite) TestUserAuthorization_SkipAppAuth() { // nolint:funlen
+	test, require := test.New(s.T())
+	config, _, adminCli := s.commonDependencies(test)
+	systemService, systemCli := grpct.NewMock(test)
+	systemService.Mock("system/secure/authenticate", func() entity.AuthenticateResponse {
+		return entity.AuthenticateResponse{
+			Authenticated: false,
+			ErrorReason:   "",
+		}
+	}).Mock("system/secure/authorize", func() entity.AuthorizeResponse {
+		return entity.AuthorizeResponse{Authorized: false}
+	})
+
+	userAuthData := fake.It[entity.UserAuthData]()
+	userAuthData.IdentityHeader = "x-" + userAuthData.IdentityHeader
+
+	targetService, targetCli := grpct.NewMock(test)
+	targetService.Mock("endpoint", func(ctx context.Context, authData grpc.AuthData, req request) response {
+		md, ok := metadata.FromIncomingContext(ctx)
+		require.True(ok)
+		require.ElementsMatch([]string{userAuthData.Identity}, md.Get(userAuthData.IdentityHeader))
+
+		return response{Id: req.Id}
+	})
+
+	routerMux := router.New()
+	defaultWrapper := endpoint.DefaultWrapper(
+		test.Logger(),
+		httplog.Noop(),
+	)
+
+	userAuthToken := fake.It[string]()
+
+	routerMux.POST("/test-user-auth/authenticate",
+		defaultWrapper.Endpoint(func(req entity.UserAuthenticateRequest) entity.UserAuthenticateResponse {
+			require.Equal(userAuthToken, req.Token)
+			return entity.UserAuthenticateResponse{
+				Authenticated: true,
+				AuthData:      &userAuthData,
+			}
+		}))
+	routerMock := httptest.NewServer(routerMux)
+	targetUrl, err := url.Parse(routerMock.URL)
+	require.NoError(err)
+	rr := lb.NewRoundRobin([]string{targetUrl.Host})
+
+	targetClients := map[string]*client.Client{"target": targetCli}
+	logger, err := log.New(log.WithLevel(log.DebugLevel))
+	require.NoError(err)
+	routes := routes.NewRoutes(logger)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, rr)
+
+	locations := []conf.Location{{
+		SkipAuth:     false,
+		PathPrefix:   "/api",
+		Protocol:     "grpc",
+		TargetModule: "target",
+	}}
+	config.UserAuth = conf.UserAuth{
+		TokenProviders: []conf.TokenProvider{
+			{
+				Name: "test_provider",
+				Type: conf.HeaderTokenProviderType,
+				HeaderProvider: &conf.HeaderTokenProvider{
+					HeaderName: "test-token-header",
+				},
+			},
+		},
+		EndpointSettings: []conf.AuthEndpointSetting{
+			{
+				EndpointPrefix: "endpoint",
+				TokenProviders: []string{"test_provider"},
+				AuthModuleName: "test-user-auth",
+				SkipAppAuth:    true,
+			},
+			{
+				EndpointPrefix: "failed_endpoint",
+				TokenProviders: []string{"test_provider"},
+				AuthModuleName: "test-user-auth",
+			},
+		},
+	}
+	handler, err := locator.Handler(config, locations)
+	require.NoError(err)
+
+	err = routes.ReceiveRoutes(context.Background(), cluster.RoutingConfig{{
+		ModuleName: "target",
+		Endpoints: []cluster.EndpointDescriptor{{
+			Path:  "endpoint",
+			Inner: true,
+		}, {
+			Path:  "failed_endpoint",
+			Inner: true,
+		}},
+	}})
+	require.NoError(err)
+
+	srv := httptest.NewServer(handler)
+	cli := httpcli.New()
+	req := request{Id: uuid.New().String()}
+	resp := response{}
+	err = cli.Post(srv.URL+"/api/endpoint").
+		Header("x-application-token", "token").
+		Header("test-token-header", userAuthToken).
+		Header("x-auth-admin", "mock-token").
+		JsonRequestBody(req).
+		JsonResponseBody(&resp).
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
+	require.NoError(err)
+	require.EqualValues(req.Id, resp.Id)
+
+	err = cli.Post(srv.URL+"/api/failed_endpoint").
+		Header("x-application-token", "token").
+		Header("test-token-header", userAuthToken).
+		Header("x-auth-admin", "mock-token").
+		JsonRequestBody(req).
+		JsonResponseBody(&resp).
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
+	errResp := httpcli.ErrorResponse{}
+	require.ErrorAs(err, &errResp)
+	require.EqualValues(http.StatusUnauthorized, errResp.StatusCode)
 }
 
 // nolint:ireturn
@@ -316,11 +573,11 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *
 	}
 
 	systemService, systemCli := grpct.NewMock(test)
-	systemService.Mock("system/secure/authenticate", func() domain.AuthenticateResponse {
-		return domain.AuthenticateResponse{
+	systemService.Mock("system/secure/authenticate", func() entity.AuthenticateResponse {
+		return entity.AuthenticateResponse{
 			Authenticated: true,
 			ErrorReason:   "",
-			AuthData: &domain.AuthData{
+			AuthData: &entity.AppAuthData{
 				SystemId:      1,
 				DomainId:      2,
 				ServiceId:     3,
@@ -328,22 +585,22 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *
 				AppName:       "test",
 			},
 		}
-	}).Mock("system/secure/authorize", func() domain.AuthorizeResponse {
-		return domain.AuthorizeResponse{Authorized: true}
+	}).Mock("system/secure/authorize", func() entity.AuthorizeResponse {
+		return entity.AuthorizeResponse{Authorized: true}
 	})
 
 	adminService, adminCli := grpct.NewMock(test)
-	adminService.Mock("admin/secure/authenticate", func(req domain.AdminAuthorizeRequest) domain.AdminAuthenticateResponse {
-		return domain.AdminAuthenticateResponse{
+	adminService.Mock("admin/secure/authenticate", func(req entity.AdminAuthorizeRequest) entity.AdminAuthenticateResponse {
+		return entity.AdminAuthenticateResponse{
 			Authenticated: true,
 			ErrorReason:   "",
 			AdminId:       1,
 		}
-	}).Mock("admin/secure/authorize", func(req domain.AdminAuthorizeRequest) domain.AdminAuthorizeResponse {
+	}).Mock("admin/secure/authorize", func(req entity.AdminAuthorizeRequest) entity.AdminAuthorizeResponse {
 		if req.Permission == "ok_permission" {
-			return domain.AdminAuthorizeResponse{Authorized: true}
+			return entity.AdminAuthorizeResponse{Authorized: true}
 		}
-		return domain.AdminAuthorizeResponse{Authorized: false}
+		return entity.AdminAuthorizeResponse{Authorized: false}
 	})
 
 	return config, systemCli, adminCli

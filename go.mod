@@ -19,6 +19,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
+	github.com/go-faker/faker/v4 v4.7.0 // indirect
 	github.com/txix-open/etp/v4 v4.0.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect

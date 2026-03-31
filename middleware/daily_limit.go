@@ -16,6 +16,10 @@ type DailyLimitChecker interface {
 func DailyLimit(checker DailyLimitChecker) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
+			if ctx.SkipAppAuth() {
+				return next.Handle(ctx)
+			}
+
 			authData, err := ctx.GetAuthData()
 			if err != nil {
 				return errors.WithMessage(err, "daily limit: get auth data")

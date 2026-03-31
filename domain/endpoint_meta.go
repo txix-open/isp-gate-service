@@ -1,6 +1,8 @@
 package domain
 
-import "context"
+import (
+	"context"
+)
 
 type EndpointMeta struct {
 	Inner                   bool
@@ -9,6 +11,9 @@ type EndpointMeta struct {
 	PathSchema string
 	// Вызываемый метод
 	Endpoint string
+	// Нормализованный путь, для известных путей берётся объявляемый метод, для неизвестных - вызываемый
+	// Удаляет '/' из начала пути
+	NormalizedEndpoint string
 }
 
 type endpointMetaKey struct{}

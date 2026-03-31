@@ -30,6 +30,7 @@ type Locator struct {
 	systemCli                   *client.Client
 	adminCli                    *client.Client
 	lockerCli                   *client.Client
+	routerLb                    *lb.RoundRobin
 }
 
 func NewLocator(
@@ -40,6 +41,7 @@ func NewLocator(
 	systemCli *client.Client,
 	adminCli *client.Client,
 	lockerCli *client.Client,
+	routerLb *lb.RoundRobin,
 ) Locator {
 	return Locator{
 		logger:                      logger,
@@ -49,6 +51,7 @@ func NewLocator(
 		systemCli:                   systemCli,
 		adminCli:                    adminCli,
 		lockerCli:                   lockerCli,
+		routerLb:                    routerLb,
 	}
 }
 
@@ -58,6 +61,17 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 
 	authenticationCache := repository.NewAuthenticationCache(time.Duration(config.Caching.AuthenticationDataInSec) * time.Second)
 	authentication := service.NewAuthentication(authenticationCache, systemRepo)
+
+	userAuthenticationCache := repository.NewUserAuthenticationCache(time.Duration(config.Caching.AuthenticationDataInSec) * time.Second)
+	userAuthRepo := repository.NewUserAuth(l.routerLb)
+	userAuthentication, err := service.NewUserAuthentication(
+		config.UserAuth,
+		userAuthenticationCache,
+		userAuthRepo,
+	)
+	if err != nil {
+		return nil, errors.WithMessage(err, "new user authentication")
+	}
 
 	adminService := service.NewAdmin(
 		repository.NewAuthorizationCache(time.Duration(config.Caching.AuthorizationDataInSec)*time.Second),
@@ -89,6 +103,9 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			proxyFunc = proxy.NewGrpc(cli, location.SkipAuth, time.Duration(config.Http.ProxyTimeoutInSec)*time.Second)
 		case conf.HttpProtocol:
 			hostManager := l.httpHostManagerByModuleName[location.TargetModule]
+			if location.TargetModule == routerModuleName {
+				hostManager = l.routerLb
+			}
 			proxyFunc = proxy.NewHttp(hostManager, location.SkipAuth, time.Duration(config.Http.ProxyTimeoutInSec)*time.Second)
 		case conf.WsProtocol:
 			hostManager := l.httpHostManagerByModuleName[location.TargetModule]
@@ -115,6 +132,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			),
 			middleware.RequestId(),
 			middleware.ErrorHandler(l.logger),
+			middleware.UserAuthenticate(userAuthentication),
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
 			middleware.ClientRequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),

@@ -9,6 +9,11 @@ import (
 	"github.com/txix-open/jsonschema"
 )
 
+const (
+	HeaderTokenProviderType = "HEADER"
+	CookieTokenProviderType = "COOKIE"
+)
+
 func init() {
 	schema.CustomGenerators.Register("logLevel", func(field reflect.StructField, t *jsonschema.Schema) {
 		t.Type = "string"
@@ -24,6 +29,7 @@ type Remote struct {
 	Throttling                      []Throttling                 `schema:"Настройки пропускной способности"`
 	EnableClientRequestIdForwarding bool                         `schema:"Включить проброс requestId из заголовка запроса"`
 	ForwardReqIdClientSettings      []ForwardReqIdClientSettings `schema:"Настройки проброcа requestId для приложений"`
+	UserAuth                        UserAuth                     `schema:"Настройка аутентификации/авторизации пользователя"`
 }
 
 type ForwardReqIdClientSettings struct {
@@ -57,4 +63,37 @@ type DailyLimit struct {
 type Throttling struct {
 	ApplicationId      int `validate:"required" schema:"ID приложения"`
 	RequestsPerSeconds int `validate:"required,min=1,max=1000" schema:"Запросов в секунду,не конфликтует с суточными ограничениями, алгоритм не работает на значениях больше 1000"`
+}
+
+type UserAuth struct {
+	TokenProviders   []TokenProvider       `schema:"Настройки получения токена из запроса"`
+	EndpointSettings []AuthEndpointSetting `schema:"Настройка пользовательской аутентификации/авторизации по путям"`
+}
+
+type AuthProvider struct {
+	Name       string `schema:"Название настройки аутентификации/авторизации,должно быть уникальным" validate:"required"`
+	ModuleName string `schema:"Название модуля,реализующего аутентификацию/авторизацию" validate:"required"`
+}
+
+type TokenProvider struct {
+	Name           string               `schema:"Название метода получения токена из запроса,должно быть уникальным" validate:"required"`
+	Type           string               `schema:"Тип метода получения токена,один из: HEADER COOKIE" validate:"required,oneof=HEADER COOKIE"`
+	HeaderProvider *HeaderTokenProvider `schema:"Настройки для получения токена из заголовка"`
+	CookieProvider *CookieTokenProvider `schema:"Настройки для получения токена из cookie"`
+}
+
+type HeaderTokenProvider struct {
+	HeaderName string `schema:"Название заголовка,из которого берётся токен" validate:"required"`
+}
+
+type CookieTokenProvider struct {
+	CookieName string `schema:"Название cookie,из которого берётся токен" validate:"required"`
+	Validate   bool   `schema:"Проверить валидность cookie"`
+}
+
+type AuthEndpointSetting struct {
+	EndpointPrefix string   `schema:"Префикс пути,для которого настраивается аутентификация/авторизация" validate:"required"`
+	TokenProviders []string `schema:"Список названий методов получения токена из запроса,возвращает токен из первого удачного"  validate:"required,min=1"`
+	AuthModuleName string   `schema:"Название модуля для аутентификации/авторизации" validate:"required"`
+	SkipAppAuth    bool     `schema:"Пропустить аутентификацию и авторизацию приложения"`
 }

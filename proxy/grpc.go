@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/base64"
 	"io"
+	"maps"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"isp-gate-service/httperrors"
@@ -70,26 +72,7 @@ func (p Grpc) Handle(ctx *request.Context) error {
 	}
 
 	requestId := requestid.FromContext(ctx.Context())
-	md := metadata.MD{
-		grpc.ProxyMethodNameHeader: {ctx.EndpointMeta().Endpoint},
-		requestid.Header:           {requestId},
-	}
-
-	if !p.skipAuth {
-		authData, err := ctx.GetAuthData()
-		if err != nil {
-			return errors.WithMessage(err, "get auth data")
-		}
-		md[grpc.SystemIdHeader] = []string{strconv.Itoa(authData.SystemId)}
-		md[grpc.DomainIdHeader] = []string{strconv.Itoa(authData.DomainId)}
-		md[grpc.ServiceIdHeader] = []string{strconv.Itoa(authData.ServiceId)}
-		md[grpc.ApplicationIdHeader] = []string{strconv.Itoa(authData.ApplicationId)}
-		encodedAppName := base64.StdEncoding.EncodeToString([]byte(authData.AppName))
-		md[grpc.ApplicationNameHeader] = []string{encodedAppName}
-		if ctx.IsAdminAuthenticated() {
-			md[xAdminIdHeader] = []string{strconv.Itoa(ctx.AdminId())}
-		}
-	}
+	md := p.writeMetadata(ctx)
 	requestContext := metadata.NewOutgoingContext(ctx.Context(), md)
 
 	requestContext, cancel := context.WithTimeout(requestContext, p.timeout)
@@ -166,4 +149,43 @@ func (p Grpc) codeToHttpStatus(code codes.Code) int {
 	}
 
 	return s
+}
+
+func (p Grpc) writeMetadata(ctx *request.Context) metadata.MD {
+	requestId := requestid.FromContext(ctx.Context())
+	md := metadata.MD{
+		grpc.ProxyMethodNameHeader: {ctx.EndpointMeta().Endpoint},
+		requestid.Header:           {requestId},
+	}
+
+	if p.skipAuth {
+		return md
+	}
+
+	appAuthData, err := ctx.GetAuthData()
+	if err == nil {
+		md[grpc.SystemIdHeader] = []string{strconv.Itoa(appAuthData.SystemId)}
+		md[grpc.DomainIdHeader] = []string{strconv.Itoa(appAuthData.DomainId)}
+		md[grpc.ServiceIdHeader] = []string{strconv.Itoa(appAuthData.ServiceId)}
+		md[grpc.ApplicationIdHeader] = []string{strconv.Itoa(appAuthData.ApplicationId)}
+		encodedAppName := base64.StdEncoding.EncodeToString([]byte(appAuthData.AppName))
+		md[grpc.ApplicationNameHeader] = []string{encodedAppName}
+	}
+
+	userAuthData, err := ctx.GetUserAuthData()
+	if err == nil {
+		proxyHeaders := maps.Clone(userAuthData.ExtraHeaders)
+		proxyHeaders[userAuthData.IdentityHeader] = []string{userAuthData.Identity}
+		for header, values := range proxyHeaders {
+			header = strings.ToLower(header)
+			if strings.HasPrefix(header, "x-") {
+				md.Set(header, values...)
+			}
+		}
+	}
+
+	if ctx.IsAdminAuthenticated() {
+		md[xAdminIdHeader] = []string{strconv.Itoa(ctx.AdminId())}
+	}
+	return md
 }

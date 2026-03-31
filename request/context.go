@@ -13,14 +13,6 @@ var (
 	ErrNotAuthenticated = errors.New("not authenticated")
 )
 
-type AuthData struct {
-	AppName       string
-	SystemId      int
-	DomainId      int
-	ServiceId     int
-	ApplicationId int
-}
-
 type Context struct {
 	request        *http.Request
 	responseWriter http.ResponseWriter
@@ -28,7 +20,10 @@ type Context struct {
 	endpointMeta *domain.EndpointMeta
 
 	authenticated bool
-	authData      *AuthData
+	authData      *domain.AppAuthData
+
+	userAuthenticated bool
+	userAuthData      *domain.UserAuthData
 
 	adminAuthenticated bool
 	adminId            int
@@ -65,16 +60,32 @@ func (c *Context) EndpointMeta() *domain.EndpointMeta {
 	return c.endpointMeta
 }
 
-func (c *Context) Authenticate(authData AuthData) {
+func (c *Context) Authenticate(authData domain.AppAuthData) {
 	c.authenticated = true
 	c.authData = &authData
 }
 
-func (c *Context) GetAuthData() (AuthData, error) {
+func (c *Context) GetAuthData() (domain.AppAuthData, error) {
 	if !c.authenticated {
-		return AuthData{}, ErrNotAuthenticated
+		return domain.AppAuthData{}, ErrNotAuthenticated
 	}
 	return *c.authData, nil
+}
+
+func (c *Context) AuthenticateUser(authData domain.UserAuthData) {
+	c.userAuthenticated = true
+	c.userAuthData = &authData
+}
+
+func (c *Context) GetUserAuthData() (domain.UserAuthData, error) {
+	if !c.userAuthenticated {
+		return domain.UserAuthData{}, ErrNotAuthenticated
+	}
+	return *c.userAuthData, nil
+}
+
+func (c *Context) SkipAppAuth() bool {
+	return c.userAuthData != nil && c.userAuthData.SkipAppAuth
 }
 
 func (c *Context) IsAdminAuthenticated() bool {
