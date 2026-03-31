@@ -14,6 +14,7 @@ import (
 	"isp-gate-service/repository"
 	"isp-gate-service/routes"
 	"isp-gate-service/service"
+	"isp-gate-service/service/authentication"
 
 	mux2 "github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -30,6 +31,7 @@ type Locator struct {
 	systemCli                   *client.Client
 	adminCli                    *client.Client
 	lockerCli                   *client.Client
+	routerLb                    *lb.RoundRobin
 }
 
 func NewLocator(
@@ -40,6 +42,7 @@ func NewLocator(
 	systemCli *client.Client,
 	adminCli *client.Client,
 	lockerCli *client.Client,
+	routerLb *lb.RoundRobin,
 ) Locator {
 	return Locator{
 		logger:                      logger,
@@ -49,6 +52,7 @@ func NewLocator(
 		systemCli:                   systemCli,
 		adminCli:                    adminCli,
 		lockerCli:                   lockerCli,
+		routerLb:                    routerLb,
 	}
 }
 
@@ -57,7 +61,15 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 	adminRepo := repository.NewAdmin(l.adminCli)
 
 	authenticationCache := repository.NewAuthenticationCache(time.Duration(config.Caching.AuthenticationDataInSec) * time.Second)
-	authentication := service.NewAuthentication(authenticationCache, systemRepo)
+	baseAuthentication := authentication.NewBaseAuthentication(authenticationCache, systemRepo)
+
+	customAuthenticationCache := repository.NewCustomAuthenticationCache(time.Duration(config.Caching.AuthenticationDataInSec) * time.Second)
+	customAuthRepo := repository.NewCustomAuth(l.routerLb)
+	customAuthentication := authentication.NewCustomAuthentication(
+		config.CustomAuth.AuthProviders,
+		customAuthenticationCache,
+		customAuthRepo,
+	)
 
 	adminService := service.NewAdmin(
 		repository.NewAuthorizationCache(time.Duration(config.Caching.AuthorizationDataInSec)*time.Second),
@@ -79,12 +91,18 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 	}
 
 	tokenExtractor, err := service.NewTokenExtractor(
-		config.ThirdPartyAuth.EndpointSettings,
-		config.ThirdPartyAuth.TokenProviders,
+		config.CustomAuth.EndpointSettings,
+		config.CustomAuth.TokenProviders,
 	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "init token extractor")
 	}
+
+	auth := service.NewAuth(
+		config.CustomAuth.EndpointSettings,
+		baseAuthentication,
+		customAuthentication,
+	)
 
 	mux := mux2.NewRouter()
 	for _, location := range locations {
@@ -97,6 +115,9 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			proxyFunc = proxy.NewGrpc(cli, location.SkipAuth, time.Duration(config.Http.ProxyTimeoutInSec)*time.Second)
 		case conf.HttpProtocol:
 			hostManager := l.httpHostManagerByModuleName[location.TargetModule]
+			if location.TargetModule == routerModuleName {
+				hostManager = l.routerLb
+			}
 			proxyFunc = proxy.NewHttp(hostManager, location.SkipAuth, time.Duration(config.Http.ProxyTimeoutInSec)*time.Second)
 		case conf.WsProtocol:
 			hostManager := l.httpHostManagerByModuleName[location.TargetModule]
@@ -123,7 +144,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			),
 			middleware.RequestId(),
 			middleware.ErrorHandler(l.logger),
-			middleware.Authenticate(tokenExtractor, authentication),
+			middleware.Authenticate(tokenExtractor, auth),
 			middleware.AdminAuthenticate(adminService),
 			middleware.ClientRequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
 			middleware.Authorize(authorization, l.logger),

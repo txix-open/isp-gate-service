@@ -13,14 +13,6 @@ var (
 	ErrNotAuthenticated = errors.New("not authenticated")
 )
 
-type AuthData struct {
-	AppName       string
-	SystemId      int
-	DomainId      int
-	ServiceId     int
-	ApplicationId int
-}
-
 type Context struct {
 	request        *http.Request
 	responseWriter http.ResponseWriter
@@ -28,7 +20,7 @@ type Context struct {
 	endpointMeta *domain.EndpointMeta
 
 	authenticated bool
-	authData      *AuthData
+	authData      *domain.AuthData
 
 	adminAuthenticated bool
 	adminId            int
@@ -65,14 +57,14 @@ func (c *Context) EndpointMeta() *domain.EndpointMeta {
 	return c.endpointMeta
 }
 
-func (c *Context) Authenticate(authData AuthData) {
+func (c *Context) Authenticate(authData domain.AuthData) {
 	c.authenticated = true
 	c.authData = &authData
 }
 
-func (c *Context) GetAuthData() (AuthData, error) {
+func (c *Context) GetAuthData() (domain.AuthData, error) {
 	if !c.authenticated {
-		return AuthData{}, ErrNotAuthenticated
+		return domain.AuthData{}, ErrNotAuthenticated
 	}
 	return *c.authData, nil
 }

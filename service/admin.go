@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"isp-gate-service/domain"
+	"isp-gate-service/entity"
 
 	"github.com/pkg/errors"
 )
 
 type AdminAuth interface {
-	Authenticate(ctx context.Context, token string) (*domain.AdminAuthenticateResponse, error)
+	Authenticate(ctx context.Context, token string) (*entity.AdminAuthenticateResponse, error)
 	Authorize(ctx context.Context, adminId int, permission string) (bool, error)
 }
 
@@ -30,7 +31,11 @@ func (s Admin) AdminAuthenticate(ctx context.Context, token string) (*domain.Adm
 	if err != nil {
 		return nil, errors.WithMessage(err, "get admin token data from admin service")
 	}
-	return resp, nil
+	return &domain.AdminAuthenticateResponse{
+		Authenticated: resp.Authenticated,
+		ErrorReason:   resp.ErrorReason,
+		AdminId:       resp.AdminId,
+	}, nil
 }
 
 func (s Admin) AdminAuthorize(ctx context.Context, adminId int, permission string) (bool, error) {

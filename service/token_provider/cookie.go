@@ -21,21 +21,21 @@ func NewCookieProvider(cfg conf.CookieTokenProvider) CookieProvider {
 	}
 }
 
-func (p CookieProvider) ExtractToken(ctx *request.Context) (string, string, error) {
+func (p CookieProvider) ExtractToken(ctx *request.Context) (string, error) {
 	cookie, err := ctx.Request().Cookie(p.cookieName)
 	switch {
 	case errors.Is(err, http.ErrNoCookie):
-		return "", "", nil
+		return "", nil
 	case err != nil:
-		return "", "", errors.WithMessagef(err, "get cookie with name '%s'", p.cookieName)
+		return "", errors.WithMessagef(err, "get cookie with name '%s'", p.cookieName)
 	}
 	if !p.validate {
-		return strings.TrimSpace(cookie.Value), "", nil
+		return strings.TrimSpace(cookie.Value), nil
 	}
 
 	err = cookie.Valid()
 	if err != nil {
-		return "", "", errors.WithMessagef(err, "validate cookie with name '%s'", p.cookieName)
+		return "", errors.WithMessagef(err, "validate cookie with name '%s'", p.cookieName)
 	}
-	return strings.TrimSpace(cookie.Value), "", nil
+	return strings.TrimSpace(cookie.Value), nil
 }

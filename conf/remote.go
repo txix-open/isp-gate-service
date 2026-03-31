@@ -29,7 +29,7 @@ type Remote struct {
 	Throttling                      []Throttling                 `schema:"Настройки пропускной способности"`
 	EnableClientRequestIdForwarding bool                         `schema:"Включить проброс requestId из заголовка запроса"`
 	ForwardReqIdClientSettings      []ForwardReqIdClientSettings `schema:"Настройки проброcа requestId для приложений"`
-	ThirdPartyAuth                  ThirdPartyAuth               `schema:"Настройка third-party аутентификации/авторизации"`
+	CustomAuth                      CustomAuth                   `schema:"Настройка third-party аутентификации/авторизации"`
 }
 
 type ForwardReqIdClientSettings struct {
@@ -65,7 +65,7 @@ type Throttling struct {
 	RequestsPerSeconds int `validate:"required,min=1,max=1000" schema:"Запросов в секунду,не конфликтует с суточными ограничениями, алгоритм не работает на значениях больше 1000"`
 }
 
-type ThirdPartyAuth struct {
+type CustomAuth struct {
 	AuthProviders    []ThirdPartyAuthProvider `schema:"Настройки аутентификации/авторизации"`
 	TokenProviders   []TokenProvider          `schema:"Настройки получения токена из запроса"`
 	EndpointSettings []AuthEndpointSetting    `schema:"Настройка путей"`
@@ -95,4 +95,5 @@ type CookieTokenProvider struct {
 type AuthEndpointSetting struct {
 	EndpointPrefix string   `schema:"Префикс пути" validate:"required"`
 	TokenProviders []string `schema:"Список методов получения токена из запроса,возвращает токен из первого удачного"  validate:"required,min=1"`
+	AuthProvider   string   `schema:"Название метода аутентификации/авторизации" validate:"required"`
 }

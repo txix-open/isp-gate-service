@@ -16,7 +16,7 @@ func NewHeaderProvider(cfg conf.HeaderTokenProvider) HeaderProvider {
 	}
 }
 
-func (p HeaderProvider) ExtractToken(ctx *request.Context) (string, string, error) {
+func (p HeaderProvider) ExtractToken(ctx *request.Context) (string, error) {
 	value := ctx.Request().Header.Get(p.headerName)
-	return strings.TrimSpace(value), "", nil
+	return strings.TrimSpace(value), nil
 }

@@ -12,7 +12,7 @@ import (
 )
 
 type Authenticator interface {
-	Authenticate(ctx context.Context, token string) (*domain.AuthenticateResponse, error)
+	Authenticate(ctx context.Context, endpoint string, token string) (*domain.AuthenticateResponse, error)
 }
 
 type TokenExtractor interface {
@@ -37,7 +37,7 @@ func Authenticate(
 				)
 			}
 
-			resp, err := authenticator.Authenticate(ctx.Context(), token)
+			resp, err := authenticator.Authenticate(ctx.Context(), ctx.EndpointMeta().NormalizedEndpoint, token)
 			if err != nil {
 				return errors.WithMessage(err, "authenticate: authenticator error")
 			}
@@ -58,7 +58,7 @@ func Authenticate(
 				)
 			}
 
-			ctx.Authenticate(request.AuthData(*resp.AuthData))
+			ctx.Authenticate(*resp.AuthData)
 			return next.Handle(ctx)
 		})
 	}

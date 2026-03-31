@@ -5,11 +5,13 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/redis/go-redis/v9"
 	"isp-gate-service/assembly"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
+	"isp-gate-service/entity"
 	"isp-gate-service/routes"
+
+	"github.com/redis/go-redis/v9"
 
 	"github.com/txix-open/isp-kit/grpc"
 	"github.com/txix-open/isp-kit/grpc/client"
@@ -65,8 +67,8 @@ func main() {
 				ApplicationId: 1,
 			},
 		}
-	}).Mock("system/secure/authorize", func() domain.AuthorizeResponse {
-		return domain.AuthorizeResponse{Authorized: true}
+	}).Mock("system/secure/authorize", func() entity.AuthorizeResponse {
+		return entity.AuthorizeResponse{Authorized: true}
 	})
 
 	adminService, _, adminCli := NewMock(logger)
@@ -84,7 +86,7 @@ func main() {
 	})
 	targetClients := map[string]*client.Client{"target": targetCli}
 	logger, _ = log.New(log.WithLevel(log.DebugLevel))
-	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(logger), systemCli, adminCli, nil)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes.NewRoutes(logger), systemCli, adminCli, nil, nil)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/api",

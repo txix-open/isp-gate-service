@@ -2,54 +2,69 @@ package service
 
 import (
 	"context"
+	"isp-gate-service/conf"
+	"isp-gate-service/domain"
+	"strings"
 
 	"github.com/pkg/errors"
-	"isp-gate-service/domain"
 )
 
-type AuthenticationCache interface {
-	Get(ctx context.Context, token string) (*domain.AuthData, error)
-	Set(ctx context.Context, token string, data domain.AuthData) error
-}
-
-type AuthenticationRepo interface {
+type AuthenticationService interface {
 	Authenticate(ctx context.Context, token string) (*domain.AuthenticateResponse, error)
 }
 
-type Auth struct {
-	cache AuthenticationCache
-	repo  AuthenticationRepo
+type CustomAuthenticationService interface {
+	Authenticate(ctx context.Context, authName string, token string) (*domain.AuthenticateResponse, error)
 }
 
-func NewAuthentication(cache AuthenticationCache, repo AuthenticationRepo) Auth {
+type prefixAuthenticationProviders struct {
+	prefix   string
+	provider string
+}
+
+type Auth struct {
+	baseAuthentication   AuthenticationService
+	customAuthentication CustomAuthenticationService
+	providersByPrefixes  []prefixAuthenticationProviders
+}
+
+func NewAuth(
+	endpointsCfg []conf.AuthEndpointSetting,
+	baseAuthentication AuthenticationService,
+	customAuthentication CustomAuthenticationService,
+) Auth {
+	providersByPrefixes := make([]prefixAuthenticationProviders, 0, len(endpointsCfg))
+	for _, endpoint := range endpointsCfg {
+		prefix := strings.TrimPrefix(endpoint.EndpointPrefix, "/")
+		providersByPrefixes = append(providersByPrefixes, prefixAuthenticationProviders{
+			prefix:   prefix,
+			provider: endpoint.AuthProvider,
+		})
+	}
+
 	return Auth{
-		cache: cache,
-		repo:  repo,
+		baseAuthentication:   baseAuthentication,
+		customAuthentication: customAuthentication,
+		providersByPrefixes:  providersByPrefixes,
 	}
 }
 
-func (s Auth) Authenticate(ctx context.Context, token string) (*domain.AuthenticateResponse, error) {
-	authData, err := s.cache.Get(ctx, token)
-	if errors.Is(err, domain.ErrAuthenticationCacheMiss) {
-		resp, err := s.repo.Authenticate(ctx, token)
-		if err != nil {
-			return nil, errors.WithMessage(err, "auth repo authenticate")
+func (s Auth) Authenticate(ctx context.Context, normalizedEndpoint string, token string) (*domain.AuthenticateResponse, error) {
+	for _, provider := range s.providersByPrefixes {
+		if !strings.HasPrefix(normalizedEndpoint, provider.prefix) {
+			continue
 		}
-		if !resp.Authenticated {
-			return resp, nil
-		}
-		err = s.cache.Set(ctx, token, *resp.AuthData)
+
+		resp, err := s.customAuthentication.Authenticate(ctx, provider.provider, token)
 		if err != nil {
-			return nil, errors.WithMessage(err, "auth cache set")
+			return nil, errors.WithMessage(err, "custom auth")
 		}
 		return resp, nil
 	}
+
+	resp, err := s.baseAuthentication.Authenticate(ctx, token)
 	if err != nil {
-		return nil, errors.WithMessage(err, "auth cache get")
+		return nil, errors.WithMessage(err, "base auth")
 	}
-	return &domain.AuthenticateResponse{
-		Authenticated: true,
-		ErrorReason:   "",
-		AuthData:      authData,
-	}, nil
+	return resp, nil
 }

@@ -4,7 +4,7 @@ package repository
 import (
 	"context"
 
-	"isp-gate-service/domain"
+	"isp-gate-service/entity"
 
 	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/grpc/client"
@@ -25,10 +25,10 @@ func NewSystem(cli *client.Client) System {
 	}
 }
 
-func (r System) Authenticate(ctx context.Context, token string) (*domain.AuthenticateResponse, error) {
-	resp := domain.AuthenticateResponse{}
+func (r System) Authenticate(ctx context.Context, token string) (*entity.AuthenticateResponse, error) {
+	resp := entity.AuthenticateResponse{}
 	err := r.cli.Invoke(authenticate).
-		JsonRequestBody(domain.AuthenticateRequest{Token: token}).
+		JsonRequestBody(entity.AuthenticateRequest{Token: token}).
 		JsonResponseBody(&resp).
 		Do(ctx)
 	if err != nil {
@@ -37,8 +37,8 @@ func (r System) Authenticate(ctx context.Context, token string) (*domain.Authent
 	return &resp, nil
 }
 
-func (r System) Authorize(ctx context.Context, req domain.AuthorizeRequest) (bool, error) {
-	resp := domain.AuthorizeResponse{}
+func (r System) Authorize(ctx context.Context, req entity.AuthorizeRequest) (bool, error) {
+	resp := entity.AuthorizeResponse{}
 	err := r.cli.Invoke(authorize).
 		JsonRequestBody(req).
 		JsonResponseBody(&resp).

@@ -17,16 +17,16 @@ const (
 )
 
 type TokenProvider interface {
-	ExtractToken(ctx *request.Context) (string, string, error)
+	ExtractToken(ctx *request.Context) (string, error)
 }
 
-type prefixProviders struct {
+type prefixTokenProviders struct {
 	prefix    string
 	providers []string
 }
 
 type TokenExtractor struct {
-	providersByPrefixes []prefixProviders
+	providersByPrefixes []prefixTokenProviders
 	tokenProviders      map[string]TokenProvider
 }
 
@@ -45,7 +45,7 @@ func NewTokenExtractor(endpointsCfg []conf.AuthEndpointSetting, tokenProviders [
 		providers[provider.Name] = tokenProvider
 	}
 
-	providersByPrefixes := make([]prefixProviders, 0, len(endpointsCfg))
+	providersByPrefixes := make([]prefixTokenProviders, 0, len(endpointsCfg))
 	for _, endpoint := range endpointsCfg {
 		prefix := strings.TrimPrefix(endpoint.EndpointPrefix, "/")
 		for _, providerName := range endpoint.TokenProviders {
@@ -55,7 +55,7 @@ func NewTokenExtractor(endpointsCfg []conf.AuthEndpointSetting, tokenProviders [
 			}
 		}
 
-		providersByPrefixes = append(providersByPrefixes, prefixProviders{
+		providersByPrefixes = append(providersByPrefixes, prefixTokenProviders{
 			prefix:    prefix,
 			providers: endpoint.TokenProviders,
 		})
@@ -87,12 +87,12 @@ func (s TokenExtractor) customExtractToken(ctx *request.Context, providers []str
 	for _, providerName := range providers {
 		provider := s.tokenProviders[providerName]
 
-		token, appName, err := provider.ExtractToken(ctx)
+		token, err := provider.ExtractToken(ctx)
 		if err != nil {
 			return "", "", errors.WithMessagef(err, "extract token by '%s'", providerName)
 		}
 		if token != "" {
-			return token, appName, nil
+			return token, "", nil
 		}
 	}
 	return "", "", nil

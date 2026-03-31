@@ -14,6 +14,7 @@ import (
 	"isp-gate-service/assembly"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
+	"isp-gate-service/entity"
 	"isp-gate-service/routes"
 
 	"github.com/stretchr/testify/require"
@@ -86,7 +87,7 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 	}})
 	require.NoError(err)
 
-	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, nil)
 
 	locations := []conf.Location{{
 		SkipAuth:     false,
@@ -136,7 +137,7 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 	}})
 	require.NoError(err)
 
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil)
+	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil, nil)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/api",
@@ -192,7 +193,7 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint: funlen
 	}})
 	require.NoError(err)
 
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil)
+	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil, nil)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/ws",
@@ -252,7 +253,7 @@ func (s *HappyPathTestSuite) TestAdminAuthorization() {
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
 	require.NoError(err)
 	routes := routes.NewRoutes(logger)
-	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, nil)
 
 	locations := []conf.Location{{
 		SkipAuth:     false,
@@ -328,22 +329,22 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *
 				AppName:       "test",
 			},
 		}
-	}).Mock("system/secure/authorize", func() domain.AuthorizeResponse {
-		return domain.AuthorizeResponse{Authorized: true}
+	}).Mock("system/secure/authorize", func() entity.AuthorizeResponse {
+		return entity.AuthorizeResponse{Authorized: true}
 	})
 
 	adminService, adminCli := grpct.NewMock(test)
-	adminService.Mock("admin/secure/authenticate", func(req domain.AdminAuthorizeRequest) domain.AdminAuthenticateResponse {
-		return domain.AdminAuthenticateResponse{
+	adminService.Mock("admin/secure/authenticate", func(req entity.AdminAuthorizeRequest) entity.AdminAuthenticateResponse {
+		return entity.AdminAuthenticateResponse{
 			Authenticated: true,
 			ErrorReason:   "",
 			AdminId:       1,
 		}
-	}).Mock("admin/secure/authorize", func(req domain.AdminAuthorizeRequest) domain.AdminAuthorizeResponse {
+	}).Mock("admin/secure/authorize", func(req entity.AdminAuthorizeRequest) entity.AdminAuthorizeResponse {
 		if req.Permission == "ok_permission" {
-			return domain.AdminAuthorizeResponse{Authorized: true}
+			return entity.AdminAuthorizeResponse{Authorized: true}
 		}
-		return domain.AdminAuthorizeResponse{Authorized: false}
+		return entity.AdminAuthorizeResponse{Authorized: false}
 	})
 
 	return config, systemCli, adminCli

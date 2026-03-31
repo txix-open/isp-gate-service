@@ -4,10 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/txix-open/isp-kit/json"
 	"isp-gate-service/cache"
 	"isp-gate-service/domain"
+	"isp-gate-service/entity"
+
+	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/json"
 )
 
 type AuthenticationCache struct {
@@ -22,13 +24,13 @@ func NewAuthenticationCache(duration time.Duration) AuthenticationCache {
 	}
 }
 
-func (r AuthenticationCache) Get(ctx context.Context, token string) (*domain.AuthData, error) {
+func (r AuthenticationCache) Get(ctx context.Context, token string) (*entity.AuthData, error) {
 	data, ok := r.cache.Get(token)
 	if !ok {
 		return nil, domain.ErrAuthenticationCacheMiss
 	}
 
-	result := domain.AuthData{}
+	result := entity.AuthData{}
 	err := json.Unmarshal(data, &result)
 	if err != nil {
 		return nil, errors.WithMessage(err, "json unmarshal auth data")
@@ -37,7 +39,7 @@ func (r AuthenticationCache) Get(ctx context.Context, token string) (*domain.Aut
 	return &result, nil
 }
 
-func (r AuthenticationCache) Set(ctx context.Context, token string, data domain.AuthData) error {
+func (r AuthenticationCache) Set(ctx context.Context, token string, data entity.AuthData) error {
 	value, err := json.Marshal(data)
 	if err != nil {
 		return errors.WithMessage(err, "json marshal auth data")

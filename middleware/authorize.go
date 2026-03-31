@@ -4,10 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pkg/errors"
-	"github.com/txix-open/isp-kit/log"
 	"isp-gate-service/httperrors"
 	"isp-gate-service/request"
+
+	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/log"
 )
 
 type Authorizer interface {
@@ -20,6 +21,10 @@ func Authorize(authorizer Authorizer, logger log.Logger) Middleware {
 			authData, err := ctx.GetAuthData()
 			if err != nil {
 				return errors.WithMessage(err, "authorize: get auth data")
+			}
+			// скип для прошедших по third-party
+			if authData.CustomAuthData != nil {
+				return next.Handle(ctx)
 			}
 
 			endpointMeta := ctx.EndpointMeta()

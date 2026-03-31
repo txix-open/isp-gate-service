@@ -3,6 +3,7 @@ package proxy
 import (
 	"encoding/base64"
 	"fmt"
+	"maps"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -92,22 +93,33 @@ func (p Http) Handle(ctx *request.Context) error {
 
 func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) error {
 	header.Set(requestid.Header, requestid.FromContext(ctx.Context()))
-	if !skipAuth {
-		authData, err := ctx.GetAuthData()
-		if err != nil {
-			return errors.WithMessage(err, "http: get auth data")
-		}
-		header.Set(grpc.SystemIdHeader, strconv.Itoa(authData.SystemId))
-		header.Set(grpc.DomainIdHeader, strconv.Itoa(authData.DomainId))
-		header.Set(grpc.ServiceIdHeader, strconv.Itoa(authData.ServiceId))
-		header.Set(grpc.ApplicationIdHeader, strconv.Itoa(authData.ApplicationId))
-		encodedAppName := base64.StdEncoding.EncodeToString([]byte(authData.AppName))
-		header.Set(grpc.ApplicationNameHeader, encodedAppName) //nolint:canonicalheader
-		if ctx.IsAdminAuthenticated() {
-			header.Set(xAdminIdHeader, strconv.Itoa(ctx.AdminId())) //nolint:canonicalheader
-		} else {
-			header.Del(xAdminIdHeader) //nolint:canonicalheader
-		}
+	if skipAuth {
+		return nil
+	}
+
+	authData, err := ctx.GetAuthData()
+	if err != nil {
+		return errors.WithMessage(err, "http: get auth data")
+	}
+
+	if authData.CustomAuthData != nil {
+		customAuthData := authData.CustomAuthData
+		proxyHeaders := maps.Clone(customAuthData.ExtraHeaders)
+		proxyHeaders[customAuthData.IdentityHeader] = []string{customAuthData.Identity}
+		maps.Copy(header, proxyHeaders)
+		return nil
+	}
+
+	header.Set(grpc.SystemIdHeader, strconv.Itoa(authData.SystemId))
+	header.Set(grpc.DomainIdHeader, strconv.Itoa(authData.DomainId))
+	header.Set(grpc.ServiceIdHeader, strconv.Itoa(authData.ServiceId))
+	header.Set(grpc.ApplicationIdHeader, strconv.Itoa(authData.ApplicationId))
+	encodedAppName := base64.StdEncoding.EncodeToString([]byte(authData.AppName))
+	header.Set(grpc.ApplicationNameHeader, encodedAppName) //nolint:canonicalheader
+	if ctx.IsAdminAuthenticated() {
+		header.Set(xAdminIdHeader, strconv.Itoa(ctx.AdminId())) //nolint:canonicalheader
+	} else {
+		header.Del(xAdminIdHeader) //nolint:canonicalheader
 	}
 	return nil
 }
