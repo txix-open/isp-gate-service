@@ -41,7 +41,7 @@ type UserAuthentication struct {
 }
 
 func NewUserAuthentication(
-	cfg conf.UserAuth,
+	cfg conf.CustomAuth,
 	cache UserAuthenticationCache,
 	repo UserAuthenticationRepo,
 ) (UserAuthentication, error) {
@@ -59,8 +59,8 @@ func NewUserAuthentication(
 		tokenProviders[provider.Name] = tokenProvider
 	}
 
-	endpointsSettings := make([]userAuthSetting, 0, len(cfg.AuthSettings))
-	for _, setting := range cfg.AuthSettings {
+	endpointsSettings := make([]userAuthSetting, 0, len(cfg.UserAuthSettings))
+	for _, setting := range cfg.UserAuthSettings {
 		for i := range setting.EndpointPrefixes {
 			setting.EndpointPrefixes[i] = strings.TrimPrefix(setting.EndpointPrefixes[i], "/")
 		}

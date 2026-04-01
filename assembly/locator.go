@@ -65,7 +65,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 	userAuthenticationCache := repository.NewUserAuthenticationCache(time.Duration(config.Caching.AuthenticationDataInSec) * time.Second)
 	userAuthRepo := repository.NewUserAuth(l.routerLb)
 	userAuthentication, err := service.NewUserAuthentication(
-		config.UserAuth,
+		config.CustomAuth,
 		userAuthenticationCache,
 		userAuthRepo,
 	)

@@ -29,7 +29,7 @@ type Remote struct {
 	Throttling                      []Throttling                 `schema:"Настройки пропускной способности"`
 	EnableClientRequestIdForwarding bool                         `schema:"Включить проброс requestId из заголовка запроса"`
 	ForwardReqIdClientSettings      []ForwardReqIdClientSettings `schema:"Настройки проброcа requestId для приложений"`
-	UserAuth                        UserAuth                     `schema:"Настройка аутентификации/авторизации пользователя"`
+	CustomAuth                      CustomAuth                   `schema:"Настройка кастомной аутентификации/авторизации"`
 }
 
 type ForwardReqIdClientSettings struct {
@@ -65,9 +65,9 @@ type Throttling struct {
 	RequestsPerSeconds int `validate:"required,min=1,max=1000" schema:"Запросов в секунду,не конфликтует с суточными ограничениями, алгоритм не работает на значениях больше 1000"`
 }
 
-type UserAuth struct {
-	TokenProviders []TokenProvider   `schema:"Настройки получения токена из запроса"`
-	AuthSettings   []UserAuthSetting `schema:"Настройка пользовательской аутентификации/авторизации"`
+type CustomAuth struct {
+	TokenProviders   []TokenProvider   `schema:"Настройки получения токена из запроса"`
+	UserAuthSettings []UserAuthSetting `schema:"Настройка пользовательской аутентификации/авторизации"`
 }
 
 type AuthProvider struct {

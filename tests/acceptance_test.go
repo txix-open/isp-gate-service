@@ -366,7 +366,7 @@ func (s *HappyPathTestSuite) TestUserAuthorization() { // nolint:funlen
 		Protocol:     "grpc",
 		TargetModule: "target",
 	}}
-	config.UserAuth = conf.UserAuth{
+	config.CustomAuth = conf.CustomAuth{
 		TokenProviders: []conf.TokenProvider{
 			{
 				Name: "test_provider",
@@ -376,7 +376,7 @@ func (s *HappyPathTestSuite) TestUserAuthorization() { // nolint:funlen
 				},
 			},
 		},
-		AuthSettings: []conf.UserAuthSetting{
+		UserAuthSettings: []conf.UserAuthSetting{
 			{
 				EndpointPrefixes: []string{"endpoint"},
 				TokenProviders:   []string{"test_provider"},
@@ -493,7 +493,7 @@ func (s *HappyPathTestSuite) TestUserAuthorization_SkipAppAuth() { // nolint:fun
 		Protocol:     "grpc",
 		TargetModule: "target",
 	}}
-	config.UserAuth = conf.UserAuth{
+	config.CustomAuth = conf.CustomAuth{
 		TokenProviders: []conf.TokenProvider{
 			{
 				Name: "test_provider",
@@ -503,7 +503,7 @@ func (s *HappyPathTestSuite) TestUserAuthorization_SkipAppAuth() { // nolint:fun
 				},
 			},
 		},
-		AuthSettings: []conf.UserAuthSetting{
+		UserAuthSettings: []conf.UserAuthSetting{
 			{
 				EndpointPrefixes: []string{"endpoint"},
 				TokenProviders:   []string{"test_provider"},
