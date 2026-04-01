@@ -59,23 +59,29 @@ func NewUserAuthentication(
 		tokenProviders[provider.Name] = tokenProvider
 	}
 
-	endpointsSettings := make([]userAuthSetting, 0, len(cfg.EndpointSettings))
-	for _, endpoint := range cfg.EndpointSettings {
-		prefix := strings.TrimPrefix(endpoint.EndpointPrefix, "/")
-
-		for _, providerName := range endpoint.TokenProviders {
-			_, ok := tokenProviders[providerName]
-			if !ok {
-				return UserAuthentication{}, errors.Errorf("endpoint with prefix '%s' has unknown token provider '%s'", prefix, providerName)
-			}
+	endpointsSettings := make([]userAuthSetting, 0, len(cfg.AuthSettings))
+	for _, setting := range cfg.AuthSettings {
+		for i := range setting.EndpointPrefixes {
+			setting.EndpointPrefixes[i] = strings.TrimPrefix(setting.EndpointPrefixes[i], "/")
 		}
 
-		endpointsSettings = append(endpointsSettings, userAuthSetting{
-			endpointPrefix: prefix,
-			authModuleName: endpoint.AuthModuleName,
-			tokenProviders: endpoint.TokenProviders,
-			skipAppAuth:    endpoint.SkipAppAuth,
-		})
+		for _, providerName := range setting.TokenProviders {
+			_, ok := tokenProviders[providerName]
+			if !ok {
+				return UserAuthentication{}, errors.Errorf("endpoint with prefixes '[%s]' has unknown token provider '%s'",
+					strings.Join(setting.EndpointPrefixes, ","),
+					providerName,
+				)
+			}
+		}
+		for _, prefix := range setting.EndpointPrefixes {
+			endpointsSettings = append(endpointsSettings, userAuthSetting{
+				endpointPrefix: prefix,
+				authModuleName: setting.AuthModuleName,
+				tokenProviders: setting.TokenProviders,
+				skipAppAuth:    setting.SkipAppAuth,
+			})
+		}
 	}
 	sort.Slice(endpointsSettings, func(i, j int) bool {
 		return len(endpointsSettings[i].endpointPrefix) > len(endpointsSettings[j].endpointPrefix)

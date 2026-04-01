@@ -66,8 +66,8 @@ type Throttling struct {
 }
 
 type UserAuth struct {
-	TokenProviders   []TokenProvider       `schema:"Настройки получения токена из запроса"`
-	EndpointSettings []AuthEndpointSetting `schema:"Настройка пользовательской аутентификации/авторизации по путям"`
+	TokenProviders []TokenProvider   `schema:"Настройки получения токена из запроса"`
+	AuthSettings   []UserAuthSetting `schema:"Настройка пользовательской аутентификации/авторизации"`
 }
 
 type AuthProvider struct {
@@ -91,9 +91,9 @@ type CookieTokenProvider struct {
 	Validate   bool   `schema:"Проверить валидность cookie"`
 }
 
-type AuthEndpointSetting struct {
-	EndpointPrefix string   `schema:"Префикс пути,для которого настраивается аутентификация/авторизация" validate:"required"`
-	TokenProviders []string `schema:"Список названий методов получения токена из запроса,возвращает токен из первого удачного"  validate:"required,min=1"`
-	AuthModuleName string   `schema:"Название модуля для аутентификации/авторизации" validate:"required"`
-	SkipAppAuth    bool     `schema:"Пропустить аутентификацию и авторизацию приложения"`
+type UserAuthSetting struct {
+	EndpointPrefixes []string `schema:"Префиксы пути,для которых настраивается аутентификация/авторизация" validate:"required"`
+	TokenProviders   []string `schema:"Список названий методов получения токена из запроса,возвращает токен из первого удачного"  validate:"required,min=1"`
+	AuthModuleName   string   `schema:"Название модуля для аутентификации/авторизации" validate:"required"`
+	SkipAppAuth      bool     `schema:"Пропустить аутентификацию и авторизацию приложения"`
 }
