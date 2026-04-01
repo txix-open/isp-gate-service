@@ -120,7 +120,7 @@ func (s UserAuthentication) Authenticate(ctx *request.Context) (*domain.Authenti
 	}
 
 	return &domain.AuthenticateUserResponse{
-		ShouldSkip: true,
+		SkipUserAuth: true,
 	}, nil
 }
 

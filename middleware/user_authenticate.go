@@ -8,20 +8,21 @@ import (
 	"isp-gate-service/request"
 
 	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/log"
 )
 
 type UserAuthenticator interface {
 	Authenticate(ctx *request.Context) (*domain.AuthenticateUserResponse, error)
 }
 
-func UserAuthenticate(authenticator UserAuthenticator) Middleware {
+func UserAuthenticate(authenticator UserAuthenticator, logger log.Logger) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
 			resp, err := authenticator.Authenticate(ctx)
 			if err != nil {
 				return errors.WithMessage(err, "authenticate user: authenticator error")
 			}
-			if resp.ShouldSkip {
+			if resp.SkipUserAuth {
 				return next.Handle(ctx)
 			}
 
@@ -34,6 +35,13 @@ func UserAuthenticate(authenticator UserAuthenticator) Middleware {
 			}
 
 			ctx.AuthenticateUser(*resp.AuthData)
+
+			if ctx.SkipAppAuth() {
+				logger.Debug(
+					ctx.Context(),
+					"skip app auth is set. All steps that require app auth data are skipped",
+				)
+			}
 			return next.Handle(ctx)
 		})
 	}

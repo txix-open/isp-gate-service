@@ -25,7 +25,7 @@ type UserToken struct {
 
 type AuthenticateUserResponse struct {
 	Authenticated bool
-	ShouldSkip    bool
+	SkipUserAuth  bool
 	ErrorReason   string
 	AuthData      *UserAuthData
 }

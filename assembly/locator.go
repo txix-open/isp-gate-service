@@ -132,7 +132,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			),
 			middleware.RequestId(),
 			middleware.ErrorHandler(l.logger),
-			middleware.UserAuthenticate(userAuthentication),
+			middleware.UserAuthenticate(userAuthentication, l.logger),
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
 			middleware.ClientRequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
