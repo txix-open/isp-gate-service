@@ -7,12 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/http/httpcli"
+	"github.com/txix-open/isp-kit/http/httpclix"
 	"github.com/txix-open/isp-kit/lb"
 	"github.com/txix-open/isp-kit/metrics/http_metrics"
-)
-
-const (
-	userAuthenticateFmt = "http://%s/%s/authenticate"
 )
 
 type UserAuth struct {
@@ -23,7 +20,7 @@ type UserAuth struct {
 func NewUserAuth(lb *lb.RoundRobin) UserAuth {
 	return UserAuth{
 		lb:  lb,
-		cli: httpcli.New(),
+		cli: httpclix.Default(),
 	}
 }
 
@@ -32,15 +29,16 @@ func (r UserAuth) Authenticate(
 	authModuleName string,
 	token string,
 ) (*entity.UserAuthenticateResponse, error) {
-	ctx = http_metrics.ClientEndpointToContext(ctx, userAuthenticateFmt)
+	method := fmt.Sprintf("%s/authenticate", authModuleName)
+
+	ctx = http_metrics.ClientEndpointToContext(ctx, method)
 
 	host, err := r.lb.Next()
 	if err != nil {
 		return nil, errors.WithMessage(err, "lb next")
 	}
 
-	endpoint := fmt.Sprintf(userAuthenticateFmt, host, authModuleName)
-
+	endpoint := fmt.Sprintf("http://%s/%s", host, method)
 	resp := entity.UserAuthenticateResponse{}
 	err = r.cli.Post(endpoint).
 		JsonRequestBody(entity.UserAuthenticateRequest{
