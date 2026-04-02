@@ -114,10 +114,7 @@ func (s UserAuthentication) Authenticate(ctx *request.Context) (*domain.Authenti
 			return nil, errors.WithMessage(err, "extract user token")
 		}
 		if token == "" {
-			return &domain.AuthenticateUserResponse{
-				Authenticated: false,
-				ErrorReason:   "failed extract user token",
-			}, nil
+			return nil, domain.ErrEmptyUserToken
 		}
 
 		resp, err := s.authenticate(

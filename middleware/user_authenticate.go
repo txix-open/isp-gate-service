@@ -19,13 +19,20 @@ func UserAuthenticate(authenticator UserAuthenticator, logger log.Logger) Middle
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
 			resp, err := authenticator.Authenticate(ctx)
-			if err != nil {
+			switch {
+			case errors.Is(err, domain.ErrEmptyUserToken):
+				return httperrors.New(
+					http.StatusUnauthorized,
+					"user token required",
+					errors.New("authenticate: user token required"),
+				)
+			case err != nil:
 				return errors.WithMessage(err, "authenticate user: authenticator error")
 			}
+
 			if resp.SkipUserAuth {
 				return next.Handle(ctx)
 			}
-
 			if !resp.Authenticated {
 				return httperrors.New(
 					http.StatusUnauthorized,
