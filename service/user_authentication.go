@@ -139,7 +139,7 @@ func (s UserAuthentication) extractToken(ctx *request.Context, providers []strin
 
 		token, err := provider.ExtractToken(ctx)
 		if err != nil {
-			return "", errors.WithMessagef(err, "extract token by '%s'", providerName)
+			return "", errors.WithMessagef(domain.ErrInvalidUserToken, "extract token by '%s' error: %s", providerName, err.Error())
 		}
 		if token != "" {
 			return token, nil

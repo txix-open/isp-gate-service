@@ -26,6 +26,12 @@ func UserAuthenticate(authenticator UserAuthenticator, logger log.Logger) Middle
 					"user token required",
 					errors.New("authenticate: user token required"),
 				)
+			case errors.Is(err, domain.ErrInvalidUserToken):
+				return httperrors.New(
+					http.StatusUnauthorized,
+					"invalid user token",
+					errors.WithMessage(err, "authenticate: invalid user token"),
+				)
 			case err != nil:
 				return errors.WithMessage(err, "authenticate user: authenticator error")
 			}
