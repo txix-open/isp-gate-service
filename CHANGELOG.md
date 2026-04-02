@@ -1,3 +1,5 @@
+### v5.9.4
+* Добавлено логирование `requestId` в лог `throttling: rate limit has been reached for application`
 ### v5.9.3
 * Исправлена опечатка при вызове `strings.TrimPrefix`
 ### v5.9.2
