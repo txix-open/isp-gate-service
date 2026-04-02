@@ -1,3 +1,4 @@
+// nolint:ireturn
 package service
 
 import (
@@ -216,7 +217,6 @@ func (UserAuthentication) convertAuthData(authData *entity.UserAuthData, skipApp
 	}
 }
 
-//nolint:ireturn
 func tokenProviderFromConfig(cfg conf.TokenProvider) (TokenProvider, error) {
 	switch cfg.Type {
 	case conf.HeaderTokenProviderType:
