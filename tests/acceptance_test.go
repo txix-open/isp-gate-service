@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"isp-gate-service/assembly"
+	"isp-gate-service/cache"
 	"isp-gate-service/conf"
 	"isp-gate-service/entity"
 	"isp-gate-service/routes"
@@ -90,7 +91,7 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 	}})
 	require.NoError(err)
 
-	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, nil)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, nil, nil)
 
 	locations := []conf.Location{{
 		SkipAuth:     false,
@@ -140,7 +141,7 @@ func (s *HappyPathTestSuite) TestHttpProxy() {
 	}})
 	require.NoError(err)
 
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil, nil)
+	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil, nil, nil)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/api",
@@ -196,7 +197,7 @@ func (s *HappyPathTestSuite) TestWsProxy() { // nolint:funlen
 	}})
 	require.NoError(err)
 
-	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil, nil)
+	locator := assembly.NewLocator(test.Logger(), nil, targetClients, routes, systemCli, adminCli, nil, nil, nil)
 	locations := []conf.Location{{
 		SkipAuth:     false,
 		PathPrefix:   "/ws",
@@ -256,7 +257,7 @@ func (s *HappyPathTestSuite) TestAdminAuthorization() {
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
 	require.NoError(err)
 	routes := routes.NewRoutes(logger)
-	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, nil)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, nil, nil)
 
 	locations := []conf.Location{{
 		SkipAuth:     false,
@@ -358,7 +359,7 @@ func (s *HappyPathTestSuite) TestUserAuthorization() { // nolint:funlen
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
 	require.NoError(err)
 	routes := routes.NewRoutes(logger)
-	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, rr)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, rr, cache.New())
 
 	locations := []conf.Location{{
 		SkipAuth:     false,
@@ -485,7 +486,7 @@ func (s *HappyPathTestSuite) TestUserAuthorization_SkipAppAuth() { // nolint:fun
 	logger, err := log.New(log.WithLevel(log.DebugLevel))
 	require.NoError(err)
 	routes := routes.NewRoutes(logger)
-	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, rr)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, rr, cache.New())
 
 	locations := []conf.Location{{
 		SkipAuth:     false,

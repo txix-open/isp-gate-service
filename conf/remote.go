@@ -95,5 +95,6 @@ type UserAuthSetting struct {
 	EndpointPrefixes []string `schema:"Префиксы пути,для которых настраивается аутентификация/авторизация" validate:"required"`
 	TokenProviders   []string `schema:"Список названий методов получения токена из запроса,возвращает токен из первого удачного"  validate:"required,min=1"`
 	AuthModuleName   string   `schema:"Название модуля для аутентификации/авторизации" validate:"required"`
+	CacheDataInSec   int      `schema:"Время кеширования данных авторизации пользователя,отключен при значениях <=0,в секундах"`
 	SkipAppAuth      bool     `schema:"Пропустить аутентификацию и авторизацию приложения"`
 }

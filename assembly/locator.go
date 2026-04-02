@@ -8,6 +8,7 @@ import (
 	"github.com/txix-open/isp-kit/metrics"
 	"github.com/txix-open/isp-kit/metrics/http_metrics"
 
+	"isp-gate-service/cache"
 	"isp-gate-service/conf"
 	"isp-gate-service/middleware"
 	"isp-gate-service/proxy"
@@ -31,6 +32,7 @@ type Locator struct {
 	adminCli                    *client.Client
 	lockerCli                   *client.Client
 	routerLb                    *lb.RoundRobin
+	usersAuthCache              *cache.Cache
 }
 
 func NewLocator(
@@ -42,6 +44,7 @@ func NewLocator(
 	adminCli *client.Client,
 	lockerCli *client.Client,
 	routerLb *lb.RoundRobin,
+	usersAuthCache *cache.Cache,
 ) Locator {
 	return Locator{
 		logger:                      logger,
@@ -52,6 +55,7 @@ func NewLocator(
 		adminCli:                    adminCli,
 		lockerCli:                   lockerCli,
 		routerLb:                    routerLb,
+		usersAuthCache:              usersAuthCache,
 	}
 }
 
@@ -62,7 +66,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 	authenticationCache := repository.NewAuthenticationCache(time.Duration(config.Caching.AuthenticationDataInSec) * time.Second)
 	authentication := service.NewAuthentication(authenticationCache, systemRepo)
 
-	userAuthenticationCache := repository.NewUserAuthenticationCache(time.Duration(config.Caching.AuthenticationDataInSec) * time.Second)
+	userAuthenticationCache := repository.NewUserAuthenticationCache(l.usersAuthCache)
 	userAuthRepo := repository.NewUserAuth(l.routerLb)
 	userAuthentication, err := service.NewUserAuthentication(
 		config.CustomAuth,

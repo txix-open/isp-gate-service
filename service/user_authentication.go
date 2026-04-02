@@ -9,13 +9,14 @@ import (
 	"isp-gate-service/service/token_provider"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
 
 type UserAuthenticationCache interface {
 	Get(ctx context.Context, authModuleName string, token string) (*entity.UserAuthData, error)
-	Set(ctx context.Context, authModuleName string, token string, data entity.UserAuthData) error
+	Set(ctx context.Context, authModuleName string, token string, data entity.UserAuthData, duration time.Duration) error
 }
 
 type UserAuthenticationRepo interface {
@@ -27,10 +28,11 @@ type TokenProvider interface {
 }
 
 type userAuthSetting struct {
-	tokenProviders []string
-	endpointPrefix string
-	authModuleName string
-	skipAppAuth    bool
+	tokenProviders    []string
+	endpointPrefix    string
+	authModuleName    string
+	authCacheDuration time.Duration
+	skipAppAuth       bool
 }
 
 type UserAuthentication struct {
@@ -74,12 +76,16 @@ func NewUserAuthentication(
 				)
 			}
 		}
+
+		cacheDuration := time.Duration(setting.CacheDataInSec) * time.Second
+
 		for _, prefix := range setting.EndpointPrefixes {
 			endpointsSettings = append(endpointsSettings, userAuthSetting{
-				endpointPrefix: prefix,
-				authModuleName: setting.AuthModuleName,
-				tokenProviders: setting.TokenProviders,
-				skipAppAuth:    setting.SkipAppAuth,
+				endpointPrefix:    prefix,
+				authModuleName:    setting.AuthModuleName,
+				tokenProviders:    setting.TokenProviders,
+				skipAppAuth:       setting.SkipAppAuth,
+				authCacheDuration: cacheDuration,
 			})
 		}
 	}
@@ -115,9 +121,8 @@ func (s UserAuthentication) Authenticate(ctx *request.Context) (*domain.Authenti
 
 		resp, err := s.authenticate(
 			ctx.Context(),
-			setting.authModuleName,
+			setting,
 			token,
-			setting.skipAppAuth,
 		)
 		if err != nil {
 			return nil, errors.WithMessage(err, "auth")
@@ -147,32 +152,45 @@ func (s UserAuthentication) extractToken(ctx *request.Context, providers []strin
 
 func (s UserAuthentication) authenticate(
 	ctx context.Context,
-	authModuleName string,
+	setting userAuthSetting,
 	token string,
-	skipAppAuth bool,
 ) (*domain.AuthenticateUserResponse, error) {
-	authData, err := s.cache.Get(ctx, authModuleName, token)
+	if setting.authCacheDuration <= 0 {
+		resp, err := s.repo.Authenticate(ctx, setting.authModuleName, token)
+		if err != nil {
+			return nil, errors.WithMessage(err, "auth repo authenticate")
+		}
+		return s.convertAuthReponse(resp, setting.skipAppAuth), nil
+	}
+
+	authData, err := s.cache.Get(ctx, setting.authModuleName, token)
 	switch {
 	case errors.Is(err, domain.ErrAuthenticationCacheMiss):
-		resp, err := s.repo.Authenticate(ctx, authModuleName, token)
+		resp, err := s.repo.Authenticate(ctx, setting.authModuleName, token)
 		if err != nil {
 			return nil, errors.WithMessage(err, "auth repo authenticate")
 		}
 		if !resp.Authenticated {
-			return s.convertAuthReponse(resp, skipAppAuth), nil
+			return s.convertAuthReponse(resp, setting.skipAppAuth), nil
 		}
-		err = s.cache.Set(ctx, authModuleName, token, *resp.AuthData)
+		err = s.cache.Set(
+			ctx,
+			setting.authModuleName,
+			token,
+			*resp.AuthData,
+			setting.authCacheDuration,
+		)
 		if err != nil {
 			return nil, errors.WithMessage(err, "auth cache set")
 		}
-		return s.convertAuthReponse(resp, skipAppAuth), nil
+		return s.convertAuthReponse(resp, setting.skipAppAuth), nil
 	case err != nil:
 		return nil, errors.WithMessage(err, "auth cache get")
 	default:
 		return &domain.AuthenticateUserResponse{
 			Authenticated: true,
 			ErrorReason:   "",
-			AuthData:      s.convertAuthData(authData, skipAppAuth),
+			AuthData:      s.convertAuthData(authData, setting.skipAppAuth),
 		}, nil
 	}
 }

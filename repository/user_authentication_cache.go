@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"isp-gate-service/cache"
 	"isp-gate-service/domain"
 	"isp-gate-service/entity"
 
@@ -13,15 +12,18 @@ import (
 	"github.com/txix-open/isp-kit/json"
 )
 
-type UserAuthenticationCache struct {
-	cache    *cache.Cache
-	duration time.Duration
+type Cache interface {
+	Get(key string) ([]byte, bool)
+	Set(key string, data []byte, lifeTime time.Duration)
 }
 
-func NewUserAuthenticationCache(duration time.Duration) UserAuthenticationCache {
+type UserAuthenticationCache struct {
+	cache Cache
+}
+
+func NewUserAuthenticationCache(cache Cache) UserAuthenticationCache {
 	return UserAuthenticationCache{
-		duration: duration,
-		cache:    cache.New(),
+		cache: cache,
 	}
 }
 
@@ -45,13 +47,14 @@ func (r UserAuthenticationCache) Set(
 	authModuleName string,
 	token string,
 	data entity.UserAuthData,
+	duration time.Duration,
 ) error {
 	value, err := json.Marshal(data)
 	if err != nil {
 		return errors.WithMessage(err, "json marshal auth data")
 	}
 
-	r.cache.Set(r.key(authModuleName, token), value, r.duration)
+	r.cache.Set(r.key(authModuleName, token), value, duration)
 
 	return nil
 }

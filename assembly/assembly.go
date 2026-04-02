@@ -2,7 +2,9 @@ package assembly
 
 import (
 	"context"
+	"time"
 
+	"isp-gate-service/cache"
 	"isp-gate-service/conf"
 	"isp-gate-service/routes"
 
@@ -17,7 +19,8 @@ import (
 )
 
 const (
-	routerModuleName = "isp-router-service"
+	routerModuleName            = "isp-router-service"
+	usersAuthCachePurgeInterval = 5 * time.Second
 )
 
 type Assembly struct {
@@ -33,6 +36,8 @@ type Assembly struct {
 	locations                   []conf.Location
 	grpcClientByModuleName      map[string]*client.Client
 	httpHostManagerByModuleName map[string]*lb.RoundRobin
+
+	usersAuthCache *cache.Cache
 }
 
 func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
@@ -87,6 +92,7 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 		adminCli:                    adminCli,
 		lockerCli:                   lockerCli,
 		routerLb:                    lb.NewRoundRobin(nil),
+		usersAuthCache:              cache.New(),
 	}, nil
 }
 
@@ -110,6 +116,7 @@ func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) error
 		a.adminCli,
 		a.lockerCli,
 		a.routerLb,
+		a.usersAuthCache,
 	)
 	handler, err := locator.Handler(newCfg, a.locations)
 	if err != nil {
@@ -143,6 +150,10 @@ func (a *Assembly) Runners() []app.Runner {
 		}),
 		app.RunnerFunc(func(ctx context.Context) error {
 			return a.boot.ClusterCli.Run(ctx, eventHandler)
+		}),
+		app.RunnerFunc(func(ctx context.Context) error {
+			a.usersAuthCache.StartCleaner(ctx, usersAuthCachePurgeInterval)
+			return nil
 		}),
 	}
 }
