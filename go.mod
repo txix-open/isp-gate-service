@@ -10,7 +10,7 @@ require (
 	github.com/redis/go-redis/v9 v9.11.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tomakado/websocketproxy v0.1.0
-	github.com/txix-open/isp-kit v1.65.1
+	github.com/txix-open/isp-kit v1.66.2
 	github.com/txix-open/jsonschema v1.3.0
 	golang.org/x/net v0.52.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260311181403-84a4fc48630c
