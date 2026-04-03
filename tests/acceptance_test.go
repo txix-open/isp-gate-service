@@ -380,12 +380,12 @@ func (s *HappyPathTestSuite) TestUserAuthorization() { // nolint:funlen
 		UserAuthSettings: []conf.UserAuthSetting{
 			{
 				EndpointPrefixes: []string{"endpoint"},
-				TokenProviders:   []string{"test_provider"},
+				TokenProvider:    "test_provider",
 				AuthModuleName:   "test-user-auth",
 			},
 			{
 				EndpointPrefixes: []string{"failed_auth_endpoint"},
-				TokenProviders:   []string{"test_provider"},
+				TokenProvider:    "test_provider",
 				AuthModuleName:   "failed-user-auth",
 			},
 		},
@@ -507,13 +507,13 @@ func (s *HappyPathTestSuite) TestUserAuthorization_SkipAppAuth() { // nolint:fun
 		UserAuthSettings: []conf.UserAuthSetting{
 			{
 				EndpointPrefixes: []string{"endpoint"},
-				TokenProviders:   []string{"test_provider"},
+				TokenProvider:    "test_provider",
 				AuthModuleName:   "test-user-auth",
 				SkipAppAuth:      true,
 			},
 			{
 				EndpointPrefixes: []string{"failed_endpoint"},
-				TokenProviders:   []string{"test_provider"},
+				TokenProvider:    "test_provider",
 				AuthModuleName:   "test-user-auth",
 			},
 		},

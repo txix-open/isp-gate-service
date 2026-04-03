@@ -29,7 +29,7 @@ type TokenProvider interface {
 }
 
 type userAuthSetting struct {
-	tokenProviders    []string
+	tokenProvider     string
 	endpointPrefix    string
 	authModuleName    string
 	authCacheDuration time.Duration
@@ -68,14 +68,13 @@ func NewUserAuthentication(
 			setting.EndpointPrefixes[i] = strings.TrimPrefix(setting.EndpointPrefixes[i], "/")
 		}
 
-		for _, providerName := range setting.TokenProviders {
-			_, ok := tokenProviders[providerName]
-			if !ok {
-				return UserAuthentication{}, errors.Errorf("endpoint with prefixes '[%s]' has unknown token provider '%s'",
+		_, ok := tokenProviders[setting.TokenProvider]
+		if !ok {
+			return UserAuthentication{},
+				errors.Errorf("endpoint with prefixes '[%s]' has unknown token provider '%s'",
 					strings.Join(setting.EndpointPrefixes, ","),
-					providerName,
+					setting.TokenProvider,
 				)
-			}
 		}
 
 		cacheDuration := time.Duration(setting.CacheDataInSec) * time.Second
@@ -84,7 +83,7 @@ func NewUserAuthentication(
 			endpointsSettings = append(endpointsSettings, userAuthSetting{
 				endpointPrefix:    prefix,
 				authModuleName:    setting.AuthModuleName,
-				tokenProviders:    setting.TokenProviders,
+				tokenProvider:     setting.TokenProvider,
 				skipAppAuth:       setting.SkipAppAuth,
 				authCacheDuration: cacheDuration,
 			})
@@ -109,9 +108,13 @@ func (s UserAuthentication) Authenticate(ctx *request.Context) (*domain.Authenti
 			continue
 		}
 
-		token, err := s.extractToken(ctx, setting.tokenProviders)
+		provider := s.tokenProviders[setting.tokenProvider]
+
+		token, err := provider.ExtractToken(ctx)
 		if err != nil {
-			return nil, errors.WithMessage(err, "extract user token")
+			return nil,
+				errors.WithMessagef(domain.ErrInvalidUserToken,
+					"extract token by '%s' error: %s", setting.tokenProvider, err.Error())
 		}
 		if token == "" {
 			return nil, domain.ErrEmptyUserToken
@@ -131,21 +134,6 @@ func (s UserAuthentication) Authenticate(ctx *request.Context) (*domain.Authenti
 	return &domain.AuthenticateUserResponse{
 		SkipUserAuth: true,
 	}, nil
-}
-
-func (s UserAuthentication) extractToken(ctx *request.Context, providers []string) (string, error) {
-	for _, providerName := range providers {
-		provider := s.tokenProviders[providerName]
-
-		token, err := provider.ExtractToken(ctx)
-		if err != nil {
-			return "", errors.WithMessagef(domain.ErrInvalidUserToken, "extract token by '%s' error: %s", providerName, err.Error())
-		}
-		if token != "" {
-			return token, nil
-		}
-	}
-	return "", nil
 }
 
 func (s UserAuthentication) authenticate(
