@@ -92,9 +92,9 @@ type CookieTokenProvider struct {
 }
 
 type UserAuthSetting struct {
-	EndpointPrefixes []string `schema:"Префиксы пути,для которых настраивается аутентификация/авторизация" validate:"required"`
-	TokenProvider    string   `schema:"Название метода получения токена из запроса"  validate:"required"`
-	AuthModuleName   string   `schema:"Название модуля для аутентификации/авторизации" validate:"required"`
-	CacheDataInSec   int      `schema:"Время кеширования данных авторизации пользователя,отключен при значениях <=0,в секундах"`
-	SkipAppAuth      bool     `schema:"Пропустить аутентификацию и авторизацию приложения"`
+	EndpointPrefixes   []string `schema:"Префиксы пути,для которых настраивается аутентификация/авторизация" validate:"required"`
+	TokenProvider      string   `schema:"Название метода получения токена из запроса"  validate:"required"`
+	AuthMethodBasePath string   `schema:"Путь до метода аутентификации/авторизации,метод вызывается через isp-router-service" validate:"required"`
+	CacheDataInSec     int      `schema:"Время кеширования данных авторизации пользователя,отключен при значениях <=0,в секундах"`
+	SkipAppAuth        bool     `schema:"Пропустить аутентификацию и авторизацию приложения"`
 }

@@ -16,8 +16,8 @@ import (
 )
 
 type UserAuthenticationCache interface {
-	Get(ctx context.Context, authModuleName string, token string) (*entity.UserAuthData, error)
-	Set(ctx context.Context, authModuleName string, token string, data entity.UserAuthData, duration time.Duration) error
+	Get(ctx context.Context, authBasePath string, token string) (*entity.UserAuthData, error)
+	Set(ctx context.Context, authBasePath string, token string, data entity.UserAuthData, duration time.Duration) error
 }
 
 type UserAuthenticationRepo interface {
@@ -31,7 +31,7 @@ type TokenProvider interface {
 type userAuthSetting struct {
 	tokenProvider     string
 	endpointPrefix    string
-	authModuleName    string
+	authBasePath      string
 	authCacheDuration time.Duration
 	skipAppAuth       bool
 }
@@ -82,7 +82,7 @@ func NewUserAuthentication(
 		for _, prefix := range setting.EndpointPrefixes {
 			endpointsSettings = append(endpointsSettings, userAuthSetting{
 				endpointPrefix:    prefix,
-				authModuleName:    setting.AuthModuleName,
+				authBasePath:      strings.TrimPrefix(setting.AuthMethodBasePath, "/"),
 				tokenProvider:     setting.TokenProvider,
 				skipAppAuth:       setting.SkipAppAuth,
 				authCacheDuration: cacheDuration,
@@ -142,17 +142,17 @@ func (s UserAuthentication) authenticate(
 	token string,
 ) (*domain.AuthenticateUserResponse, error) {
 	if setting.authCacheDuration <= 0 {
-		resp, err := s.repo.Authenticate(ctx, setting.authModuleName, token)
+		resp, err := s.repo.Authenticate(ctx, setting.authBasePath, token)
 		if err != nil {
 			return nil, errors.WithMessage(err, "auth repo authenticate")
 		}
 		return s.convertAuthReponse(resp, setting.skipAppAuth), nil
 	}
 
-	authData, err := s.cache.Get(ctx, setting.authModuleName, token)
+	authData, err := s.cache.Get(ctx, setting.authBasePath, token)
 	switch {
 	case errors.Is(err, domain.ErrAuthenticationCacheMiss):
-		resp, err := s.repo.Authenticate(ctx, setting.authModuleName, token)
+		resp, err := s.repo.Authenticate(ctx, setting.authBasePath, token)
 		if err != nil {
 			return nil, errors.WithMessage(err, "auth repo authenticate")
 		}
@@ -161,7 +161,7 @@ func (s UserAuthentication) authenticate(
 		}
 		err = s.cache.Set(
 			ctx,
-			setting.authModuleName,
+			setting.authBasePath,
 			token,
 			*resp.AuthData,
 			setting.authCacheDuration,
