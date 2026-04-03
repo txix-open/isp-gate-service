@@ -5,7 +5,10 @@ import (
 )
 
 type EndpointMeta struct {
-	Inner                   bool
+	Inner            bool
+	UserAuthRequired bool
+
+	ModuleName              string
 	RequiredAdminPermission string
 	// Объявляемый сервисом метод
 	PathSchema string

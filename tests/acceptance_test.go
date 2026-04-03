@@ -379,12 +379,12 @@ func (s *HappyPathTestSuite) TestUserAuthorization() { // nolint:funlen
 		},
 		UserAuthSettings: []conf.UserAuthSetting{
 			{
-				EndpointPrefixes:   []string{"endpoint"},
+				ModuleNameList:     []string{"target"},
 				TokenProvider:      "test_provider",
 				AuthMethodBasePath: "test-user-auth",
 			},
 			{
-				EndpointPrefixes:   []string{"failed_auth_endpoint"},
+				ModuleNameList:     []string{"target2"},
 				TokenProvider:      "test_provider",
 				AuthMethodBasePath: "failed-user-auth",
 			},
@@ -393,19 +393,31 @@ func (s *HappyPathTestSuite) TestUserAuthorization() { // nolint:funlen
 	handler, err := locator.Handler(config, locations)
 	require.NoError(err)
 
-	err = routes.ReceiveRoutes(context.Background(), cluster.RoutingConfig{{
-		ModuleName: "target",
-		Endpoints: []cluster.EndpointDescriptor{{
-			Path:  "endpoint",
-			Inner: true,
-		}, {
-			Path:  "failed_auth_endpoint",
-			Inner: true,
-		}, {
-			Path:  "failed_endpoint",
-			Inner: true,
-		}},
-	}})
+	err = routes.ReceiveRoutes(context.Background(), cluster.RoutingConfig{
+		{
+			ModuleName: "target",
+			Endpoints: []cluster.EndpointDescriptor{{
+				Path:             "endpoint",
+				Inner:            true,
+				UserAuthRequired: true,
+			},
+			},
+		},
+		{
+			ModuleName: "target2",
+			Endpoints: []cluster.EndpointDescriptor{
+				{
+					Path:             "failed_auth_endpoint",
+					Inner:            true,
+					UserAuthRequired: true,
+				}, {
+					Path:             "failed_endpoint",
+					Inner:            true,
+					UserAuthRequired: true,
+				},
+			},
+		},
+	})
 	require.NoError(err)
 
 	srv := httptest.NewServer(handler)
@@ -506,13 +518,13 @@ func (s *HappyPathTestSuite) TestUserAuthorization_SkipAppAuth() { // nolint:fun
 		},
 		UserAuthSettings: []conf.UserAuthSetting{
 			{
-				EndpointPrefixes:   []string{"endpoint"},
+				ModuleNameList:     []string{"target"},
 				TokenProvider:      "test_provider",
 				AuthMethodBasePath: "test-user-auth",
 				SkipAppAuth:        true,
 			},
 			{
-				EndpointPrefixes:   []string{"failed_endpoint"},
+				ModuleNameList:     []string{"target2"},
 				TokenProvider:      "test_provider",
 				AuthMethodBasePath: "test-user-auth",
 			},
@@ -524,13 +536,19 @@ func (s *HappyPathTestSuite) TestUserAuthorization_SkipAppAuth() { // nolint:fun
 	err = routes.ReceiveRoutes(context.Background(), cluster.RoutingConfig{{
 		ModuleName: "target",
 		Endpoints: []cluster.EndpointDescriptor{{
-			Path:  "endpoint",
-			Inner: true,
-		}, {
-			Path:  "failed_endpoint",
-			Inner: true,
-		}},
-	}})
+			Path:             "endpoint",
+			Inner:            true,
+			UserAuthRequired: true,
+		}}},
+		{
+			ModuleName: "target2",
+			Endpoints: []cluster.EndpointDescriptor{{
+				Path:             "failed_endpoint",
+				Inner:            true,
+				UserAuthRequired: true,
+			}},
+		},
+	})
 	require.NoError(err)
 
 	srv := httptest.NewServer(handler)

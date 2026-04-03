@@ -8,7 +8,6 @@ import (
 	"isp-gate-service/entity"
 	"isp-gate-service/request"
 	"isp-gate-service/service/token_provider"
-	"sort"
 	"strings"
 	"time"
 
@@ -30,17 +29,16 @@ type TokenProvider interface {
 
 type userAuthSetting struct {
 	tokenProvider     string
-	endpointPrefix    string
 	authBasePath      string
 	authCacheDuration time.Duration
 	skipAppAuth       bool
 }
 
 type UserAuthentication struct {
-	cache             UserAuthenticationCache
-	repo              UserAuthenticationRepo
-	endpointsSettings []userAuthSetting
-	tokenProviders    map[string]TokenProvider
+	cache                UserAuthenticationCache
+	repo                 UserAuthenticationRepo
+	settingsByModuleName map[string]userAuthSetting
+	tokenProviders       map[string]TokenProvider
 }
 
 func NewUserAuthentication(
@@ -62,78 +60,79 @@ func NewUserAuthentication(
 		tokenProviders[provider.Name] = tokenProvider
 	}
 
-	endpointsSettings := make([]userAuthSetting, 0, len(cfg.UserAuthSettings))
+	settingsByModuleName := make(map[string]userAuthSetting, len(cfg.UserAuthSettings))
 	for _, setting := range cfg.UserAuthSettings {
-		for i := range setting.EndpointPrefixes {
-			setting.EndpointPrefixes[i] = strings.TrimPrefix(setting.EndpointPrefixes[i], "/")
-		}
-
 		_, ok := tokenProviders[setting.TokenProvider]
 		if !ok {
 			return UserAuthentication{},
-				errors.Errorf("endpoint with prefixes '[%s]' has unknown token provider '%s'",
-					strings.Join(setting.EndpointPrefixes, ","),
+				errors.Errorf("modules with names'[%s]' has unknown token provider '%s'",
+					strings.Join(setting.ModuleNameList, ","),
 					setting.TokenProvider,
 				)
 		}
 
 		cacheDuration := time.Duration(setting.CacheDataInSec) * time.Second
-
-		for _, prefix := range setting.EndpointPrefixes {
-			endpointsSettings = append(endpointsSettings, userAuthSetting{
-				endpointPrefix:    prefix,
-				authBasePath:      strings.TrimPrefix(setting.AuthMethodBasePath, "/"),
+		for _, moduleName := range setting.ModuleNameList {
+			_, ok := settingsByModuleName[moduleName]
+			if ok {
+				return UserAuthentication{},
+					errors.Errorf("setting unique violation, setting for module with name '%s' already present",
+						moduleName,
+					)
+			}
+			settingsByModuleName[moduleName] = userAuthSetting{
 				tokenProvider:     setting.TokenProvider,
-				skipAppAuth:       setting.SkipAppAuth,
+				authBasePath:      setting.AuthMethodBasePath,
 				authCacheDuration: cacheDuration,
-			})
+				skipAppAuth:       setting.SkipAppAuth,
+			}
 		}
 	}
-	sort.Slice(endpointsSettings, func(i, j int) bool {
-		return len(endpointsSettings[i].endpointPrefix) > len(endpointsSettings[j].endpointPrefix)
-	})
 
 	return UserAuthentication{
-		cache:             cache,
-		repo:              repo,
-		endpointsSettings: endpointsSettings,
-		tokenProviders:    tokenProviders,
+		cache:                cache,
+		repo:                 repo,
+		settingsByModuleName: settingsByModuleName,
+		tokenProviders:       tokenProviders,
 	}, nil
 }
 
 func (s UserAuthentication) Authenticate(ctx *request.Context) (*domain.AuthenticateUserResponse, error) {
-	normalizedEndpoint := ctx.EndpointMeta().NormalizedEndpoint
-	for _, setting := range s.endpointsSettings {
-		if !strings.HasPrefix(normalizedEndpoint, setting.endpointPrefix) {
-			continue
-		}
-
-		provider := s.tokenProviders[setting.tokenProvider]
-
-		token, err := provider.ExtractToken(ctx)
-		if err != nil {
-			return nil,
-				errors.WithMessagef(domain.ErrInvalidUserToken,
-					"extract token by '%s' error: %s", setting.tokenProvider, err.Error())
-		}
-		if token == "" {
-			return nil, domain.ErrEmptyUserToken
-		}
-
-		resp, err := s.authenticate(
-			ctx.Context(),
-			setting,
-			token,
-		)
-		if err != nil {
-			return nil, errors.WithMessage(err, "auth")
-		}
-		return resp, nil
+	meta := ctx.EndpointMeta()
+	if !meta.UserAuthRequired {
+		return &domain.AuthenticateUserResponse{
+			SkipUserAuth: true,
+		}, nil
 	}
 
-	return &domain.AuthenticateUserResponse{
-		SkipUserAuth: true,
-	}, nil
+	setting, ok := s.settingsByModuleName[meta.ModuleName]
+	if !ok {
+		return nil, errors.WithMessagef(domain.ErrUserAuthSettingNotFound,
+			"setting for module '%s' and endpoint '%s' not found",
+			meta.ModuleName, meta.Endpoint,
+		)
+	}
+
+	provider := s.tokenProviders[setting.tokenProvider]
+
+	token, err := provider.ExtractToken(ctx)
+	if err != nil {
+		return nil, errors.WithMessagef(domain.ErrInvalidUserToken,
+			"extract token by '%s' error: %s", setting.tokenProvider, err.Error())
+	}
+	if token == "" {
+		return nil, domain.ErrEmptyUserToken
+	}
+
+	resp, err := s.authenticate(
+		ctx.Context(),
+		setting,
+		token,
+	)
+	if err != nil {
+		return nil, errors.WithMessage(err, "auth")
+	}
+	return resp, nil
 }
 
 func (s UserAuthentication) authenticate(
