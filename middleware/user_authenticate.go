@@ -24,16 +24,16 @@ func UserAuthenticate(authenticator UserAuthenticator, logger log.Logger) Middle
 				return httperrors.New(
 					http.StatusUnauthorized,
 					"user token required",
-					errors.New("authenticate: user token required"),
+					errors.New("customAuth: authenticate user: user token required"),
 				)
 			case errors.Is(err, domain.ErrInvalidUserToken):
 				return httperrors.New(
 					http.StatusUnauthorized,
 					"invalid user token",
-					errors.WithMessage(err, "authenticate: invalid user token"),
+					errors.WithMessage(err, "customAuth: authenticate user: invalid user token"),
 				)
 			case err != nil:
-				return errors.WithMessage(err, "authenticate user: authenticator error")
+				return errors.WithMessage(err, "customAuth: authenticate user: authenticator error")
 			}
 
 			if resp.SkipUserAuth {
@@ -43,7 +43,7 @@ func UserAuthenticate(authenticator UserAuthenticator, logger log.Logger) Middle
 				return httperrors.New(
 					http.StatusUnauthorized,
 					"invalid user token",
-					errors.Errorf("authenticate: %s", resp.ErrorReason),
+					errors.Errorf("customAuth: authenticate user: authenticate: %s", resp.ErrorReason),
 				)
 			}
 
