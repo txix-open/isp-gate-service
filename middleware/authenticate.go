@@ -16,12 +16,16 @@ const (
 )
 
 type Authenticator interface {
-	Authenticate(ctx context.Context, token string) (*domain.AuthenticateResponse, error)
+	Authenticate(ctx context.Context, token string) (*domain.AuthenticateAppResponse, error)
 }
 
 func Authenticate(authenticator Authenticator) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
+			if ctx.SkipAppAuth() {
+				return next.Handle(ctx)
+			}
+
 			token, appName, err := extractToken(ctx)
 			if err != nil {
 				return err
@@ -55,7 +59,7 @@ func Authenticate(authenticator Authenticator) Middleware {
 				)
 			}
 
-			ctx.Authenticate(request.AuthData(*resp.AuthData))
+			ctx.Authenticate(*resp.AuthData)
 			return next.Handle(ctx)
 		})
 	}

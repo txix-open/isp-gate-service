@@ -43,7 +43,7 @@ func (ws Ws) Handle(ctx *request.Context) error {
 	var resultError error
 	proxy := websocketproxy.NewProxy(target)
 	proxy.Director = func(incoming *http.Request, out http.Header) {
-		_ = setHttpHeaders(ctx, out, ws.skipAuth)
+		setHttpHeaders(ctx, out, ws.skipAuth)
 	}
 	proxy.Upgrader = &websocket.Upgrader{
 		HandshakeTimeout: 5 * time.Second,

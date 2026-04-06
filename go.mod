@@ -10,7 +10,7 @@ require (
 	github.com/redis/go-redis/v9 v9.11.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tomakado/websocketproxy v0.1.0
-	github.com/txix-open/isp-kit v1.65.1
+	github.com/txix-open/isp-kit v1.66.2
 	github.com/txix-open/jsonschema v1.3.0
 	golang.org/x/net v0.52.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260311181403-84a4fc48630c
@@ -19,6 +19,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
+	github.com/go-faker/faker/v4 v4.7.0 // indirect
 	github.com/txix-open/etp/v4 v4.0.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect

@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"isp-gate-service/domain"
+	"isp-gate-service/entity"
 
 	"github.com/pkg/errors"
 )
@@ -14,7 +14,7 @@ type AuthorizationCache interface {
 }
 
 type AuthorizationRepo interface {
-	Authorize(ctx context.Context, req domain.AuthorizeRequest) (bool, error)
+	Authorize(ctx context.Context, req entity.AuthorizeRequest) (bool, error)
 }
 
 type Authorization struct {
@@ -39,7 +39,7 @@ func (s Authorization) Authorize(ctx context.Context, applicationId int, httpMet
 		return true, nil
 	}
 
-	ok, err = s.repo.Authorize(ctx, domain.AuthorizeRequest{
+	ok, err = s.repo.Authorize(ctx, entity.AuthorizeRequest{
 		ApplicationId: applicationId,
 		HttpMethod:    httpMethod,
 		Endpoint:      endpoint,

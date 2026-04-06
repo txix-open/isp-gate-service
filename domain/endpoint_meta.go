@@ -1,14 +1,22 @@
 package domain
 
-import "context"
+import (
+	"context"
+)
 
 type EndpointMeta struct {
-	Inner                   bool
+	Inner            bool
+	UserAuthRequired bool
+
+	ModuleName              string
 	RequiredAdminPermission string
 	// Объявляемый сервисом метод
 	PathSchema string
 	// Вызываемый метод
 	Endpoint string
+	// Нормализованный путь, для известных путей берётся объявляемый метод, для неизвестных - вызываемый
+	// Удаляет '/' из начала пути
+	NormalizedEndpoint string
 }
 
 type endpointMetaKey struct{}

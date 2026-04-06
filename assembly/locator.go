@@ -8,6 +8,7 @@ import (
 	"github.com/txix-open/isp-kit/metrics"
 	"github.com/txix-open/isp-kit/metrics/http_metrics"
 
+	"isp-gate-service/cache"
 	"isp-gate-service/conf"
 	"isp-gate-service/middleware"
 	"isp-gate-service/proxy"
@@ -30,6 +31,8 @@ type Locator struct {
 	systemCli                   *client.Client
 	adminCli                    *client.Client
 	lockerCli                   *client.Client
+	routerLb                    *lb.RoundRobin
+	usersAuthCache              *cache.Cache
 }
 
 func NewLocator(
@@ -40,6 +43,8 @@ func NewLocator(
 	systemCli *client.Client,
 	adminCli *client.Client,
 	lockerCli *client.Client,
+	routerLb *lb.RoundRobin,
+	usersAuthCache *cache.Cache,
 ) Locator {
 	return Locator{
 		logger:                      logger,
@@ -49,6 +54,8 @@ func NewLocator(
 		systemCli:                   systemCli,
 		adminCli:                    adminCli,
 		lockerCli:                   lockerCli,
+		routerLb:                    routerLb,
+		usersAuthCache:              usersAuthCache,
 	}
 }
 
@@ -58,6 +65,17 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 
 	authenticationCache := repository.NewAuthenticationCache(time.Duration(config.Caching.AuthenticationDataInSec) * time.Second)
 	authentication := service.NewAuthentication(authenticationCache, systemRepo)
+
+	userAuthenticationCache := repository.NewUserAuthenticationCache(l.usersAuthCache)
+	userAuthRepo := repository.NewUserAuth(l.routerLb)
+	userAuthentication, err := service.NewUserAuthentication(
+		config.CustomAuth,
+		userAuthenticationCache,
+		userAuthRepo,
+	)
+	if err != nil {
+		return nil, errors.WithMessage(err, "new user authentication")
+	}
 
 	adminService := service.NewAdmin(
 		repository.NewAuthorizationCache(time.Duration(config.Caching.AuthorizationDataInSec)*time.Second),
@@ -89,6 +107,9 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			proxyFunc = proxy.NewGrpc(cli, location.SkipAuth, time.Duration(config.Http.ProxyTimeoutInSec)*time.Second)
 		case conf.HttpProtocol:
 			hostManager := l.httpHostManagerByModuleName[location.TargetModule]
+			if location.TargetModule == routerModuleName {
+				hostManager = l.routerLb
+			}
 			proxyFunc = proxy.NewHttp(hostManager, location.SkipAuth, time.Duration(config.Http.ProxyTimeoutInSec)*time.Second)
 		case conf.WsProtocol:
 			hostManager := l.httpHostManagerByModuleName[location.TargetModule]
@@ -115,6 +136,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			),
 			middleware.RequestId(),
 			middleware.ErrorHandler(l.logger),
+			middleware.UserAuthenticate(userAuthentication, l.logger),
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
 			middleware.ClientRequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),

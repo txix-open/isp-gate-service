@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"isp-gate-service/domain"
+	"isp-gate-service/entity"
 
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
@@ -25,7 +26,7 @@ func NewRedisAuthCache(cli redis.UniversalClient, duration time.Duration, db int
 	}
 }
 
-func (r RedisAuthCache) Get(ctx context.Context, token string) (*domain.AuthData, error) {
+func (r RedisAuthCache) Get(ctx context.Context, token string) (*entity.AppAuthData, error) {
 	results, err := r.cli.Pipelined(ctx, func(p redis.Pipeliner) error {
 		p.Select(ctx, r.db)
 		p.Get(ctx, token)
@@ -43,7 +44,7 @@ func (r RedisAuthCache) Get(ctx context.Context, token string) (*domain.AuthData
 		return nil, errors.WithMessage(err, "get")
 	}
 
-	result := domain.AuthData{}
+	result := entity.AppAuthData{}
 	err = json.Unmarshal([]byte(data), &result)
 	if err != nil {
 		return nil, errors.WithMessage(err, "json unmarshal auth data")
@@ -52,7 +53,7 @@ func (r RedisAuthCache) Get(ctx context.Context, token string) (*domain.AuthData
 	return &result, nil
 }
 
-func (r RedisAuthCache) Set(ctx context.Context, token string, data domain.AuthData) error {
+func (r RedisAuthCache) Set(ctx context.Context, token string, data entity.AppAuthData) error {
 	value, err := json.Marshal(data)
 	if err != nil {
 		return errors.WithMessage(err, "json marshal auth data")

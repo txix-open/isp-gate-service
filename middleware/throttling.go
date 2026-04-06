@@ -18,6 +18,10 @@ type Throttler interface {
 func Throttling(throttler Throttler) Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
+			if ctx.SkipAppAuth() {
+				return next.Handle(ctx)
+			}
+
 			authData, err := ctx.GetAuthData()
 			if err != nil {
 				return errors.WithMessage(err, "throttling: get auth data")
