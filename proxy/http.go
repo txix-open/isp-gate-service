@@ -67,10 +67,8 @@ func (p Http) Handle(ctx *request.Context) error {
 
 	request := ctx.Request()
 	request.URL.Path = ctx.EndpointMeta().Endpoint
-	err = setHttpHeaders(ctx, request.Header, p.skipAuth)
-	if err != nil {
-		return err
-	}
+	setHttpHeaders(ctx, request.Header, p.skipAuth)
+
 	reverseProxy := httputil.NewSingleHostReverseProxy(target)
 	reverseProxy.Transport = httpTransport
 	var resultError error
@@ -90,26 +88,37 @@ func (p Http) Handle(ctx *request.Context) error {
 	return resultError
 }
 
-func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) error {
+func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) {
 	header.Set(requestid.Header, requestid.FromContext(ctx.Context()))
-	if !skipAuth {
-		authData, err := ctx.GetAuthData()
-		if err != nil {
-			return errors.WithMessage(err, "http: get auth data")
-		}
-		header.Set(grpc.SystemIdHeader, strconv.Itoa(authData.SystemId))
-		header.Set(grpc.DomainIdHeader, strconv.Itoa(authData.DomainId))
-		header.Set(grpc.ServiceIdHeader, strconv.Itoa(authData.ServiceId))
-		header.Set(grpc.ApplicationIdHeader, strconv.Itoa(authData.ApplicationId))
-		encodedAppName := base64.StdEncoding.EncodeToString([]byte(authData.AppName))
-		header.Set(grpc.ApplicationNameHeader, encodedAppName) //nolint:canonicalheader
-		if ctx.IsAdminAuthenticated() {
-			header.Set(xAdminIdHeader, strconv.Itoa(ctx.AdminId())) //nolint:canonicalheader
-		} else {
-			header.Del(xAdminIdHeader) //nolint:canonicalheader
-		}
+	if skipAuth {
+		return
 	}
-	return nil
+
+	userAuthData, err := ctx.GetUserAuthData()
+	if err == nil {
+		for key, values := range userAuthData.ExtraHeaders {
+			for _, value := range values {
+				header.Add(key, value)
+			}
+		}
+		header.Set(userAuthData.IdentityHeader, userAuthData.Identity)
+	}
+
+	appAuthData, err := ctx.GetAuthData()
+	if err == nil {
+		header.Set(grpc.SystemIdHeader, strconv.Itoa(appAuthData.SystemId))
+		header.Set(grpc.DomainIdHeader, strconv.Itoa(appAuthData.DomainId))
+		header.Set(grpc.ServiceIdHeader, strconv.Itoa(appAuthData.ServiceId))
+		header.Set(grpc.ApplicationIdHeader, strconv.Itoa(appAuthData.ApplicationId))
+		encodedAppName := base64.StdEncoding.EncodeToString([]byte(appAuthData.AppName))
+		header.Set(grpc.ApplicationNameHeader, encodedAppName) //nolint:canonicalheader
+	}
+
+	if ctx.IsAdminAuthenticated() {
+		header.Set(xAdminIdHeader, strconv.Itoa(ctx.AdminId())) //nolint:canonicalheader
+	} else {
+		header.Del(xAdminIdHeader) //nolint:canonicalheader
+	}
 }
 
 func defaultTransportDialContext(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {

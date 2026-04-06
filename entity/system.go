@@ -1,4 +1,4 @@
-package domain
+package entity
 
 type AuthenticateRequest struct {
 	Token string
@@ -7,7 +7,7 @@ type AuthenticateRequest struct {
 type AuthenticateResponse struct {
 	Authenticated bool
 	ErrorReason   string
-	AuthData      *AuthData
+	AuthData      *AppAuthData
 }
 
 type AuthorizeRequest struct {

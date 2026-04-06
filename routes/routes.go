@@ -45,10 +45,10 @@ func (s *Routes) ReceiveRoutes(ctx context.Context, routes cluster.RoutingConfig
 		for _, descriptor := range backend.Endpoints {
 			path := normalizeDescriptorPath(descriptor.Path)
 			if descriptor.HttpMethod != "" {
-				s.registerEndpoint(router, descriptor.HttpMethod, path, descriptor)
+				s.registerEndpoint(router, backend.ModuleName, descriptor.HttpMethod, path, descriptor)
 			} else {
 				for _, httpMethod := range s.allHttpMethods {
-					s.registerEndpoint(router, httpMethod, path, descriptor)
+					s.registerEndpoint(router, backend.ModuleName, httpMethod, path, descriptor)
 				}
 			}
 		}
@@ -68,7 +68,8 @@ func (s *Routes) ResolveEndpoint(method string, path string, cfg middleware.Entr
 			return nil, errors.Errorf("unknown endpoint '%s'", lookupPath)
 		}
 		return &domain.EndpointMeta{
-			Endpoint: metaEndpoint,
+			Endpoint:           metaEndpoint,
+			NormalizedEndpoint: normalizePath(metaEndpoint),
 		}, nil
 	}
 
@@ -77,6 +78,7 @@ func (s *Routes) ResolveEndpoint(method string, path string, cfg middleware.Entr
 
 	meta := domain.EndpointMetaFromContext(req.Context())
 	meta.Endpoint = metaEndpoint
+	meta.NormalizedEndpoint = normalizePath(meta.PathSchema)
 	return &meta, nil
 }
 
@@ -94,6 +96,7 @@ func (s *Routes) GetPaths(path string, cfg middleware.EntryPointConfig) (string,
 
 func (s *Routes) registerEndpoint(
 	router *httprouter.Router,
+	moduleName string,
 	httpMethod string,
 	path string,
 	descriptor cluster.EndpointDescriptor,
@@ -105,6 +108,8 @@ func (s *Routes) registerEndpoint(
 	requiredAdminPerm, _ := cluster.GetRequiredAdminPermission(descriptor)
 	meta := domain.EndpointMeta{
 		Inner:                   descriptor.Inner,
+		UserAuthRequired:        descriptor.UserAuthRequired,
+		ModuleName:              moduleName,
 		RequiredAdminPermission: requiredAdminPerm,
 		PathSchema:              descriptor.Path,
 	}
@@ -115,4 +120,8 @@ func (s *Routes) registerEndpoint(
 		*r = *r.WithContext(ctx)
 	}
 	router.Handle(httpMethod, path, handler)
+}
+
+func normalizePath(path string) string {
+	return strings.TrimPrefix(path, "/")
 }
