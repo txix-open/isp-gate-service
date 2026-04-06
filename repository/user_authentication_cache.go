@@ -27,8 +27,8 @@ func NewUserAuthenticationCache(cache Cache) UserAuthenticationCache {
 	}
 }
 
-func (r UserAuthenticationCache) Get(ctx context.Context, authModuleName string, token string) (*entity.UserAuthData, error) {
-	data, ok := r.cache.Get(r.key(authModuleName, token))
+func (r UserAuthenticationCache) Get(ctx context.Context, authMethodPath string, token string) (*entity.UserAuthData, error) {
+	data, ok := r.cache.Get(r.key(authMethodPath, token))
 	if !ok {
 		return nil, domain.ErrAuthenticationCacheMiss
 	}
@@ -44,7 +44,7 @@ func (r UserAuthenticationCache) Get(ctx context.Context, authModuleName string,
 
 func (r UserAuthenticationCache) Set(
 	ctx context.Context,
-	authModuleName string,
+	authMethodPath string,
 	token string,
 	data entity.UserAuthData,
 	duration time.Duration,
@@ -54,7 +54,7 @@ func (r UserAuthenticationCache) Set(
 		return errors.WithMessage(err, "json marshal auth data")
 	}
 
-	r.cache.Set(r.key(authModuleName, token), value, duration)
+	r.cache.Set(r.key(authMethodPath, token), value, duration)
 
 	return nil
 }

@@ -26,11 +26,9 @@ func NewUserAuth(lb *lb.RoundRobin) UserAuth {
 
 func (r UserAuth) Authenticate(
 	ctx context.Context,
-	authModuleName string,
+	method string,
 	token string,
 ) (*entity.UserAuthenticateResponse, error) {
-	method := fmt.Sprintf("%s/authenticate", authModuleName)
-
 	ctx = http_metrics.ClientEndpointToContext(ctx, method)
 
 	host, err := r.lb.Next()
