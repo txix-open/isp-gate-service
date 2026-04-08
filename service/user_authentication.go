@@ -15,12 +15,12 @@ import (
 )
 
 type UserAuthenticationCache interface {
-	Get(ctx context.Context, authMethodPath string, token string) (*entity.UserAuthData, error)
-	Set(ctx context.Context, authMethodPath string, token string, data entity.UserAuthData, duration time.Duration) error
+	Get(ctx context.Context, authEndpoint string, token string) (*entity.UserAuthData, error)
+	Set(ctx context.Context, authEndpoint string, token string, data entity.UserAuthData, duration time.Duration) error
 }
 
 type UserAuthenticationRepo interface {
-	Authenticate(ctx context.Context, methodPath string, token string) (*entity.UserAuthenticateResponse, error)
+	Authenticate(ctx context.Context, authEndpoint string, token string) (*entity.UserAuthenticateResponse, error)
 }
 
 type TokenProvider interface {
@@ -29,7 +29,7 @@ type TokenProvider interface {
 
 type userAuthSetting struct {
 	tokenProvider     string
-	authenticatePath  string
+	authEndpoint      string
 	authCacheDuration time.Duration
 	skipAppAuth       bool
 }
@@ -82,7 +82,7 @@ func NewUserAuthentication(
 			}
 			settingsByModuleName[moduleName] = userAuthSetting{
 				tokenProvider:     setting.TokenProvider,
-				authenticatePath:  setting.AuthenticateMethodPath,
+				authEndpoint:      setting.AuthenticateEndpoint,
 				authCacheDuration: cacheDuration,
 				skipAppAuth:       setting.SkipAppAuth,
 			}
@@ -141,17 +141,17 @@ func (s UserAuthentication) authenticate(
 	token string,
 ) (*domain.AuthenticateUserResponse, error) {
 	if setting.authCacheDuration <= 0 {
-		resp, err := s.repo.Authenticate(ctx, setting.authenticatePath, token)
+		resp, err := s.repo.Authenticate(ctx, setting.authEndpoint, token)
 		if err != nil {
 			return nil, errors.WithMessage(err, "auth repo authenticate")
 		}
 		return s.convertAuthReponse(resp, setting.skipAppAuth), nil
 	}
 
-	authData, err := s.cache.Get(ctx, setting.authenticatePath, token)
+	authData, err := s.cache.Get(ctx, setting.authEndpoint, token)
 	switch {
 	case errors.Is(err, domain.ErrAuthenticationCacheMiss):
-		resp, err := s.repo.Authenticate(ctx, setting.authenticatePath, token)
+		resp, err := s.repo.Authenticate(ctx, setting.authEndpoint, token)
 		if err != nil {
 			return nil, errors.WithMessage(err, "auth repo authenticate")
 		}
@@ -160,7 +160,7 @@ func (s UserAuthentication) authenticate(
 		}
 		err = s.cache.Set(
 			ctx,
-			setting.authenticatePath,
+			setting.authEndpoint,
 			token,
 			*resp.AuthData,
 			setting.authCacheDuration,
