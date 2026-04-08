@@ -1,3 +1,5 @@
+### v5.10.1
+* Изменен нейминг настройки `customAuth.userAuthSettings.authenticateMethodPath` на `customAuth.userAuthSettings.authenticateEndpoint`
 ### v5.10.0
 * Добавлена конфигурируемая аутентификация/авторизация пользователя
 ### v5.9.3
