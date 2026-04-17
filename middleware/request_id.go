@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"strings"
 
 	"isp-gate-service/request"
@@ -10,17 +9,13 @@ import (
 	"github.com/txix-open/isp-kit/requestid"
 )
 
-const (
-	requestIdHeader = "x-request-id"
-)
-
 func RequestId() Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
 			requestId := requestid.Next()
 
 			context := requestid.ToContext(ctx.Context(), requestId)
-			context = writeLogField(context, log.String("requestId", requestId))
+			context = log.ToContext(context, log.String(requestid.LogKey, requestId))
 
 			ctx.SetContext(context)
 			return next.Handle(ctx)
@@ -32,11 +27,7 @@ func ClientRequestId(forwardClientRequestId bool, forwardReqIdByApp map[int]bool
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
 			requestId := requestid.FromContext(ctx.Context())
-			if requestId == "" {
-				requestId = requestid.Next()
-			}
-
-			clientRequestId := strings.TrimSpace(ctx.Request().Header.Get(requestIdHeader))
+			clientRequestId := strings.TrimSpace(ctx.Request().Header.Get(requestid.Header))
 
 			clientLogFields := make([]log.Field, 0, 1)
 			if clientRequestId != "" {
@@ -49,21 +40,11 @@ func ClientRequestId(forwardClientRequestId bool, forwardReqIdByApp map[int]bool
 			}
 
 			context := requestid.ToContext(ctx.Context(), requestId)
-			context = writeLogField(context, log.String("requestId", requestId))
+			context = log.RewriteContextField(context, log.String(requestid.LogKey, requestId))
 			context = log.ToContext(context, clientLogFields...)
 
 			ctx.SetContext(context)
 			return next.Handle(ctx)
 		})
 	}
-}
-
-func writeLogField(ctx context.Context, field log.Field) context.Context {
-	for _, f := range log.ContextLogValues(ctx) {
-		if f.Key == field.Key {
-			return log.RewriteContextField(ctx, field)
-		}
-	}
-
-	return log.ToContext(ctx, field)
 }
