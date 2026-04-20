@@ -1,3 +1,5 @@
+### v5.10.2
+* Убрано дублирование поля `requestId` при логгировании
 ### v5.10.1
 * Изменен нейминг настройки `customAuth.userAuthSettings.authenticateMethodPath` на `customAuth.userAuthSettings.authenticateEndpoint`
 ### v5.10.0

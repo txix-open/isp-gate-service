@@ -9,17 +9,13 @@ import (
 	"github.com/txix-open/isp-kit/requestid"
 )
 
-const (
-	requestIdHeader = "x-request-id"
-)
-
 func RequestId() Middleware {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
 			requestId := requestid.Next()
 
 			context := requestid.ToContext(ctx.Context(), requestId)
-			context = log.ToContext(context, log.String("requestId", requestId))
+			context = log.ToContext(context, log.String(requestid.LogKey, requestId))
 
 			ctx.SetContext(context)
 			return next.Handle(ctx)
@@ -31,25 +27,21 @@ func ClientRequestId(forwardClientRequestId bool, forwardReqIdByApp map[int]bool
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx *request.Context) error {
 			requestId := requestid.FromContext(ctx.Context())
-			if requestId == "" {
-				requestId = requestid.Next()
-			}
+			clientRequestId := strings.TrimSpace(ctx.Request().Header.Get(requestid.Header))
 
-			clientRequestId := strings.TrimSpace(ctx.Request().Header.Get(requestIdHeader))
-
-			logFields := make([]log.Field, 0)
+			clientLogFields := make([]log.Field, 0, 1)
 			if clientRequestId != "" {
-				logFields = append(logFields, log.String("clientRequestId", clientRequestId))
-
 				authData, _ := ctx.GetAuthData()
 				if forwardClientRequestId || forwardReqIdByApp[authData.ApplicationId] {
 					requestId = clientRequestId
 				}
+
+				clientLogFields = append(clientLogFields, log.String("clientRequestId", clientRequestId))
 			}
-			logFields = append(logFields, log.String("requestId", requestId))
 
 			context := requestid.ToContext(ctx.Context(), requestId)
-			context = log.ToContext(context, logFields...)
+			context = log.RewriteContextField(context, log.String(requestid.LogKey, requestId))
+			context = log.ToContext(context, clientLogFields...)
 
 			ctx.SetContext(context)
 			return next.Handle(ctx)
