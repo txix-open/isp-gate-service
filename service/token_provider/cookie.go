@@ -10,15 +10,21 @@ import (
 )
 
 type CookieProvider struct {
+	name       string
 	cookieName string
 	validate   bool
 }
 
-func NewCookieProvider(cfg conf.CookieTokenProvider) CookieProvider {
+func NewCookieProvider(name string, cfg conf.CookieTokenProvider) CookieProvider {
 	return CookieProvider{
+		name:       name,
 		cookieName: cfg.CookieName,
 		validate:   cfg.Validate,
 	}
+}
+
+func (p CookieProvider) GetName() string {
+	return p.name
 }
 
 func (p CookieProvider) ExtractToken(ctx *request.Context) (string, error) {
