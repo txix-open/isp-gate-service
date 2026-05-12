@@ -24,11 +24,12 @@ type UserAuthenticationRepo interface {
 }
 
 type TokenProvider interface {
+	GetName() string
 	ExtractToken(ctx *request.Context) (string, error)
 }
 
 type userAuthSetting struct {
-	tokenProvider     string
+	tokenProviders    []TokenProvider
 	authEndpoint      string
 	authCacheDuration time.Duration
 	skipAppAuth       bool
@@ -38,7 +39,6 @@ type UserAuthentication struct {
 	cache                UserAuthenticationCache
 	repo                 UserAuthenticationRepo
 	settingsByModuleName map[string]userAuthSetting
-	tokenProviders       map[string]TokenProvider
 }
 
 func NewUserAuthentication(
@@ -62,13 +62,17 @@ func NewUserAuthentication(
 
 	settingsByModuleName := make(map[string]userAuthSetting, len(cfg.UserAuthSettings))
 	for _, setting := range cfg.UserAuthSettings {
-		_, ok := tokenProviders[setting.TokenProvider]
-		if !ok {
-			return UserAuthentication{},
-				errors.Errorf("modules with names'[%s]' has unknown token provider '%s'",
-					strings.Join(setting.ModuleNameList, ","),
-					setting.TokenProvider,
-				)
+		settingTokenProviders := make([]TokenProvider, 0, len(setting.TokenProviders))
+		for _, providerName := range setting.TokenProviders {
+			tokenProvider, ok := tokenProviders[providerName]
+			if !ok {
+				return UserAuthentication{},
+					errors.Errorf("modules with names'[%s]' has unknown token provider '%s'",
+						strings.Join(setting.ModuleNameList, ","),
+						providerName,
+					)
+			}
+			settingTokenProviders = append(settingTokenProviders, tokenProvider)
 		}
 
 		cacheDuration := time.Duration(setting.CacheDataInSec) * time.Second
@@ -81,7 +85,7 @@ func NewUserAuthentication(
 					)
 			}
 			settingsByModuleName[moduleName] = userAuthSetting{
-				tokenProvider:     setting.TokenProvider,
+				tokenProviders:    settingTokenProviders,
 				authEndpoint:      setting.AuthenticateEndpoint,
 				authCacheDuration: cacheDuration,
 				skipAppAuth:       setting.SkipAppAuth,
@@ -93,7 +97,6 @@ func NewUserAuthentication(
 		cache:                cache,
 		repo:                 repo,
 		settingsByModuleName: settingsByModuleName,
-		tokenProviders:       tokenProviders,
 	}, nil
 }
 
@@ -113,15 +116,9 @@ func (s UserAuthentication) Authenticate(ctx *request.Context) (*domain.Authenti
 		)
 	}
 
-	provider := s.tokenProviders[setting.tokenProvider]
-
-	token, err := provider.ExtractToken(ctx)
+	token, err := s.extractToken(ctx, setting.tokenProviders)
 	if err != nil {
-		return nil, errors.WithMessagef(domain.ErrInvalidUserToken,
-			"extract token by '%s' error: %s", setting.tokenProvider, err.Error())
-	}
-	if token == "" {
-		return nil, domain.ErrEmptyUserToken
+		return nil, errors.WithMessage(err, "extract user token")
 	}
 
 	resp, err := s.authenticate(
@@ -135,6 +132,24 @@ func (s UserAuthentication) Authenticate(ctx *request.Context) (*domain.Authenti
 	return resp, nil
 }
 
+func (s UserAuthentication) extractToken(ctx *request.Context, providers []TokenProvider) (string, error) {
+	for _, provider := range providers {
+		token, err := provider.ExtractToken(ctx)
+		if err != nil {
+			return "", errors.WithMessagef(
+				domain.ErrInvalidUserToken,
+				"extract token by '%s' error: %s",
+				provider.GetName(),
+				err.Error(),
+			)
+		}
+		if token != "" {
+			return token, nil
+		}
+	}
+	return "", domain.ErrEmptyUserToken
+}
+
 func (s UserAuthentication) authenticate(
 	ctx context.Context,
 	setting userAuthSetting,
@@ -145,7 +160,7 @@ func (s UserAuthentication) authenticate(
 		if err != nil {
 			return nil, errors.WithMessage(err, "auth repo authenticate")
 		}
-		return s.convertAuthReponse(resp, setting.skipAppAuth), nil
+		return s.convertAuthResponse(resp, setting.skipAppAuth), nil
 	}
 
 	authData, err := s.cache.Get(ctx, setting.authEndpoint, token)
@@ -156,7 +171,7 @@ func (s UserAuthentication) authenticate(
 			return nil, errors.WithMessage(err, "auth repo authenticate")
 		}
 		if !resp.Authenticated {
-			return s.convertAuthReponse(resp, setting.skipAppAuth), nil
+			return s.convertAuthResponse(resp, setting.skipAppAuth), nil
 		}
 		err = s.cache.Set(
 			ctx,
@@ -168,7 +183,7 @@ func (s UserAuthentication) authenticate(
 		if err != nil {
 			return nil, errors.WithMessage(err, "auth cache set")
 		}
-		return s.convertAuthReponse(resp, setting.skipAppAuth), nil
+		return s.convertAuthResponse(resp, setting.skipAppAuth), nil
 	case err != nil:
 		return nil, errors.WithMessage(err, "auth cache get")
 	default:
@@ -180,7 +195,7 @@ func (s UserAuthentication) authenticate(
 	}
 }
 
-func (s UserAuthentication) convertAuthReponse(resp *entity.UserAuthenticateResponse, skipAppAuth bool) *domain.AuthenticateUserResponse {
+func (s UserAuthentication) convertAuthResponse(resp *entity.UserAuthenticateResponse, skipAppAuth bool) *domain.AuthenticateUserResponse {
 	return &domain.AuthenticateUserResponse{
 		Authenticated: resp.Authenticated,
 		ErrorReason:   resp.ErrorReason,
@@ -207,12 +222,12 @@ func tokenProviderFromConfig(cfg conf.TokenProvider) (TokenProvider, error) {
 		if cfg.HeaderProvider == nil {
 			return nil, errors.Errorf("token method '%s' has empty header provider", cfg.Name)
 		}
-		return token_provider.NewHeaderProvider(*cfg.HeaderProvider), nil
+		return token_provider.NewHeaderProvider(cfg.Name, *cfg.HeaderProvider), nil
 	case conf.CookieTokenProviderType:
 		if cfg.CookieProvider == nil {
 			return nil, errors.Errorf("token method '%s' has empty cookie provider", cfg.Name)
 		}
-		return token_provider.NewCookieProvider(*cfg.CookieProvider), nil
+		return token_provider.NewCookieProvider(cfg.Name, *cfg.CookieProvider), nil
 	default:
 		return nil, errors.Errorf("unknown token provider with type '%s'", cfg.Type)
 	}
