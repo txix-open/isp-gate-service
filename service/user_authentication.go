@@ -145,7 +145,7 @@ func (s UserAuthentication) authenticate(
 		if err != nil {
 			return nil, errors.WithMessage(err, "auth repo authenticate")
 		}
-		return s.convertAuthReponse(resp, setting.skipAppAuth), nil
+		return s.convertAuthResponse(resp, setting.skipAppAuth), nil
 	}
 
 	authData, err := s.cache.Get(ctx, setting.authEndpoint, token)
@@ -156,7 +156,7 @@ func (s UserAuthentication) authenticate(
 			return nil, errors.WithMessage(err, "auth repo authenticate")
 		}
 		if !resp.Authenticated {
-			return s.convertAuthReponse(resp, setting.skipAppAuth), nil
+			return s.convertAuthResponse(resp, setting.skipAppAuth), nil
 		}
 		err = s.cache.Set(
 			ctx,
@@ -168,7 +168,7 @@ func (s UserAuthentication) authenticate(
 		if err != nil {
 			return nil, errors.WithMessage(err, "auth cache set")
 		}
-		return s.convertAuthReponse(resp, setting.skipAppAuth), nil
+		return s.convertAuthResponse(resp, setting.skipAppAuth), nil
 	case err != nil:
 		return nil, errors.WithMessage(err, "auth cache get")
 	default:
@@ -180,7 +180,7 @@ func (s UserAuthentication) authenticate(
 	}
 }
 
-func (s UserAuthentication) convertAuthReponse(resp *entity.UserAuthenticateResponse, skipAppAuth bool) *domain.AuthenticateUserResponse {
+func (s UserAuthentication) convertAuthResponse(resp *entity.UserAuthenticateResponse, skipAppAuth bool) *domain.AuthenticateUserResponse {
 	return &domain.AuthenticateUserResponse{
 		Authenticated: resp.Authenticated,
 		ErrorReason:   resp.ErrorReason,
