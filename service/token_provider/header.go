@@ -7,13 +7,19 @@ import (
 )
 
 type HeaderProvider struct {
+	name       string
 	headerName string
 }
 
-func NewHeaderProvider(cfg conf.HeaderTokenProvider) HeaderProvider {
+func NewHeaderProvider(name string, cfg conf.HeaderTokenProvider) HeaderProvider {
 	return HeaderProvider{
+		name:       name,
 		headerName: cfg.HeaderName,
 	}
+}
+
+func (p HeaderProvider) GetName() string {
+	return p.name
 }
 
 func (p HeaderProvider) ExtractToken(ctx *request.Context) (string, error) {
