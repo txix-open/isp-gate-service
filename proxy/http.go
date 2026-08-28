@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"net"
@@ -16,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/grpc"
 	"github.com/txix-open/isp-kit/requestid"
-	"golang.org/x/net/context"
 )
 
 var (
