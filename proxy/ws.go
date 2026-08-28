@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/pkg/errors"
 	"github.com/tomakado/websocketproxy"
+	"github.com/txix-open/isp-kit/errors"
 	"isp-gate-service/httperrors"
 	"isp-gate-service/request"
 )

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
+	"github.com/txix-open/isp-kit/errors"
 )
 
 type RedisAuthzCache struct {

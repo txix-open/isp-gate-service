@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"isp-gate-service/conf"
 	"isp-gate-service/domain"
 	"isp-gate-service/entity"

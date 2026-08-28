@@ -8,10 +8,10 @@ import (
 	"isp-gate-service/conf"
 	"isp-gate-service/routes"
 
-	"github.com/pkg/errors"
 	"github.com/txix-open/isp-kit/app"
 	"github.com/txix-open/isp-kit/bootstrap"
 	"github.com/txix-open/isp-kit/cluster"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/grpc/client"
 	"github.com/txix-open/isp-kit/http"
 	"github.com/txix-open/isp-kit/lb"
