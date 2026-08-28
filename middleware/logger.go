@@ -11,7 +11,7 @@ import (
 	"isp-gate-service/helpers"
 	"isp-gate-service/request"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/http/endpoint/buffer"
 	"github.com/txix-open/isp-kit/log"
 )

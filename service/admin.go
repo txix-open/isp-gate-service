@@ -6,7 +6,7 @@ import (
 	"isp-gate-service/domain"
 	"isp-gate-service/entity"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 )
 
 type AdminAuth interface {

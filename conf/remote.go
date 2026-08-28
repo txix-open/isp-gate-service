@@ -30,6 +30,7 @@ type Remote struct {
 	EnableClientRequestIdForwarding bool                         `schema:"Включить проброс requestId из заголовка запроса"`
 	ForwardReqIdClientSettings      []ForwardReqIdClientSettings `schema:"Настройки проброcа requestId для приложений"`
 	CustomAuth                      CustomAuth                   `schema:"Настройка кастомной аутентификации/авторизации"`
+	ResponseContentTypeSettings     []ResponseContentTypeSetting `schema:"Настройки Content-Type ответов"`
 }
 
 type ForwardReqIdClientSettings struct {
@@ -97,4 +98,9 @@ type UserAuthSetting struct {
 	AuthenticateEndpoint string   `schema:"Endpoint для аутентификации пользователя,вызывается через isp-router-service" validate:"required"`
 	CacheDataInSec       int      `schema:"Время кеширования данных аутентификации/авторизации пользователя,отключен при значениях <=0,в секундах"`
 	SkipAppAuth          bool     `schema:"Пропустить аутентификацию и авторизацию приложения"`
+}
+
+type ResponseContentTypeSetting struct {
+	ApplicationId      int  `validate:"required" schema:"ID приложения"`
+	AddJsonUtf8Charset bool `schema:"Добавлять charset=utf-8 в Content-Type ответа: application/json для locations с protocol=http"`
 }

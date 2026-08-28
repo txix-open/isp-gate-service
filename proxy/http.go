@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"net"
@@ -8,15 +9,15 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"isp-gate-service/httperrors"
 	"isp-gate-service/request"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/grpc"
 	"github.com/txix-open/isp-kit/requestid"
-	"golang.org/x/net/context"
 )
 
 var (
@@ -79,6 +80,9 @@ func (p Http) Handle(ctx *request.Context) error {
 			errors.WithMessagef(err, "http proxy to %s", host),
 		)
 	}
+	if ctx.IsJsonUtf8CharsetEnabled() {
+		reverseProxy.ModifyResponse = addJsonUtf8Charset
+	}
 
 	context, cancel := context.WithTimeout(request.Context(), p.timeout)
 	defer cancel()
@@ -123,4 +127,13 @@ func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) {
 
 func defaultTransportDialContext(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
 	return dialer.DialContext
+}
+
+func addJsonUtf8Charset(response *http.Response) error {
+	contentType := response.Header.Get("Content-Type")
+	if strings.EqualFold(contentType, "application/json") {
+		response.Header.Set("Content-Type", "application/json; charset=utf-8")
+	}
+
+	return nil
 }
