@@ -17,7 +17,7 @@ import (
 	"isp-gate-service/service"
 
 	mux2 "github.com/gorilla/mux"
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/grpc/client"
 	"github.com/txix-open/isp-kit/lb"
 	"github.com/txix-open/isp-kit/log"

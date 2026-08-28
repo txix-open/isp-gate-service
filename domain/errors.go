@@ -1,6 +1,6 @@
 package domain
 
-import "github.com/pkg/errors"
+import "github.com/txix-open/isp-kit/errors"
 
 var (
 	ErrUserAuthSettingNotFound = errors.New("user auth setting not found")

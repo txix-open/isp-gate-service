@@ -7,7 +7,7 @@ import (
 	"isp-gate-service/httperrors"
 	"isp-gate-service/request"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/log"
 )
 

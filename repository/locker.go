@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/grpc/client"
 	"isp-gate-service/entity"
 )
