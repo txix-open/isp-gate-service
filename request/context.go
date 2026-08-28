@@ -30,6 +30,8 @@ type Context struct {
 	adminToken         string
 
 	queryParams map[string]string
+
+	httpJsonUtf8Charset bool
 }
 
 func NewContext(
@@ -112,6 +114,14 @@ func (c *Context) Context() context.Context {
 
 func (c *Context) SetContext(ctx context.Context) {
 	c.request = c.request.WithContext(ctx)
+}
+
+func (c *Context) EnableHttpJsonUtf8Charset(enable bool) {
+	c.httpJsonUtf8Charset = enable
+}
+
+func (c *Context) IsJsonUtf8CharsetEnabled() bool {
+	return c.httpJsonUtf8Charset
 }
 
 func (c *Context) Param(name string) string {

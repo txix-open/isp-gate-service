@@ -124,6 +124,11 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			forwardReqIdByAppId[setting.ApplicationId] = setting.ForwardRequestId
 		}
 
+		enableUtf8JsonCharsetByApp := make(map[int]bool, len(config.ResponseContentTypeSettings))
+		for _, setting := range config.ResponseContentTypeSettings {
+			enableUtf8JsonCharsetByApp[setting.ApplicationId] = setting.AddJsonUtf8Charset
+		}
+
 		metricsStorage := http_metrics.NewServerStorage(metrics.DefaultRegistry)
 
 		handler := middleware.Chain(
@@ -140,6 +145,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
 			middleware.ClientRequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),
+			middleware.JsonResponseUtf8Charset(enableUtf8JsonCharsetByApp),
 			middleware.Authorize(authorization, l.logger),
 			middleware.AdminAuthorize(adminService),
 			middleware.Throttling(throttlingService),
