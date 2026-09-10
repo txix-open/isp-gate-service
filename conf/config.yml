@@ -17,6 +17,7 @@ logfile:
   maxBackups: 4
   compress: true
 
+adminServiceName: msp-admin-service
 
 locations:
   - pathPrefix: /api
