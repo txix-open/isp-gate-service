@@ -7,7 +7,8 @@ const (
 )
 
 type Local struct {
-	Locations []Location
+	Locations        []Location
+	AdminServiceName string
 }
 
 type Location struct {

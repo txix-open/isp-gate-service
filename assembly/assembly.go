@@ -20,6 +20,7 @@ import (
 
 const (
 	routerModuleName            = "isp-router-service"
+	defaultAdminServiceName     = "msp-admin-service"
 	usersAuthCachePurgeInterval = 5 * time.Second
 )
 
@@ -33,7 +34,7 @@ type Assembly struct {
 	lockerCli *client.Client
 	routerLb  *lb.RoundRobin
 
-	locations                   []conf.Location
+	localConfig                 conf.Local
 	grpcClientByModuleName      map[string]*client.Client
 	httpHostManagerByModuleName map[string]*lb.RoundRobin
 
@@ -85,7 +86,7 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 		server:                      server,
 		logger:                      boot.App.Logger(),
 		routes:                      routes.NewRoutes(boot.App.Logger()),
-		locations:                   localConfig.Locations,
+		localConfig:                 localConfig,
 		grpcClientByModuleName:      grpcClientByModuleName,
 		httpHostManagerByModuleName: httpHostManagerByModuleName,
 		systemCli:                   systemCli,
@@ -118,7 +119,7 @@ func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) error
 		a.routerLb,
 		a.usersAuthCache,
 	)
-	handler, err := locator.Handler(newCfg, a.locations)
+	handler, err := locator.Handler(newCfg, a.localConfig.Locations)
 	if err != nil {
 		return errors.WithMessage(err, "locator handler")
 	}
@@ -139,8 +140,12 @@ func (a *Assembly) Runners() []app.Runner {
 	for moduleName, upgrader := range a.httpHostManagerByModuleName {
 		eventHandler.RequireModule(moduleName, upgrader)
 	}
+	adminServiceName := a.localConfig.AdminServiceName
+	if adminServiceName == "" {
+		adminServiceName = defaultAdminServiceName
+	}
 	eventHandler.RequireModule("isp-system-service", a.systemCli)
-	eventHandler.RequireModule("msp-admin-service", a.adminCli)
+	eventHandler.RequireModule(adminServiceName, a.adminCli)
 	eventHandler.RequireModule("isp-lock-service", a.lockerCli)
 	eventHandler.RequireModule(routerModuleName, a.routerLb)
 
