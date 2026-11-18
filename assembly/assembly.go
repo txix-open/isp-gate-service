@@ -14,6 +14,7 @@ import (
 	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/grpc/client"
 	"github.com/txix-open/isp-kit/http"
+	"github.com/txix-open/isp-kit/http/httpclix"
 	"github.com/txix-open/isp-kit/lb"
 	"github.com/txix-open/isp-kit/log"
 )
@@ -30,7 +31,7 @@ type Assembly struct {
 	logger    *log.Adapter
 	routes    *routes.Routes
 	systemCli *client.Client
-	adminCli  *client.Client
+	adminCli  *httpclix.ClientBalancer
 	lockerCli *client.Client
 	routerLb  *lb.RoundRobin
 
@@ -72,10 +73,7 @@ func New(boot *bootstrap.Bootstrap) (*Assembly, error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "create system cli")
 	}
-	adminCli, err := client.Default()
-	if err != nil {
-		return nil, errors.WithMessage(err, "create admin cli")
-	}
+	adminCli := httpclix.DefaultWithBalancer(nil)
 	lockerCli, err := client.Default()
 	if err != nil {
 		return nil, errors.WithMessage(err, "create isp-lock-service client")
@@ -173,7 +171,7 @@ func (a *Assembly) Closers() []app.Closer {
 	for _, cliCloser := range a.grpcClientByModuleName {
 		closers = append(closers, cliCloser)
 	}
-	closers = append(closers, a.systemCli, a.adminCli, a.lockerCli)
+	closers = append(closers, a.systemCli, a.lockerCli)
 
 	return closers
 }

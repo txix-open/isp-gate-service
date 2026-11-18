@@ -24,6 +24,7 @@ import (
 	"github.com/txix-open/isp-kit/http/endpoint"
 	"github.com/txix-open/isp-kit/http/endpoint/httplog"
 	"github.com/txix-open/isp-kit/http/httpcli"
+	"github.com/txix-open/isp-kit/http/httpclix"
 	"github.com/txix-open/isp-kit/http/router"
 	"github.com/txix-open/isp-kit/test/fake"
 
@@ -580,7 +581,7 @@ func (s *HappyPathTestSuite) TestUserAuthorization_SkipAppAuth() { // nolint:fun
 }
 
 // nolint:ireturn
-func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *client.Client, *client.Client) {
+func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *client.Client, *httpclix.ClientBalancer) {
 	config := conf.Remote{
 		Http: conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
 		Logging: conf.Logging{LogLevel: log.DebugLevel, RequestLogEnable: true, BodyLogEnable: true,
@@ -608,19 +609,27 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *
 		return entity.AuthorizeResponse{Authorized: true}
 	})
 
-	adminService, adminCli := grpct.NewMock(test)
-	adminService.Mock("admin/secure/authenticate", func(req entity.AdminAuthorizeRequest) entity.AdminAuthenticateResponse {
-		return entity.AdminAuthenticateResponse{
-			Authenticated: true,
-			ErrorReason:   "",
-			AdminId:       1,
-		}
-	}).Mock("admin/secure/authorize", func(req entity.AdminAuthorizeRequest) entity.AdminAuthorizeResponse {
-		if req.Permission == "ok_permission" {
-			return entity.AdminAuthorizeResponse{Authorized: true}
-		}
-		return entity.AdminAuthorizeResponse{Authorized: false}
-	})
+	adminMux := router.New()
+	defaultWrapper := endpoint.DefaultWrapper(test.Logger(), httplog.Noop())
+	adminMux.POST("/admin/secure/authenticate",
+		defaultWrapper.Endpoint(func(req entity.AuthenticateRequest) entity.AdminAuthenticateResponse {
+			return entity.AdminAuthenticateResponse{
+				Authenticated: true,
+				ErrorReason:   "",
+				AdminId:       1,
+			}
+		}))
+	adminMux.POST("/admin/secure/authorize",
+		defaultWrapper.Endpoint(func(req entity.AdminAuthorizeRequest) entity.AdminAuthorizeResponse {
+			if req.Permission == "ok_permission" {
+				return entity.AdminAuthorizeResponse{Authorized: true}
+			}
+			return entity.AdminAuthorizeResponse{Authorized: false}
+		}))
+	adminMock := httptest.NewServer(adminMux)
+	adminUrl, err := url.Parse(adminMock.URL)
+	require.New(s.T()).NoError(err)
+	adminCli := httpclix.NewClientBalancer([]string{adminUrl.Host})
 
 	return config, systemCli, adminCli
 }
