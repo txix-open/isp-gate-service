@@ -20,21 +20,30 @@ import (
 	"github.com/txix-open/isp-kit/requestid"
 )
 
-var (
-	httpTransport = &http.Transport{
+const (
+	httpDialTimeout         = 3 * time.Second
+	httpDialKeepAlive       = 30 * time.Second
+	httpMaxIdleConns        = 512
+	httpMaxIdleConnsPerHost = 32
+	httpIdleConnTimeout     = 60 * time.Second
+	httpTLSHandshakeTimeout = 5 * time.Second
+)
+
+func newHttpTransport() *http.Transport {
+	return &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: defaultTransportDialContext(&net.Dialer{
-			Timeout:   3 * time.Second,
-			KeepAlive: 30 * time.Second,
+			Timeout:   httpDialTimeout,
+			KeepAlive: httpDialKeepAlive,
 		}),
 		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          512,
-		MaxIdleConnsPerHost:   32,
-		IdleConnTimeout:       60 * time.Second,
-		TLSHandshakeTimeout:   5 * time.Second,
+		MaxIdleConns:          httpMaxIdleConns,
+		MaxIdleConnsPerHost:   httpMaxIdleConnsPerHost,
+		IdleConnTimeout:       httpIdleConnTimeout,
+		TLSHandshakeTimeout:   httpTLSHandshakeTimeout,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
-)
+}
 
 type HttpHostManager interface {
 	Next() (string, error)
@@ -42,6 +51,7 @@ type HttpHostManager interface {
 
 type Http struct {
 	hostManager HttpHostManager
+	transport   http.RoundTripper
 	skipAuth    bool
 	timeout     time.Duration
 }
@@ -49,6 +59,7 @@ type Http struct {
 func NewHttp(hostManager HttpHostManager, skipAuth bool, timeout time.Duration) Http {
 	return Http{
 		hostManager: hostManager,
+		transport:   newHttpTransport(),
 		skipAuth:    skipAuth,
 		timeout:     timeout,
 	}
@@ -71,7 +82,7 @@ func (p Http) Handle(ctx *request.Context) error {
 	setHttpHeaders(ctx, request.Header, p.skipAuth)
 
 	reverseProxy := httputil.NewSingleHostReverseProxy(target)
-	reverseProxy.Transport = httpTransport
+	reverseProxy.Transport = p.transport
 	var resultError error
 	reverseProxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, err error) {
 		resultError = httperrors.New(

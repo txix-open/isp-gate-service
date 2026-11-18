@@ -32,6 +32,7 @@ func init() {
 	}
 }
 
+//nolint:gochecknoglobals
 var (
 	codeMap = map[int]codes.Code{
 		http.StatusOK:                  codes.OK,

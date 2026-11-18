@@ -15,13 +15,17 @@ linters:
     - nolintlint # Goland все равно форматирует с отступом
     - perfsprint # мнимая производительность в угоду читаемости
     - tagalign # не всегда имеет смысл
-    - testpackage
     - varnamelen # очень индивидуально (db)
     - wsl # расставление пробелов очень индивидуально
     - wsl_v5 # расставление пробелов очень индивидуально
     - godoclint # ругается на // nolint, не удобно
     - prealloc # слишком аггресивный, в большинстве случаев не требуется
+    - gomodguard # deprecated
+    - goconst # слишком агрессивный
   settings:
+    exhaustruct_v5:
+      allow-empty: true
+      explicit-mode: true
     cyclop:
       max-complexity: 15 # по умолчанию 10 мало
     funlen:
@@ -62,15 +66,8 @@ linters:
           - prealloc
         path: ".*_test\\.go$"
       - linters:
-          - wrapcheck
-        path: middleware #отсутствует необходимость оборачивать ошибки
-      - linters:
-          - gochecknoglobals
-          - mnd
-        path: proxy
-      - linters:
-          - wrapcheck
-        path: httperrors #отсутствует необходимость оборачивать ошибки
+          - goconst
+        path: "tests/" # компонентные тесты: фикстуры и моки не выносим в константы
     paths:
       - third_party$
       - builtin$

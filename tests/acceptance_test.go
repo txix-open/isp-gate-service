@@ -1,5 +1,5 @@
 // nolint:canonicalheader
-package tests
+package tests_test
 
 import (
 	"context"
