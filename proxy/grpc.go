@@ -32,7 +32,6 @@ func init() {
 	}
 }
 
-//nolint:gochecknoglobals
 var (
 	codeMap = map[int]codes.Code{
 		http.StatusOK:                  codes.OK,
@@ -165,9 +164,6 @@ func (p Grpc) writeMetadata(ctx *request.Context) metadata.MD {
 
 	appAuthData, err := ctx.GetAuthData()
 	if err == nil {
-		md[grpc.SystemIdHeader] = []string{strconv.Itoa(appAuthData.SystemId)}
-		md[grpc.DomainIdHeader] = []string{strconv.Itoa(appAuthData.DomainId)}
-		md[grpc.ServiceIdHeader] = []string{strconv.Itoa(appAuthData.ServiceId)}
 		md[grpc.ApplicationIdHeader] = []string{strconv.Itoa(appAuthData.ApplicationId)}
 		encodedAppName := base64.StdEncoding.EncodeToString([]byte(appAuthData.AppName))
 		md[grpc.ApplicationNameHeader] = []string{encodedAppName}

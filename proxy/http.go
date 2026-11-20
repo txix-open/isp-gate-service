@@ -20,30 +20,21 @@ import (
 	"github.com/txix-open/isp-kit/requestid"
 )
 
-const (
-	httpDialTimeout         = 3 * time.Second
-	httpDialKeepAlive       = 30 * time.Second
-	httpMaxIdleConns        = 512
-	httpMaxIdleConnsPerHost = 32
-	httpIdleConnTimeout     = 60 * time.Second
-	httpTLSHandshakeTimeout = 5 * time.Second
-)
-
-func newHttpTransport() *http.Transport {
-	return &http.Transport{
+var (
+	httpTransport = &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: defaultTransportDialContext(&net.Dialer{
-			Timeout:   httpDialTimeout,
-			KeepAlive: httpDialKeepAlive,
+			Timeout:   3 * time.Second,
+			KeepAlive: 30 * time.Second,
 		}),
 		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          httpMaxIdleConns,
-		MaxIdleConnsPerHost:   httpMaxIdleConnsPerHost,
-		IdleConnTimeout:       httpIdleConnTimeout,
-		TLSHandshakeTimeout:   httpTLSHandshakeTimeout,
+		MaxIdleConns:          512,
+		MaxIdleConnsPerHost:   32,
+		IdleConnTimeout:       60 * time.Second,
+		TLSHandshakeTimeout:   5 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
-}
+)
 
 type HttpHostManager interface {
 	Next() (string, error)
@@ -51,7 +42,6 @@ type HttpHostManager interface {
 
 type Http struct {
 	hostManager HttpHostManager
-	transport   http.RoundTripper
 	skipAuth    bool
 	timeout     time.Duration
 }
@@ -59,7 +49,6 @@ type Http struct {
 func NewHttp(hostManager HttpHostManager, skipAuth bool, timeout time.Duration) Http {
 	return Http{
 		hostManager: hostManager,
-		transport:   newHttpTransport(),
 		skipAuth:    skipAuth,
 		timeout:     timeout,
 	}
@@ -82,7 +71,7 @@ func (p Http) Handle(ctx *request.Context) error {
 	setHttpHeaders(ctx, request.Header, p.skipAuth)
 
 	reverseProxy := httputil.NewSingleHostReverseProxy(target)
-	reverseProxy.Transport = p.transport
+	reverseProxy.Transport = httpTransport
 	var resultError error
 	reverseProxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, err error) {
 		resultError = httperrors.New(
@@ -121,9 +110,6 @@ func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) {
 
 	appAuthData, err := ctx.GetAuthData()
 	if err == nil {
-		header.Set(grpc.SystemIdHeader, strconv.Itoa(appAuthData.SystemId))
-		header.Set(grpc.DomainIdHeader, strconv.Itoa(appAuthData.DomainId))
-		header.Set(grpc.ServiceIdHeader, strconv.Itoa(appAuthData.ServiceId))
 		header.Set(grpc.ApplicationIdHeader, strconv.Itoa(appAuthData.ApplicationId))
 		encodedAppName := base64.StdEncoding.EncodeToString([]byte(appAuthData.AppName))
 		header.Set(grpc.ApplicationNameHeader, encodedAppName) //nolint:canonicalheader

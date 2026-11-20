@@ -3,7 +3,6 @@ package httperrors
 import (
 	"net/http"
 
-	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/json"
 )
 
@@ -34,11 +33,7 @@ func (e *HttpError) WriteError(w http.ResponseWriter) error {
 		"errorMessage": e.userMessage,
 		"details":      e.details,
 	}
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		return errors.WithMessage(err, "encode HTTP error response")
-	}
-	return nil
+	return json.NewEncoder(w).Encode(data)
 }
 
 func (e *HttpError) WithDetails(details ...any) {

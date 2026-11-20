@@ -66,9 +66,6 @@ func main() {
 			Authenticated: true,
 			ErrorReason:   "",
 			AuthData: &entity.AppAuthData{
-				SystemId:      1,
-				DomainId:      1,
-				ServiceId:     1,
 				ApplicationId: 1,
 			},
 		}

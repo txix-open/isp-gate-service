@@ -35,11 +35,7 @@ func (w *writerWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if !ok {
 		return nil, nil, errors.New("writerWrapper: upstream writer doesn't implement Hijack")
 	}
-	conn, readWriter, err := upstream.Hijack()
-	if err != nil {
-		return conn, readWriter, errors.WithMessage(err, "writerWrapper: hijack upstream writer")
-	}
-	return conn, readWriter, nil
+	return upstream.Hijack()
 }
 
 func (w *writerWrapper) StatusCode() int {
@@ -140,10 +136,7 @@ func Logger( // nolint:gocognit,funlen
 				logger.Debug(ctx.Context(), "log request", fields...)
 			}
 
-			if err != nil {
-				return errors.WithMessage(err, "logger: handle request")
-			}
-			return nil
+			return err
 		})
 	}
 }

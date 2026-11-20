@@ -13,12 +13,6 @@ import (
 	"isp-gate-service/request"
 )
 
-const (
-	wsHandshakeTimeout = 5 * time.Second
-	wsReadBufferSize   = 1024
-	wsWriteBufferSize  = 1024
-)
-
 type Ws struct {
 	hostManager HttpHostManager
 	skipAuth    bool
@@ -52,9 +46,9 @@ func (ws Ws) Handle(ctx *request.Context) error {
 		setHttpHeaders(ctx, out, ws.skipAuth)
 	}
 	proxy.Upgrader = &websocket.Upgrader{
-		HandshakeTimeout: wsHandshakeTimeout,
-		ReadBufferSize:   wsReadBufferSize,
-		WriteBufferSize:  wsWriteBufferSize,
+		HandshakeTimeout: 5 * time.Second,
+		ReadBufferSize:   1024,
+		WriteBufferSize:  1024,
 		WriteBufferPool:  nil,
 		Subprotocols:     nil,
 		Error: func(w http.ResponseWriter, r *http.Request, status int, reason error) {

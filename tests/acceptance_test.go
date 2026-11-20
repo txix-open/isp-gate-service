@@ -60,18 +60,9 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 	requestId := requestid.Next()
 	targetService, targetCli := grpct.NewMock(test)
 	targetService.Mock("endpoint", func(ctx context.Context, authData grpc.AuthData, req request) response {
-		systemId, err := authData.SystemId()
-		require.NoError(err)
-		domainId, err := authData.DomainId()
-		require.NoError(err)
-		serviceId, err := authData.ServiceId()
-		require.NoError(err)
 		applicationId, err := authData.ApplicationId()
 		require.NoError(err)
 		require.EqualValues(requestId, requestid.FromContext(ctx))
-		require.EqualValues(1, systemId)
-		require.EqualValues(2, domainId)
-		require.EqualValues(3, serviceId)
 		require.EqualValues(4, applicationId)
 
 		adminId, err := grpc.StringFromMd("x-admin-id", metadata.MD(authData))
@@ -598,9 +589,6 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *
 			Authenticated: true,
 			ErrorReason:   "",
 			AuthData: &entity.AppAuthData{
-				SystemId:      1,
-				DomainId:      2,
-				ServiceId:     3,
 				ApplicationId: 4,
 				AppName:       "test",
 			},
@@ -640,18 +628,9 @@ func TestHappyPathTestSuite(t *testing.T) {
 }
 
 func assertHeaders(require *require.Assertions, requestId string, ctx context.Context, headers http.Header) {
-	systemId, err := strconv.Atoi(headers.Get("x-system-identity"))
-	require.NoError(err)
-	domainId, err := strconv.Atoi(headers.Get("x-domain-identity"))
-	require.NoError(err)
-	serviceId, err := strconv.Atoi(headers.Get("x-service-identity"))
-	require.NoError(err)
 	applicationId, err := strconv.Atoi(headers.Get("x-application-identity"))
 	require.NoError(err)
 	require.EqualValues(requestId, requestid.FromContext(ctx))
-	require.EqualValues(1, systemId)
-	require.EqualValues(2, domainId)
-	require.EqualValues(3, serviceId)
 	require.EqualValues(4, applicationId)
 	expectedAppName := base64.StdEncoding.EncodeToString([]byte("test"))
 	require.EqualValues(expectedAppName, headers.Get("x-application-name"))

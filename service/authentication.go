@@ -74,9 +74,6 @@ func (Authentication) convertAuthData(authData *entity.AppAuthData) *domain.AppA
 
 	return &domain.AppAuthData{
 		AppName:       authData.AppName,
-		SystemId:      authData.SystemId,
-		DomainId:      authData.DomainId,
-		ServiceId:     authData.ServiceId,
 		ApplicationId: authData.ApplicationId,
 	}
 }
