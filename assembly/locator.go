@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/txix-open/isp-kit/http/httpclix"
 	"github.com/txix-open/isp-kit/metrics"
 	"github.com/txix-open/isp-kit/metrics/http_metrics"
 
@@ -29,7 +30,7 @@ type Locator struct {
 	httpHostManagerByModuleName map[string]*lb.RoundRobin
 	routes                      *routes.Routes
 	systemCli                   *client.Client
-	adminCli                    *client.Client
+	adminCli                    *httpclix.ClientBalancer
 	lockerCli                   *client.Client
 	routerLb                    *lb.RoundRobin
 	usersAuthCache              *cache.Cache
@@ -41,7 +42,7 @@ func NewLocator(
 	httpHostManagerByModuleName map[string]*lb.RoundRobin,
 	routes *routes.Routes,
 	systemCli *client.Client,
-	adminCli *client.Client,
+	adminCli *httpclix.ClientBalancer,
 	lockerCli *client.Client,
 	routerLb *lb.RoundRobin,
 	usersAuthCache *cache.Cache,

@@ -7,7 +7,8 @@ import (
 	"isp-gate-service/entity"
 
 	"github.com/txix-open/isp-kit/errors"
-	"github.com/txix-open/isp-kit/grpc/client"
+	"github.com/txix-open/isp-kit/http/httpclix"
+	"github.com/txix-open/isp-kit/metrics/http_metrics"
 )
 
 const (
@@ -16,33 +17,39 @@ const (
 )
 
 type Admin struct {
-	cli *client.Client
+	cli *httpclix.ClientBalancer
 }
 
-func NewAdmin(cli *client.Client) Admin {
+func NewAdmin(cli *httpclix.ClientBalancer) Admin {
 	return Admin{cli: cli}
 }
 
 func (r Admin) Authenticate(ctx context.Context, token string) (*entity.AdminAuthenticateResponse, error) {
+	ctx = http_metrics.ClientEndpointToContext(ctx, adminAuthenticate)
+
 	resp := entity.AdminAuthenticateResponse{}
-	err := r.cli.Invoke(adminAuthenticate).
+	err := r.cli.Post(adminAuthenticate).
 		JsonRequestBody(entity.AuthenticateRequest{Token: token}).
 		JsonResponseBody(&resp).
-		Do(ctx)
+		StatusCodeToError().
+		DoWithoutResponse(ctx)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "grpc client invoke %s", adminAuthenticate)
+		return nil, errors.WithMessagef(err, "http client invoke %s", adminAuthenticate)
 	}
 	return &resp, nil
 }
 
 func (r Admin) Authorize(ctx context.Context, adminId int, permission string) (bool, error) {
+	ctx = http_metrics.ClientEndpointToContext(ctx, adminAuthorize)
+
 	resp := entity.AdminAuthorizeResponse{}
-	err := r.cli.Invoke(adminAuthorize).
+	err := r.cli.Post(adminAuthorize).
 		JsonRequestBody(entity.AdminAuthorizeRequest{AdminId: adminId, Permission: permission}).
 		JsonResponseBody(&resp).
-		Do(ctx)
+		StatusCodeToError().
+		DoWithoutResponse(ctx)
 	if err != nil {
-		return false, errors.WithMessagef(err, "grpc client invoke: %s", adminAuthorize)
+		return false, errors.WithMessagef(err, "http client invoke %s", adminAuthorize)
 	}
 	return resp.Authorized, nil
 }

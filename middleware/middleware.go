@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"slices"
+
 	"isp-gate-service/request"
 )
 
@@ -18,8 +20,8 @@ type Middleware func(next Handler) Handler
 
 // nolint:ireturn
 func Chain(root Handler, middlewares ...Middleware) Handler {
-	for i := len(middlewares) - 1; i >= 0; i-- {
-		root = middlewares[i](root)
+	for _, middleware := range slices.Backward(middlewares) {
+		root = middleware(root)
 	}
 	return root
 }

@@ -110,9 +110,6 @@ func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) {
 
 	appAuthData, err := ctx.GetAuthData()
 	if err == nil {
-		header.Set(grpc.SystemIdHeader, strconv.Itoa(appAuthData.SystemId))
-		header.Set(grpc.DomainIdHeader, strconv.Itoa(appAuthData.DomainId))
-		header.Set(grpc.ServiceIdHeader, strconv.Itoa(appAuthData.ServiceId))
 		header.Set(grpc.ApplicationIdHeader, strconv.Itoa(appAuthData.ApplicationId))
 		encodedAppName := base64.StdEncoding.EncodeToString([]byte(appAuthData.AppName))
 		header.Set(grpc.ApplicationNameHeader, encodedAppName) //nolint:canonicalheader

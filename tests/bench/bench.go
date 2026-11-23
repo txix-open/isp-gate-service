@@ -4,10 +4,11 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 
 	"isp-gate-service/assembly"
 	"isp-gate-service/conf"
-	"isp-gate-service/domain"
 	"isp-gate-service/entity"
 	"isp-gate-service/routes"
 
@@ -17,6 +18,10 @@ import (
 	"github.com/txix-open/isp-kit/grpc/client"
 	endpoint2 "github.com/txix-open/isp-kit/grpc/endpoint"
 	"github.com/txix-open/isp-kit/grpc/isp"
+	"github.com/txix-open/isp-kit/http/endpoint"
+	"github.com/txix-open/isp-kit/http/endpoint/httplog"
+	"github.com/txix-open/isp-kit/http/httpclix"
+	"github.com/txix-open/isp-kit/http/router"
 	"github.com/txix-open/isp-kit/log"
 )
 
@@ -55,15 +60,12 @@ func main() {
 		Throttling:  []conf.Throttling{{ApplicationId: 1, RequestsPerSeconds: 5000}},
 	}
 
-	systemService, systemCli, _ := NewMock(logger)
+	systemService, systemCli := NewMock(logger)
 	systemService.Mock("system/secure/authenticate", func() entity.AuthenticateResponse {
 		return entity.AuthenticateResponse{
 			Authenticated: true,
 			ErrorReason:   "",
 			AuthData: &entity.AppAuthData{
-				SystemId:      1,
-				DomainId:      1,
-				ServiceId:     1,
 				ApplicationId: 1,
 			},
 		}
@@ -71,16 +73,9 @@ func main() {
 		return entity.AuthorizeResponse{Authorized: true}
 	})
 
-	adminService, _, adminCli := NewMock(logger)
-	adminService.Mock("admin/secure/authenticate", func() domain.AdminAuthenticateResponse {
-		return domain.AdminAuthenticateResponse{
-			Authenticated: true,
-			ErrorReason:   "",
-			AdminId:       1,
-		}
-	})
+	adminCli := NewAdminMock(logger)
 
-	targetService, targetCli, _ := NewMock(logger)
+	targetService, targetCli := NewMock(logger)
 	targetService.Mock("endpoint", func(req request) response {
 		return response{Id: req.Id}
 	})
@@ -102,19 +97,33 @@ func main() {
 	srv.ListenAndServe()
 }
 
-func TestServer(service isp.BackendServiceServer) (*grpc.Server, *client.Client, *client.Client) {
+func NewAdminMock(logger log.Logger) *httpclix.ClientBalancer {
+	mux := router.New()
+	wrapper := endpoint.DefaultWrapper(logger, httplog.Noop())
+	mux.POST("/admin/secure/authenticate",
+		wrapper.Endpoint(func() entity.AdminAuthenticateResponse {
+			return entity.AdminAuthenticateResponse{
+				Authenticated: true,
+				ErrorReason:   "",
+				AdminId:       1,
+			}
+		}))
+	mock := httptest.NewServer(mux)
+	u, _ := url.Parse(mock.URL)
+	return httpclix.NewClientBalancer([]string{u.Host})
+}
+
+func TestServer(service isp.BackendServiceServer) (*grpc.Server, *client.Client) {
 	listener, _ := net.Listen("tcp", "127.0.0.1:") // nolint:noctx
 	srv := grpc.NewServer()
 	sysCli, _ := client.Default()
-	adminCli, _ := client.Default()
 	srv.Upgrade(service)
 	go func() {
 		_ = srv.Serve(listener)
 	}()
 
 	sysCli.Upgrade([]string{listener.Addr().String()})
-	adminCli.Upgrade([]string{listener.Addr().String()})
-	return srv, sysCli, adminCli
+	return srv, sysCli
 }
 
 type MockServer struct {
@@ -123,13 +132,13 @@ type MockServer struct {
 	mockEndpoints map[string]any
 }
 
-func NewMock(logger log.Logger) (*MockServer, *client.Client, *client.Client) {
-	srv, syscli, admincli := TestServer(grpc.NewMux())
+func NewMock(logger log.Logger) (*MockServer, *client.Client) {
+	srv, syscli := TestServer(grpc.NewMux())
 	return &MockServer{
 		srv:           srv,
 		logger:        logger,
 		mockEndpoints: make(map[string]any),
-	}, syscli, admincli
+	}, syscli
 }
 
 func (m *MockServer) Mock(endpoint string, handler any) *MockServer {

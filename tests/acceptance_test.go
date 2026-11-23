@@ -1,5 +1,5 @@
 // nolint:canonicalheader
-package tests
+package tests_test
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"github.com/txix-open/isp-kit/http/endpoint"
 	"github.com/txix-open/isp-kit/http/endpoint/httplog"
 	"github.com/txix-open/isp-kit/http/httpcli"
+	"github.com/txix-open/isp-kit/http/httpclix"
 	"github.com/txix-open/isp-kit/http/router"
 	"github.com/txix-open/isp-kit/test/fake"
 
@@ -59,18 +60,9 @@ func (s *HappyPathTestSuite) TestGrpcProxy() {
 	requestId := requestid.Next()
 	targetService, targetCli := grpct.NewMock(test)
 	targetService.Mock("endpoint", func(ctx context.Context, authData grpc.AuthData, req request) response {
-		systemId, err := authData.SystemId()
-		require.NoError(err)
-		domainId, err := authData.DomainId()
-		require.NoError(err)
-		serviceId, err := authData.ServiceId()
-		require.NoError(err)
 		applicationId, err := authData.ApplicationId()
 		require.NoError(err)
 		require.EqualValues(requestId, requestid.FromContext(ctx))
-		require.EqualValues(1, systemId)
-		require.EqualValues(2, domainId)
-		require.EqualValues(3, serviceId)
 		require.EqualValues(4, applicationId)
 
 		adminId, err := grpc.StringFromMd("x-admin-id", metadata.MD(authData))
@@ -580,7 +572,7 @@ func (s *HappyPathTestSuite) TestUserAuthorization_SkipAppAuth() { // nolint:fun
 }
 
 // nolint:ireturn
-func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *client.Client, *client.Client) {
+func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *client.Client, *httpclix.ClientBalancer) {
 	config := conf.Remote{
 		Http: conf.Http{MaxRequestBodySizeInMb: 1, ProxyTimeoutInSec: 15},
 		Logging: conf.Logging{LogLevel: log.DebugLevel, RequestLogEnable: true, BodyLogEnable: true,
@@ -597,9 +589,6 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *
 			Authenticated: true,
 			ErrorReason:   "",
 			AuthData: &entity.AppAuthData{
-				SystemId:      1,
-				DomainId:      2,
-				ServiceId:     3,
 				ApplicationId: 4,
 				AppName:       "test",
 			},
@@ -608,19 +597,27 @@ func (s *HappyPathTestSuite) commonDependencies(test *test.Test) (conf.Remote, *
 		return entity.AuthorizeResponse{Authorized: true}
 	})
 
-	adminService, adminCli := grpct.NewMock(test)
-	adminService.Mock("admin/secure/authenticate", func(req entity.AdminAuthorizeRequest) entity.AdminAuthenticateResponse {
-		return entity.AdminAuthenticateResponse{
-			Authenticated: true,
-			ErrorReason:   "",
-			AdminId:       1,
-		}
-	}).Mock("admin/secure/authorize", func(req entity.AdminAuthorizeRequest) entity.AdminAuthorizeResponse {
-		if req.Permission == "ok_permission" {
-			return entity.AdminAuthorizeResponse{Authorized: true}
-		}
-		return entity.AdminAuthorizeResponse{Authorized: false}
-	})
+	adminMux := router.New()
+	defaultWrapper := endpoint.DefaultWrapper(test.Logger(), httplog.Noop())
+	adminMux.POST("/admin/secure/authenticate",
+		defaultWrapper.Endpoint(func(req entity.AuthenticateRequest) entity.AdminAuthenticateResponse {
+			return entity.AdminAuthenticateResponse{
+				Authenticated: true,
+				ErrorReason:   "",
+				AdminId:       1,
+			}
+		}))
+	adminMux.POST("/admin/secure/authorize",
+		defaultWrapper.Endpoint(func(req entity.AdminAuthorizeRequest) entity.AdminAuthorizeResponse {
+			if req.Permission == "ok_permission" {
+				return entity.AdminAuthorizeResponse{Authorized: true}
+			}
+			return entity.AdminAuthorizeResponse{Authorized: false}
+		}))
+	adminMock := httptest.NewServer(adminMux)
+	adminUrl, err := url.Parse(adminMock.URL)
+	require.New(s.T()).NoError(err)
+	adminCli := httpclix.NewClientBalancer([]string{adminUrl.Host})
 
 	return config, systemCli, adminCli
 }
@@ -631,18 +628,9 @@ func TestHappyPathTestSuite(t *testing.T) {
 }
 
 func assertHeaders(require *require.Assertions, requestId string, ctx context.Context, headers http.Header) {
-	systemId, err := strconv.Atoi(headers.Get("x-system-identity"))
-	require.NoError(err)
-	domainId, err := strconv.Atoi(headers.Get("x-domain-identity"))
-	require.NoError(err)
-	serviceId, err := strconv.Atoi(headers.Get("x-service-identity"))
-	require.NoError(err)
 	applicationId, err := strconv.Atoi(headers.Get("x-application-identity"))
 	require.NoError(err)
 	require.EqualValues(requestId, requestid.FromContext(ctx))
-	require.EqualValues(1, systemId)
-	require.EqualValues(2, domainId)
-	require.EqualValues(3, serviceId)
 	require.EqualValues(4, applicationId)
 	expectedAppName := base64.StdEncoding.EncodeToString([]byte("test"))
 	require.EqualValues(expectedAppName, headers.Get("x-application-name"))
