@@ -106,11 +106,13 @@ func (s *Routes) registerEndpoint(
 	}()
 
 	requiredAdminPerm, _ := cluster.GetRequiredAdminPermission(descriptor)
+	requiredUserPerm, _ := cluster.GetRequiredUserPermission(descriptor)
 	meta := domain.EndpointMeta{
 		Inner:                   descriptor.Inner,
 		UserAuthRequired:        descriptor.UserAuthRequired,
 		ModuleName:              moduleName,
 		RequiredAdminPermission: requiredAdminPerm,
+		RequiredUserPermission:  requiredUserPerm,
 		PathSchema:              descriptor.Path,
 	}
 

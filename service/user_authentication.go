@@ -19,8 +19,14 @@ type UserAuthenticationCache interface {
 	Set(ctx context.Context, authEndpoint string, token string, data entity.UserAuthData, duration time.Duration) error
 }
 
+type UserAuthorizationCache interface {
+	Get(ctx context.Context, authorizeEndpoint string, identity string, permission string) (bool, error)
+	SetAuthorized(ctx context.Context, authorizeEndpoint string, identity string, permission string) error
+}
+
 type UserAuthenticationRepo interface {
 	Authenticate(ctx context.Context, authEndpoint string, token string) (*entity.UserAuthenticateResponse, error)
+	Authorize(ctx context.Context, authorizeEndpoint string, identity string, permission string) (bool, error)
 }
 
 type TokenProvider interface {
@@ -31,12 +37,14 @@ type TokenProvider interface {
 type userAuthSetting struct {
 	tokenProviders    []TokenProvider
 	authEndpoint      string
+	authorizeEndpoint string
 	authCacheDuration time.Duration
 	skipAppAuth       bool
 }
 
 type UserAuthentication struct {
 	cache                UserAuthenticationCache
+	authzCache           UserAuthorizationCache
 	repo                 UserAuthenticationRepo
 	settingsByModuleName map[string]userAuthSetting
 }
@@ -44,6 +52,7 @@ type UserAuthentication struct {
 func NewUserAuthentication(
 	cfg conf.CustomAuth,
 	cache UserAuthenticationCache,
+	authzCache UserAuthorizationCache,
 	repo UserAuthenticationRepo,
 ) (UserAuthentication, error) {
 	tokenProviders := make(map[string]TokenProvider, len(cfg.TokenProviders))
@@ -87,6 +96,7 @@ func NewUserAuthentication(
 			settingsByModuleName[moduleName] = userAuthSetting{
 				tokenProviders:    settingTokenProviders,
 				authEndpoint:      setting.AuthenticateEndpoint,
+				authorizeEndpoint: setting.AuthorizeEndpoint,
 				authCacheDuration: cacheDuration,
 				skipAppAuth:       setting.SkipAppAuth,
 			}
@@ -95,6 +105,7 @@ func NewUserAuthentication(
 
 	return UserAuthentication{
 		cache:                cache,
+		authzCache:           authzCache,
 		repo:                 repo,
 		settingsByModuleName: settingsByModuleName,
 	}, nil
@@ -130,6 +141,58 @@ func (s UserAuthentication) Authenticate(ctx *request.Context) (*domain.Authenti
 		return nil, errors.WithMessage(err, "auth")
 	}
 	return resp, nil
+}
+
+func (s UserAuthentication) UserAuthorize(ctx *request.Context) (bool, error) {
+	meta := ctx.EndpointMeta()
+
+	setting, ok := s.settingsByModuleName[meta.ModuleName]
+	if !ok {
+		return false, errors.WithMessagef(domain.ErrUserAuthSettingNotFound,
+			"setting for module '%s' and endpoint '%s' not found",
+			meta.ModuleName, meta.Endpoint,
+		)
+	}
+
+	userAuthData, err := ctx.GetUserAuthData()
+	if err != nil {
+		return false, errors.WithMessage(err, "get user auth data")
+	}
+
+	return s.authorize(
+		ctx.Context(),
+		setting,
+		userAuthData.Identity,
+		meta.RequiredUserPermission,
+	)
+}
+
+func (s UserAuthentication) authorize(
+	ctx context.Context,
+	setting userAuthSetting,
+	identity string,
+	permission string,
+) (bool, error) {
+	ok, err := s.authzCache.Get(ctx, setting.authorizeEndpoint, identity, permission)
+	if err != nil {
+		return false, errors.WithMessage(err, "user authz cache get")
+	}
+	if ok {
+		return true, nil
+	}
+
+	ok, err = s.repo.Authorize(ctx, setting.authorizeEndpoint, identity, permission)
+	if err != nil {
+		return false, errors.WithMessagef(err, "user authz repo authorize")
+	}
+	if ok {
+		err = s.authzCache.SetAuthorized(ctx, setting.authorizeEndpoint, identity, permission)
+		if err != nil {
+			return false, errors.WithMessagef(err, "user authz cache set")
+		}
+	}
+
+	return ok, nil
 }
 
 func (s UserAuthentication) extractToken(ctx *request.Context, providers []TokenProvider) (string, error) {

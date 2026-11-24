@@ -67,10 +67,12 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 	authentication := service.NewAuthentication(authenticationCache, systemRepo)
 
 	userAuthenticationCache := repository.NewUserAuthenticationCache(l.usersAuthCache)
+	userAuthorizationCache := repository.NewUserAuthorizationCache(time.Duration(config.Caching.AuthorizationDataInSec) * time.Second)
 	userAuthRepo := repository.NewUserAuth(l.routerLb)
 	userAuthentication, err := service.NewUserAuthentication(
 		config.CustomAuth,
 		userAuthenticationCache,
+		userAuthorizationCache,
 		userAuthRepo,
 	)
 	if err != nil {
@@ -142,6 +144,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			middleware.RequestId(),
 			middleware.ErrorHandler(l.logger),
 			middleware.UserAuthenticate(userAuthentication, l.logger),
+			middleware.UserAuthorize(userAuthentication),
 			middleware.Authenticate(authentication),
 			middleware.AdminAuthenticate(adminService),
 			middleware.ClientRequestId(config.EnableClientRequestIdForwarding, forwardReqIdByAppId),

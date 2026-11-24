@@ -15,3 +15,12 @@ type UserAuthData struct {
 	IdentityHeader string
 	ExtraHeaders   map[string][]string
 }
+
+type UserAuthorizeRequest struct {
+	Identity   string
+	Permission string
+}
+
+type UserAuthorizeResponse struct {
+	Authorized bool
+}

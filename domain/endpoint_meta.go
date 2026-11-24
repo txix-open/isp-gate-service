@@ -10,6 +10,7 @@ type EndpointMeta struct {
 
 	ModuleName              string
 	RequiredAdminPermission string
+	RequiredUserPermission  string
 	// Объявляемый сервисом метод
 	PathSchema string
 	// Вызываемый метод

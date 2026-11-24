@@ -49,3 +49,31 @@ func (r UserAuth) Authenticate(
 	}
 	return &resp, nil
 }
+
+func (r UserAuth) Authorize(
+	ctx context.Context,
+	method string,
+	identity string,
+	permission string,
+) (bool, error) {
+	ctx = http_metrics.ClientEndpointToContext(ctx, method)
+
+	host, err := r.lb.Next()
+	if err != nil {
+		return false, errors.WithMessage(err, "lb next")
+	}
+
+	endpoint := fmt.Sprintf("http://%s/%s", host, method)
+	resp := entity.UserAuthorizeResponse{}
+	err = r.cli.Post(endpoint).
+		JsonRequestBody(entity.UserAuthorizeRequest{
+			Identity:   identity,
+			Permission: permission,
+		}).JsonResponseBody(&resp).
+		StatusCodeToError().
+		DoWithoutResponse(ctx)
+	if err != nil {
+		return false, errors.WithMessagef(err, "http client invoke: %s", endpoint)
+	}
+	return resp.Authorized, nil
+}

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -382,11 +383,13 @@ func (s *HappyPathTestSuite) TestUserAuthorization() { // nolint:funlen
 				ModuleNameList:       []string{"target"},
 				TokenProviders:       []string{"test_provider"},
 				AuthenticateEndpoint: "test-user-auth/authenticate",
+				AuthorizeEndpoint:    "test-user-auth/authorize",
 			},
 			{
 				ModuleNameList:       []string{"target2"},
 				TokenProviders:       []string{"test_provider"},
 				AuthenticateEndpoint: "failed-user-auth/authenticate",
+				AuthorizeEndpoint:    "failed-user-auth/authorize",
 			},
 		},
 	}
@@ -521,12 +524,14 @@ func (s *HappyPathTestSuite) TestUserAuthorization_SkipAppAuth() { // nolint:fun
 				ModuleNameList:       []string{"target"},
 				TokenProviders:       []string{"test_provider"},
 				AuthenticateEndpoint: "test-user-auth/authenticate",
+				AuthorizeEndpoint:    "test-user-auth/authorize",
 				SkipAppAuth:          true,
 			},
 			{
 				ModuleNameList:       []string{"target2"},
 				TokenProviders:       []string{"test_provider"},
 				AuthenticateEndpoint: "test-user-auth/authenticate",
+				AuthorizeEndpoint:    "test-user-auth/authorize",
 			},
 		},
 	}
@@ -575,6 +580,163 @@ func (s *HappyPathTestSuite) TestUserAuthorization_SkipAppAuth() { // nolint:fun
 		StatusCodeToError().
 		DoWithoutResponse(s.T().Context())
 	errResp := httpcli.ErrorResponse{}
+	require.ErrorAs(err, &errResp)
+	require.EqualValues(http.StatusUnauthorized, errResp.StatusCode)
+}
+
+func (s *HappyPathTestSuite) TestUserAuthorization_PermissionCheck() { // nolint:funlen
+	test, require := test.New(s.T())
+	config, systemCli, adminCli := s.commonDependencies(test)
+
+	userAuthData := entity.UserAuthData{
+		Identity:       "42",
+		IdentityHeader: "x-user-identity",
+		ExtraHeaders:   map[string][]string{"x-user-session-token": {"test-session-token"}},
+	}
+
+	targetService, targetCli := grpct.NewMock(test)
+	for _, endpointName := range []string{"perm_ok_endpoint", "no_perm_endpoint"} {
+		targetService.Mock(endpointName, func(ctx context.Context, authData grpc.AuthData, req request) response {
+			md, ok := metadata.FromIncomingContext(ctx)
+			require.True(ok)
+			require.ElementsMatch([]string{userAuthData.Identity}, md.Get(userAuthData.IdentityHeader))
+
+			return response{Id: req.Id}
+		})
+	}
+
+	var authorizeCalls atomic.Int64
+	routerMux := router.New()
+	defaultWrapper := endpoint.DefaultWrapper(
+		test.Logger(),
+		httplog.Noop(),
+	)
+
+	userAuthToken := fake.It[string]()
+
+	routerMux.POST("/test-user-auth/authenticate",
+		defaultWrapper.Endpoint(func(req entity.UserAuthenticateRequest) entity.UserAuthenticateResponse {
+			require.Equal(userAuthToken, req.Token)
+			return entity.UserAuthenticateResponse{
+				Authenticated: true,
+				AuthData:      &userAuthData,
+			}
+		}))
+	routerMux.POST("/test-user-auth/authorize",
+		defaultWrapper.Endpoint(func(req entity.UserAuthorizeRequest) entity.UserAuthorizeResponse {
+			authorizeCalls.Add(1)
+			require.Equal(userAuthData.Identity, req.Identity)
+			if req.Permission == "ok_permission" {
+				return entity.UserAuthorizeResponse{Authorized: true}
+			}
+			return entity.UserAuthorizeResponse{}
+		}))
+	routerMock := httptest.NewServer(routerMux)
+	targetUrl, err := url.Parse(routerMock.URL)
+	require.NoError(err)
+	rr := lb.NewRoundRobin([]string{targetUrl.Host})
+
+	targetClients := map[string]*client.Client{"target": targetCli}
+	logger, err := log.New(log.WithLevel(log.DebugLevel))
+	require.NoError(err)
+	routes := routes.NewRoutes(logger)
+	locator := assembly.NewLocator(logger, targetClients, nil, routes, systemCli, adminCli, nil, rr, cache.New())
+
+	locations := []conf.Location{{
+		SkipAuth:     false,
+		PathPrefix:   "/api",
+		Protocol:     "grpc",
+		TargetModule: "target",
+	}}
+	config.CustomAuth = conf.CustomAuth{
+		TokenProviders: []conf.TokenProvider{
+			{
+				Name: "test_provider",
+				Type: conf.HeaderTokenProviderType,
+				HeaderProvider: &conf.HeaderTokenProvider{
+					HeaderName: "test-token-header",
+				},
+			},
+		},
+		UserAuthSettings: []conf.UserAuthSetting{
+			{
+				ModuleNameList:       []string{"target"},
+				TokenProviders:       []string{"test_provider"},
+				AuthenticateEndpoint: "test-user-auth/authenticate",
+				AuthorizeEndpoint:    "test-user-auth/authorize",
+				SkipAppAuth:          true,
+			},
+		},
+	}
+	handler, err := locator.Handler(config, locations)
+	require.NoError(err)
+
+	err = routes.ReceiveRoutes(context.Background(), cluster.RoutingConfig{{
+		ModuleName: "target",
+		Endpoints: []cluster.EndpointDescriptor{
+			{
+				Path:             "perm_ok_endpoint",
+				Inner:            false,
+				UserAuthRequired: true,
+				Extra:            cluster.RequireUserPermission("ok_permission"),
+			},
+			{
+				Path:             "perm_bad_endpoint",
+				Inner:            false,
+				UserAuthRequired: true,
+				Extra:            cluster.RequireUserPermission("bad_permission"),
+			},
+			{
+				Path:             "no_perm_endpoint",
+				Inner:            false,
+				UserAuthRequired: true,
+			},
+		},
+	}})
+	require.NoError(err)
+
+	srv := httptest.NewServer(handler)
+	cli := httpcli.New()
+	req := request{Id: uuid.New().String()}
+	resp := response{}
+
+	err = cli.Post(srv.URL+"/api/perm_ok_endpoint").
+		Header("test-token-header", userAuthToken).
+		JsonRequestBody(req).
+		JsonResponseBody(&resp).
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
+	require.NoError(err)
+	require.EqualValues(req.Id, resp.Id)
+	require.EqualValues(int64(1), authorizeCalls.Load())
+
+	err = cli.Post(srv.URL+"/api/perm_bad_endpoint").
+		Header("test-token-header", userAuthToken).
+		JsonRequestBody(req).
+		JsonResponseBody(&resp).
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
+	errResp := httpcli.ErrorResponse{}
+	require.ErrorAs(err, &errResp)
+	require.EqualValues(http.StatusForbidden, errResp.StatusCode)
+	require.EqualValues(int64(2), authorizeCalls.Load())
+
+	err = cli.Post(srv.URL+"/api/no_perm_endpoint").
+		Header("test-token-header", userAuthToken).
+		JsonRequestBody(req).
+		JsonResponseBody(&resp).
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
+	require.NoError(err)
+	require.EqualValues(req.Id, resp.Id)
+	require.EqualValues(int64(2), authorizeCalls.Load())
+
+	err = cli.Post(srv.URL + "/api/perm_ok_endpoint").
+		JsonRequestBody(req).
+		JsonResponseBody(&resp).
+		StatusCodeToError().
+		DoWithoutResponse(s.T().Context())
+	errResp = httpcli.ErrorResponse{}
 	require.ErrorAs(err, &errResp)
 	require.EqualValues(http.StatusUnauthorized, errResp.StatusCode)
 }
