@@ -101,6 +101,7 @@ func setHttpHeaders(ctx *request.Context, header http.Header, skipAuth bool) {
 	userAuthData, err := ctx.GetUserAuthData()
 	if err == nil {
 		for key, values := range userAuthData.ExtraHeaders {
+			header.Del(key)
 			for _, value := range values {
 				header.Add(key, value)
 			}
