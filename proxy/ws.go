@@ -6,11 +6,12 @@ import (
 	"net/url"
 	"time"
 
+	"isp-gate-service/httperrors"
+	"isp-gate-service/request"
+
 	"github.com/gorilla/websocket"
 	"github.com/tomakado/websocketproxy"
 	"github.com/txix-open/isp-kit/errors"
-	"isp-gate-service/httperrors"
-	"isp-gate-service/request"
 )
 
 type Ws struct {
@@ -45,6 +46,7 @@ func (ws Ws) Handle(ctx *request.Context) error {
 	proxy.Director = func(incoming *http.Request, out http.Header) {
 		setHttpHeaders(ctx, out, ws.skipAuth)
 	}
+	// nolint: mnd
 	proxy.Upgrader = &websocket.Upgrader{
 		HandshakeTimeout: 5 * time.Second,
 		ReadBufferSize:   1024,
