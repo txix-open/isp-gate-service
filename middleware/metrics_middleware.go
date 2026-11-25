@@ -1,11 +1,9 @@
 package middleware
 
 import (
+	"isp-gate-service/request"
 	"time"
 
-	"isp-gate-service/request"
-
-	"github.com/txix-open/isp-kit/errors"
 	"github.com/txix-open/isp-kit/metrics/http_metrics"
 )
 
@@ -22,7 +20,7 @@ func Metrics(storage *http_metrics.ServerStorage) Middleware {
 			start := time.Now()
 			err := next.Handle(ctx)
 			if err != nil {
-				return errors.WithMessage(err, "metrics middleware error")
+				return err
 			}
 
 			storage.ObserveDuration(r.Method, pathSchema, time.Since(start))

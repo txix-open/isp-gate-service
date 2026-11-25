@@ -33,7 +33,6 @@ func init() {
 }
 
 var (
-	// nolint: gochecknoglobals
 	codeMap = map[int]codes.Code{
 		http.StatusOK:                  codes.OK,
 		http.StatusRequestTimeout:      codes.Canceled,
@@ -49,7 +48,6 @@ var (
 		http.StatusInternalServerError: codes.Internal,
 		http.StatusServiceUnavailable:  codes.Unavailable,
 	}
-	// nolint: gochecknoglobals
 	inverseCodeMap = map[codes.Code]int{}
 )
 

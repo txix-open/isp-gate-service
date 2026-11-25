@@ -46,7 +46,6 @@ func (ws Ws) Handle(ctx *request.Context) error {
 	proxy.Director = func(incoming *http.Request, out http.Header) {
 		setHttpHeaders(ctx, out, ws.skipAuth)
 	}
-	// nolint: mnd
 	proxy.Upgrader = &websocket.Upgrader{
 		HandshakeTimeout: 5 * time.Second,
 		ReadBufferSize:   1024,
