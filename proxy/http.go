@@ -21,6 +21,7 @@ import (
 )
 
 var (
+	// nolint: gochecknoglobals, mnd
 	httpTransport = &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: defaultTransportDialContext(&net.Dialer{
