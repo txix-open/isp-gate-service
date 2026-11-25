@@ -15,6 +15,7 @@ linters:
     - nolintlint # Goland все равно форматирует с отступом
     - perfsprint # мнимая производительность в угоду читаемости
     - tagalign # не всегда имеет смысл
+    - testpackage
     - varnamelen # очень индивидуально (db)
     - wsl # расставление пробелов очень индивидуально
     - wsl_v5 # расставление пробелов очень индивидуально
@@ -66,8 +67,15 @@ linters:
           - prealloc
         path: ".*_test\\.go$"
       - linters:
-          - goconst
-        path: "tests/" # компонентные тесты: фикстуры и моки не выносим в константы
+          - wrapcheck
+        path: middleware #отсутствует необходимость оборачивать ошибки
+      - linters:
+          - gochecknoglobals
+          - mnd
+        path: proxy
+      - linters:
+          - wrapcheck
+        path: httperrors #отсутствует необходимость оборачивать ошибки
     paths:
       - third_party$
       - builtin$

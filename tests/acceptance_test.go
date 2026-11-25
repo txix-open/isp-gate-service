@@ -1,4 +1,5 @@
-package tests_test
+// nolint:canonicalheader
+package tests
 
 import (
 	"context"
@@ -238,7 +239,7 @@ type wsEventHandlerMock struct {
 
 func (s wsEventHandlerMock) Handle(_ context.Context, conn *etp.Conn, event msg.Event) []byte {
 	headers := conn.HttpRequest().Header
-	ctx := requestid.ToContext(context.Background(), headers.Get("x-request-id")) // nolint: canonicalheader
+	ctx := requestid.ToContext(context.Background(), headers.Get("x-request-id"))
 	assertHeaders(s.require, s.requestId, ctx, headers)
 	require.EqualValues(s.t, "data", event.Data)
 	return []byte("world")
@@ -630,13 +631,13 @@ func TestHappyPathTestSuite(t *testing.T) {
 }
 
 func assertHeaders(require *require.Assertions, requestId string, ctx context.Context, headers http.Header) {
-	systemId, err := strconv.Atoi(headers.Get("x-system-identity")) // nolint: canonicalheader
+	systemId, err := strconv.Atoi(headers.Get("x-system-identity"))
 	require.NoError(err)
-	domainId, err := strconv.Atoi(headers.Get("x-domain-identity")) // nolint: canonicalheader
+	domainId, err := strconv.Atoi(headers.Get("x-domain-identity"))
 	require.NoError(err)
-	serviceId, err := strconv.Atoi(headers.Get("x-service-identity")) // nolint: canonicalheader
+	serviceId, err := strconv.Atoi(headers.Get("x-service-identity"))
 	require.NoError(err)
-	applicationId, err := strconv.Atoi(headers.Get("x-application-identity")) // nolint: canonicalheader
+	applicationId, err := strconv.Atoi(headers.Get("x-application-identity"))
 	require.NoError(err)
 	require.EqualValues(requestId, requestid.FromContext(ctx))
 	require.EqualValues(1, systemId)
@@ -644,9 +645,9 @@ func assertHeaders(require *require.Assertions, requestId string, ctx context.Co
 	require.EqualValues(3, serviceId)
 	require.EqualValues(4, applicationId)
 	expectedAppName := base64.StdEncoding.EncodeToString([]byte("test"))
-	require.EqualValues(expectedAppName, headers.Get("x-application-name")) // nolint: canonicalheader
+	require.EqualValues(expectedAppName, headers.Get("x-application-name"))
 
-	adminId, err := strconv.Atoi(headers.Get("x-admin-id")) // nolint: canonicalheader
+	adminId, err := strconv.Atoi(headers.Get("x-admin-id"))
 	require.NoError(err)
 	require.EqualValues(1, adminId)
 }
