@@ -136,7 +136,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			middleware.Logger(
 				l.logger, config.Logging.RequestLogEnable,
 				enableBodyLog,
-				config.Logging.SkipBodyLoggingEndpointPrefixes,
+				skipBodyLoggingEndpointPrefixes,
 				config.Logging.EnableForceUnescapingUnicode,
 			),
 			middleware.RequestId(),
