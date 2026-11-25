@@ -49,6 +49,7 @@ type Logging struct {
 	BodyLogEnable                   bool      `schema:"Включить логирование тел запросов и ответов,должно быть включено логирование запросов"`
 	SkipBodyLoggingEndpointPrefixes []string  `schema:"Выключить логирование тел запросов и ответов для путей имеющих префикс из списка,'/' в начале игнорируется"`
 	EnableForceUnescapingUnicode    bool      `schema:"Включить перевод тел запроса из unicode в utf-8, должно быть включено логирование тел запросов и ответов"`
+	SkipLoggingPathPrefixes         []string  `schema:"Полностью не логировать запросы к путям с префиксом из списка (сырой path, query не учитывается, '/' в начале игнорируется). Применяется к логу запросов, предупреждению о неизвестном эндпоинте и логу незнакомых locations"`
 }
 
 type Caching struct {
