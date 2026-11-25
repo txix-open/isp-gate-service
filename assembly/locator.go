@@ -96,6 +96,8 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 		skipBodyLoggingEndpointPrefixes = append(skipBodyLoggingEndpointPrefixes, strings.TrimPrefix(prefix, "/"))
 	}
 
+	skipLogging := middleware.NewSkipLoggingPaths(config.Logging.SkipLoggingPathPrefixes)
+
 	mux := mux2.NewRouter()
 	for _, location := range locations {
 		var proxyFunc middleware.Handler
@@ -136,6 +138,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 			middleware.Logger(
 				l.logger, config.Logging.RequestLogEnable,
 				enableBodyLog,
+				skipLogging,
 				skipBodyLoggingEndpointPrefixes,
 				config.Logging.EnableForceUnescapingUnicode,
 			),
@@ -160,6 +163,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 				proxyFunc,
 				middleware.Logger(l.logger, config.Logging.RequestLogEnable,
 					enableBodyLog,
+					skipLogging,
 					skipBodyLoggingEndpointPrefixes,
 					config.Logging.EnableForceUnescapingUnicode,
 				),
@@ -177,12 +181,15 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 				PathPrefix:             location.PathPrefix,
 				ErrorOnUnknownEndpoint: errorOnUnknownEndpoint,
 				WithLendingSlash:       location.Protocol != conf.GrpcProtocol,
+				SkipLogging:            skipLogging,
 			},
 			l.routes,
 			l.logger,
 		)
 		mux.PathPrefix(location.PathPrefix).Handler(entrypoint)
 	}
+
+	mux.NotFoundHandler = middleware.UnknownLocation(l.logger, skipLogging)
 
 	return mux, nil
 }

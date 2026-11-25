@@ -58,6 +58,7 @@ func Logger( // nolint:gocognit,funlen
 	logger log.Logger,
 	enableRequestLogging bool,
 	enableBodyLogging bool,
+	skipLogging SkipLoggingPaths,
 	skipBodyLoggingEndpointPrefixes []string,
 	enableForceUnescapingUnicode bool,
 ) Middleware {
@@ -68,6 +69,10 @@ func Logger( // nolint:gocognit,funlen
 			}
 
 			r := ctx.Request()
+
+			if skipLogging.ShouldSkip(r.URL.Path) {
+				return next.Handle(ctx)
+			}
 
 			endpoint := ctx.EndpointMeta().NormalizedEndpoint
 			logBodyFromCurrenRequest := enableBodyLogging

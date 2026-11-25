@@ -14,6 +14,7 @@ type EntryPointConfig struct {
 	WithPrefix             bool
 	ErrorOnUnknownEndpoint bool
 	WithLendingSlash       bool
+	SkipLogging            SkipLoggingPaths
 }
 
 type EndpointResolver interface {
@@ -33,16 +34,18 @@ func Entrypoint(
 
 		endpoint, err := entryPointResolver.ResolveEndpoint(req.Method, req.URL.Path, cfg)
 		if err != nil {
-			lookupPath, endpoint := entryPointResolver.GetPaths(req.URL.Path, cfg)
-			logger.Warn(
-				req.Context(),
-				"call unknown method",
-				log.String("pathPrefix", cfg.PathPrefix),
-				log.String("httpMethod", req.Method),
-				log.String("originalPath", req.URL.Path),
-				log.String("lookupPath", lookupPath),
-				log.String("enpoint", endpoint),
-			)
+			if !cfg.SkipLogging.ShouldSkip(req.URL.Path) {
+				lookupPath, endpoint := entryPointResolver.GetPaths(req.URL.Path, cfg)
+				logger.Warn(
+					req.Context(),
+					"call unknown method",
+					log.String("pathPrefix", cfg.PathPrefix),
+					log.String("httpMethod", req.Method),
+					log.String("originalPath", req.URL.Path),
+					log.String("lookupPath", lookupPath),
+					log.String("enpoint", endpoint),
+				)
+			}
 
 			http.Error(writer, err.Error(), http.StatusNotImplemented)
 			return

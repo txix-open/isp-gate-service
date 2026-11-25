@@ -4,7 +4,8 @@
         "requestLogEnable": true,
         "bodyLogEnable": false,
         "skipBodyLoggingEndpointPrefixes": [],
-        "enableForceUnescapingUnicode": false
+        "enableForceUnescapingUnicode": false,
+        "skipLoggingPathPrefixes": []
     },
     "caching": {
         "authenticationDataInSec": 60,
