@@ -1,3 +1,7 @@
+### v5.11.6
+* Логирование запросов на незнакомые locations — `warn` `request to unknown location` при включённом `logging.requestLogEnable`
+* Добавлена настройка `logging.skipLoggingPathPrefixes` — полное отключение логирования запросов для путей с префиксом из списка (лог запросов, `warn` об неизвестном эндпоинте, лог незнакомых locations)
+* Исправлено `logging.skipBodyLoggingEndpointPrefixes`: значения с ведущим `/` теперь работают и для локаций без `SkipAuth`
 ### v5.11.5
 * Обновлена версия go до версии 1.27
 * Обновлены правила для linter
