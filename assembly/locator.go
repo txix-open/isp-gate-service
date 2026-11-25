@@ -189,7 +189,7 @@ func (l Locator) Handler(config conf.Remote, locations []conf.Location) (http.Ha
 		mux.PathPrefix(location.PathPrefix).Handler(entrypoint)
 	}
 
-	mux.NotFoundHandler = middleware.UnknownLocation(l.logger, skipLogging)
+	mux.NotFoundHandler = middleware.UnknownLocation(l.logger, config.Logging.RequestLogEnable, skipLogging)
 
 	return mux, nil
 }

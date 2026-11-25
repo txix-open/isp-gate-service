@@ -29,7 +29,10 @@ func (s *UnknownLocationsLoggingTestSuite) Test_UnknownPath_LogsWarn() {
 	capture := &logCapture{}
 
 	locator := assembly.NewLocator(capture, nil, nil, routes.NewRoutes(test.Logger()), nil, nil, nil, nil, nil)
-	handler, err := locator.Handler(conf.Remote{Http: conf.Http{MaxRequestBodySizeInMb: 1}}, nil)
+	handler, err := locator.Handler(conf.Remote{
+		Http:    conf.Http{MaxRequestBodySizeInMb: 1},
+		Logging: conf.Logging{RequestLogEnable: true},
+	}, nil)
 	require.NoError(err)
 
 	srv := httptest.NewServer(handler)
@@ -58,8 +61,11 @@ func (s *UnknownLocationsLoggingTestSuite) Test_UnknownPath_SuppressionSkipsWarn
 	capture := &logCapture{}
 
 	config := conf.Remote{
-		Http:    conf.Http{MaxRequestBodySizeInMb: 1},
-		Logging: conf.Logging{SkipLoggingPathPrefixes: []string{"/unknown"}},
+		Http: conf.Http{MaxRequestBodySizeInMb: 1},
+		Logging: conf.Logging{
+			RequestLogEnable:        true,
+			SkipLoggingPathPrefixes: []string{"/unknown"},
+		},
 	}
 	locator := assembly.NewLocator(capture, nil, nil, routes.NewRoutes(test.Logger()), nil, nil, nil, nil, nil)
 	handler, err := locator.Handler(config, nil)
@@ -73,6 +79,29 @@ func (s *UnknownLocationsLoggingTestSuite) Test_UnknownPath_SuppressionSkipsWarn
 	require.EqualValues(http.StatusNotFound, resp.StatusCode())
 
 	// запрос полностью не логируется
+	require.Empty(capture.entries)
+}
+
+// Warn о незнакомой location привязан к requestLogEnable как обычный лог запросов:
+// при выключенном флаге запрос не логируется, но ответ 404 — без изменений.
+func (s *UnknownLocationsLoggingTestSuite) Test_UnknownPath_RequestLoggingDisabled_NoWarn() {
+	test, require := test.New(s.T())
+	capture := &logCapture{}
+
+	locator := assembly.NewLocator(capture, nil, nil, routes.NewRoutes(test.Logger()), nil, nil, nil, nil, nil)
+	handler, err := locator.Handler(conf.Remote{Http: conf.Http{MaxRequestBodySizeInMb: 1}}, nil)
+	require.NoError(err)
+
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	resp, err := httpcli.New().Get(srv.URL + "/unknown/path").Do(s.T().Context())
+	require.NoError(err)
+	require.EqualValues(http.StatusNotFound, resp.StatusCode())
+	body, err := resp.BodyCopy()
+	require.NoError(err)
+	require.EqualValues("404 page not found\n", string(body))
+
 	require.Empty(capture.entries)
 }
 

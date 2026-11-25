@@ -7,9 +7,10 @@ import (
 )
 
 // UnknownLocation — catch-all для запросов, не попавших ни в один location.
-func UnknownLocation(logger log.Logger, skipLogging SkipLoggingPaths) http.Handler {
+// Warn пишется при включённом логировании запросов (как у log request).
+func UnknownLocation(logger log.Logger, enableRequestLogging bool, skipLogging SkipLoggingPaths) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !skipLogging.ShouldSkip(r.URL.Path) {
+		if enableRequestLogging && !skipLogging.ShouldSkip(r.URL.Path) {
 			logger.Warn(r.Context(), "request to unknown location",
 				log.String("httpMethod", r.Method),
 				log.String("path", r.URL.Path),
